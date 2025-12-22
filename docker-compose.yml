@@ -1,0 +1,55 @@
+version: "3.8"
+services:
+  web:
+    image: nginx:latest
+    ports:
+      - "8000:80"
+    volumes:
+      - .:/var/www/html
+      - ./docker/nginx:/etc/nginx/conf.d
+    networks:
+      - laravel-app
+  app:
+    image: "app"
+    container_name: "tecbank"
+    restart: unless-stopped
+    working_dir: /var/www/html
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    volumes:
+      - .:/var/www/html
+    networks:
+      - laravel-app
+    ports:
+      - "6000:8080"
+    depends_on:
+      - db
+  db:
+    image: mysql:8
+    container_name: "mysql"
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: "${DB_PASSWORD}"
+      MYSQL_DATABASE: "${DB_DATABASE}"
+      MYSQL_USER: "${DB_USERNAME}"
+      MYSQL_PASSWORD: "${DB_PASSWORD}"
+    volumes:
+      - ./docker/mysql:/var/lib/mysql
+    networks:
+      - laravel-app
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    restart: always
+    environment:
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "8080:80"
+    networks:
+      - laravel-app
+
+networks:
+  laravel-app:
+    driver: bridge
