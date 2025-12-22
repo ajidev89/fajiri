@@ -16,7 +16,7 @@ class SendOneTimePasswordJob implements ShouldQueue
     /**
      * Create a new job instance.
      */
-    public function __construct(protected Otp $otp)
+    public function __construct(protected Otp $otp, public $code)
     {
         //
     }
@@ -29,11 +29,11 @@ class SendOneTimePasswordJob implements ShouldQueue
 
         switch ($this->otp->channel) {
             case 'email':
-                Mail::to($this->otp->identifier)->send(new OneTimePasswordMail($this->otp));
+                Mail::to($this->otp->identifier)->send(new OneTimePasswordMail($this->code));
                 break;
 
             case 'phone':
-                TwilioService::sendVerificationSms($this->otp->code);
+                TwilioService::sendVerificationSms($this->code);
                 break;
 
             default:

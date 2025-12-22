@@ -18,13 +18,13 @@ Route::controller(AuthController::class)->group(function () {
 
 Route::controller(OtpController::class)->group(function () { 
     Route::group(['prefix' => 'otp'], function () {
-        Route::post('/', 'index');
+        Route::post('/send', 'index');
         Route::post('/verify', 'verify');
     });
 });
 
 Route::controller(CountryController::class)->group(function () { 
-    Route::group(['prefix' => 'country'], function () {
-        Route::post('/', 'index');
+    Route::group(['prefix' => 'countries'], function () {
+        Route::get('/', 'index');
     });
 });

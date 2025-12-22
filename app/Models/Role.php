@@ -2,12 +2,22 @@
 
 namespace App\Models;
 
+use App\Http\Traits\SluggableTrait;
 use Illuminate\Database\Eloquent\Model;
 
 class Role extends Model
 {
+    use SluggableTrait;
+
     public $fillable = [
         "name",
-        "slug"
+        'slug'
+    ];
+
+   /**
+     * @var array|string[]
+     */
+    public array $sluggable = [
+        'source' => 'name'
     ];
 }

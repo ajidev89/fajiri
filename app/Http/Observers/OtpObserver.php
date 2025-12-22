@@ -15,12 +15,13 @@ class OtpObserver
      */
     public function creating(Otp $otp): void
     {
+        info( $otp);
         $otp->hash ??= Hash::make($otp->code);
         $otp->expired_at ??= now()->addMinutes(self::minutes);
     }
 
-    public function created(Otp $otp): void
-    {
-        SendOneTimePasswordJob::dispatch($otp);
-    }
+    // public function created(Otp $otp): void
+    // {
+   
+    // }
 }

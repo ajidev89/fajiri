@@ -4,8 +4,11 @@ namespace App\Http\Repository;
 
 use App\Http\Repository\Contracts\OtpRepositoryInterface;
 use App\Http\Traits\ResponseTrait;
+use App\Jobs\Otp\SendOneTimePasswordJob;
 use App\Models\Otp;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Testing\Fluent\Concerns\Has;
 
 class OtpRepository implements OtpRepositoryInterface
 {
@@ -16,11 +19,15 @@ class OtpRepository implements OtpRepositoryInterface
     public function create($request)
     {
 
-        $this->otp->create([
+        $code = random_int(100000, 999999);
+
+        $otp = $this->otp->create([
             'identifier' => $request->identifier,
             'channel' => $request->channel,
-            'code' => random_int(100000, 999999),
+            'hash' => Hash::make($code) ,
         ]);
+
+        SendOneTimePasswordJob::dispatchAfterResponse($otp, $code);
 
         return $this->handleSuccessResponse('Successfully sent otp', [], 204);
     }
@@ -28,7 +35,7 @@ class OtpRepository implements OtpRepositoryInterface
 
     public function verify($request)
     {
-        $request->fufill();
+        $request->fulfill();
         return $this->handleSuccessResponse('Successfully verified otp', [
             "token" => generateToken([
                 'value' => $request->identifier,

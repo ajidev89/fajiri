@@ -7,25 +7,22 @@ trait SluggableTrait
     protected static function bootSluggableTrait(): void
     {
         static::creating(function ($model) {
-            $slugSource = $model->attributes[$model->sluggable['source']];
-            $model->slug = $model->generateSlug($slugSource, $model->sluggable['source']);
+            $source = $model->sluggable['source'];
+            $value = $model->$source;
+
+            $model->slug = $model->generateSlug($value);
         });
     }
 
-    /**
-     * @return array|string|string[]|null
-     */
-    private function generateSlug($key, $name): string|array|null
+    private function generateSlug(string $value): string
     {
-        if (static::whereSlug($slug = str()->slug($key))->exists()) {
-            $max = static::where("$name", '=', $key)->latest('id')->skip(1)->value('slug');
-            if (isset($max[-1]) && is_numeric($max[-1])) {
-                return preg_replace_callback('/(\d+)$/', function ($match) {
-                    return $match[1] + 1;
-                }, $max);
-            } else {
-                return "{$slug}-".+1;
-            }
+        $slug = str()->slug($value);
+        $original = $slug;
+        $count = 1;
+
+        while (static::where('slug', $slug)->exists()) {
+            $slug = "{$original}-{$count}";
+            $count++;
         }
 
         return $slug;
