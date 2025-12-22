@@ -3,6 +3,17 @@
 
     # Install Laravel dependencies
     RUN apt-get update && apt-get install -y \
+        git \
+        zip \
+        unzip \
+        libpng-dev \
+        libjpeg-dev \
+        cron\
+        nano \
+        supervisor
+
+    # Install Laravel dependencies
+    RUN apt-get update && apt-get install -y \
     git \
     zip \
     unzip \
