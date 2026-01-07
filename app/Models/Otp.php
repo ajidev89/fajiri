@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Http\Traits\Observable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Hash;
 
 class Otp extends Model
 {
+    use Observable;
     public $fillable = [
         "channel",
         "identifier",

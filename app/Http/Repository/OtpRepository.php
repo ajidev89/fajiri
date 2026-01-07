@@ -24,7 +24,7 @@ class OtpRepository implements OtpRepositoryInterface
         $otp = $this->otp->create([
             'identifier' => $request->identifier,
             'channel' => $request->channel,
-            'hash' => Hash::make($code) ,
+            'hash' => Hash::make($code),
         ]);
 
         SendOneTimePasswordJob::dispatchAfterResponse($otp, $code);
