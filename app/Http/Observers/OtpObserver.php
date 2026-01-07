@@ -16,7 +16,7 @@ class OtpObserver
     public function creating(Otp $otp): void
     {
         $otp->hash ??= Hash::make($otp->code);
-        $otp->expired_at ??= now()->addMinutes(self::minutes);
+        $otp->expires_at ??= now()->addMinutes(self::minutes);
     }
 
     // public function created(Otp $otp): void
