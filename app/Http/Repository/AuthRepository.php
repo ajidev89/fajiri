@@ -31,8 +31,6 @@ class AuthRepository implements AuthRepositoryInterface {
 
         try{
 
-            $validAppNames = ['personal', 'business', 'back-office'];
-
             $appName = $request->header('X-App-Name');
 
             $phone = decryptToken($request->phone['token']);
@@ -41,7 +39,6 @@ class AuthRepository implements AuthRepositoryInterface {
             $slug = ($appName == "personal") ? "user" : "business-owner";
 
             $role = $this->role->where('slug', $slug)->first();
-
 
             $user = $this->model->create([
                 "email" => $request->email['value'],
@@ -56,7 +53,7 @@ class AuthRepository implements AuthRepositoryInterface {
                 $user->markPhoneAsVerified();
             }
 
-            if($email && $phone['value'] === $request->email['value']) {
+            if($email && $email['value'] === $request->email['value']) {
                 $user->markEmailAsVerified();
             }
 
