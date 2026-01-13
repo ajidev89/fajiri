@@ -8,4 +8,5 @@ interface AuthRepositoryInterface {
     public function login($request);
     public function changePassword($request);
     public function logout();
+    public function generateToken($request);
 }

@@ -6,6 +6,7 @@ use App\Http\Repository\Contracts\AuthRepositoryInterface;
 use App\Http\Resources\User\UserResource;
 use App\Http\Traits\AuthUserTrait;
 use App\Http\Traits\ResponseTrait;
+use App\Jobs\Otp\SendOneTimePasswordJob;
 use App\Models\Otp;
 use App\Models\Profile;
 use App\Models\Role;
@@ -30,20 +31,24 @@ class AuthRepository implements AuthRepositoryInterface {
 
         try{
 
-            $phone = decryptToken($request->phone['hash']);
-            $email = decryptToken($request->email['hash']);
+            $validAppNames = ['personal', 'business', 'back-office'];
 
+            $appName = $request->header('X-App-Name');
 
-            $role = $this->role->where('slug', $request->role)->first();
+            $phone = decryptToken($request->phone['token']);
+            $email = decryptToken($request->email['token']);
 
-            $profile = $this->profile->where('tag', $request->referred_by)->first();
+            $slug = ($appName == "personal") ? "user" : "business-owner";
+
+            $role = $this->role->where('slug', $slug)->first();
+
 
             $user = $this->model->create([
                 "email" => $request->email['value'],
                 "phone" => $request->phone['value'],
+                "account_type" => $appName,
                 "password" => Hash::make($request->password),
-                "role_id" => $role->id,
-                "referred_by" => $profile->user->id ?? NULL
+                "role_id" => $role->id
             ]);
 
 
@@ -61,16 +66,18 @@ class AuthRepository implements AuthRepositoryInterface {
                 "dob" => $request->dob,
             ]);
 
-            $user->address()->create([
-                
+            $user->address()->create([  
+                "line_1" => $request->line_1,
+                "line_2" => $request->line_2,
+                "city" => $request->city,
+                "state" => $request->state,
+                "postal_code" => $request->postal_code ?? null, 
+                "country_id" => $request->country_id
             ]);
-
-            $token = $user->createToken($user->email)->plainTextToken;
 
             DB::commit();
 
             return $this->handleSuccessResponse("Successfully registered",[
-                "token" => $token,
                 "user" => new UserResource($user)
             ]);
             
@@ -91,34 +98,33 @@ class AuthRepository implements AuthRepositoryInterface {
 
         $credentials = $request->only($field, 'password');
 
-       
 
         if (Auth::attempt($credentials)) {
-
 
             if($request->app_name != $this->user()->account_type){
                 
                 return $this->handleErrorResponse('Your account does not have the necessary permissions for this application. Please log in with the appropriate credentials.',401);
             }
 
-            if($this->user()->status != "active"){
-                return $this->handleErrorResponse('Your account is not active contact support via email',401);
-            }
+            // if($this->user()->status != "active"){
+            //     return $this->handleErrorResponse('Your account is not active contact support via email',401);
+            // }
 
             $this->user()->tokens()->delete();
+         
+            $code = random_int(100000, 999999);
 
-
-            $this->otp->create([
+            $otp = $this->otp->create([
                 'identifier' => $request->$field,
                 'channel' => $field,
-                'code' => random_int(100000, 999999),
+                'hash' => Hash::make($code),
             ]);
-    
 
             if($request->notification_token){
                 $this->user()->update(['notification_token' => $request->notification_token]);
             }
 
+            SendOneTimePasswordJob::dispatchAfterResponse($otp, $code);
 
             return $this->handleSuccessResponse('Successfully sent otp',new UserResource($this->user())); 
         }
@@ -148,6 +154,20 @@ class AuthRepository implements AuthRepositoryInterface {
         catch(Exception $e){
             return $this->handleErrorResponse('We could not change your password please try again!'); 
         }
+    }
+
+    public function generateToken($request)
+    {
+        $request->fulfill();
+
+        $user = $this->model->where($request->channel, $request->identifier)->firstorFail();
+
+        $token = $user->createToken($user->email)->plainTextToken;
+
+        return $this->handleSuccessResponse('Successfully verified otp', [
+            "token" => $token,
+            "type" => "bearer"
+        ]);
     }
 
 

@@ -7,6 +7,7 @@ use App\Http\Repository\Contracts\AuthRepositoryInterface;
 use App\Http\Requests\Auth\ChangePasswordRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Otp\VerifyRequest;
 
 class AuthController extends Controller
 {
@@ -24,6 +25,10 @@ class AuthController extends Controller
 
     public function changePassword(ChangePasswordRequest $request){
         return $this->authRepositoryInterface->changePassword($request);
+    }
+
+    public function generateToken(VerifyRequest $request){
+        return $this->authRepositoryInterface->generateToken($request);
     }
 
     public function logout(){

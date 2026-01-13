@@ -6,9 +6,7 @@ use App\Http\Repository\Contracts\OtpRepositoryInterface;
 use App\Http\Traits\ResponseTrait;
 use App\Jobs\Otp\SendOneTimePasswordJob;
 use App\Models\Otp;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Testing\Fluent\Concerns\Has;
 
 class OtpRepository implements OtpRepositoryInterface
 {

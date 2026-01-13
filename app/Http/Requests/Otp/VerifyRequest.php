@@ -37,10 +37,10 @@ class VerifyRequest extends ApiRequest
                     ['email']
                 ),
 
-                Rule::when(
-                    request('channel') === Channel::PHONE->value,
-                    new ValidatePhoneNumber() // or your ValidatePhoneNumber rule
-                ),
+                // Rule::when(
+                //     request('channel') === Channel::PHONE->value,
+                //     new ValidatePhoneNumber() // or your ValidatePhoneNumber rule
+                // ),
             ],
             'code' => "required|digits:6"
         ];
@@ -51,13 +51,17 @@ class VerifyRequest extends ApiRequest
         $identifier = $this->input('identifier');
         $code = $this->input('code');
 
-        $phone = ["+2349063328998"];
+        $phone = ["+2349063328998","+2347084773667"];
 
         // Skip Twilio verification for test numbers
         if (!in_array($identifier, $phone)) {
             if ($this->input('channel') === Channel::PHONE->value) {
                return TwilioService::verifySms($code, $identifier);
             }
+        }
+
+        if(in_array($identifier, $phone) && Channel::PHONE->value){
+            return;
         }
 
         $emails = [];
