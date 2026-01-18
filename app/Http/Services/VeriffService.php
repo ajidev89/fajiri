@@ -3,7 +3,7 @@ namespace App\Http\Services;
 
 use App\Enums\Kyc\Status;
 use App\Http\Traits\ResponseTrait;
-use App\Jobs\VerificationJob;
+use App\Jobs\Kyc\VerificationJob;
 use App\Models\User;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Request;
@@ -42,6 +42,7 @@ class VeriffService {
 
     public function createSession(User $user)
     {
+
         $response  = $this->http->post("/v1/sessions",[
             "verification" => [
                 "vendorData" => $user->id,
@@ -50,9 +51,9 @@ class VeriffService {
                     "firstName" => $user->profile->first_name,
                     "lastName" => $user->profile->last_name
                 ],
-            ],
-            "address" => [
-                "fullAddress" => "{$user->address->line_1}, {$user->address->line_2}, {$user->address->city}, {$user->address->state}, {$user->address->country->name}",
+                "address" => [
+                    "fullAddress" => "{$user->address->line_1}, {$user->address->line_2}, {$user->address->city}, {$user->address->state}, {$user->address->country->name}",
+                ]
             ]
         ]);
 
@@ -61,7 +62,9 @@ class VeriffService {
 
     public function updateSession($id, $data = [])
         {
-        $response  = $this->http->patch("/v1/sessions/{$id}", $data);
+        $response  = $this->http->withHeaders([
+            "X-HMAC-SIGNATURE" => $this->generateHMAC(json_encode($data))
+        ])->patch("/v1/sessions/{$id}", $data);
 
         return $response->throw()->json();
     }
@@ -89,7 +92,7 @@ class VeriffService {
     public function createSessionMedia($id, $data = []) {
 
         $response  = $this->http->withHeaders([
-            "X-HMAC-SIGNATURE" => $this->generateHMAC($data)
+            "X-HMAC-SIGNATURE" => $this->generateHMAC(json_encode($data))
         ])->post("/v1/sessions/{$id}/media", $data);
 
         return $response->throw()->json();
@@ -131,11 +134,11 @@ class VeriffService {
         $isValid = hash_equals(strtolower($signature), strtolower($generatedHash));
     
         if (!$isValid) {
-            return $this->handleErrorResponse("Cannot verify payload", [], 403);
+            return $this->handleErrorResponse("Cannot verify payload", 403);
         }
 
         if(isset($request->verification)){
-            $user = $this->user->where('user_id', $request->verification['vendorData'])->firstOrFail();
+            $user = $this->user->where('id', $request->verification['vendorData'])->firstOrFail();
 
             $status =  Status::values();
 

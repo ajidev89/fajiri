@@ -45,6 +45,7 @@ class KycRepository implements KycRepositoryInterface {
     public function uploadMedia(VerificationSession $session, $request){
 
         $file = $request->file('image');
+
         $response = app(VeriffService::class)->createSessionMedia($session->session_id,
             [     
                 "image" => [
@@ -83,6 +84,8 @@ class KycRepository implements KycRepositoryInterface {
                 "status" => "submitted"
             ]
         ]);
+
+        info($response);
 
         $session->update([
             "status" => Status::COMPLETED

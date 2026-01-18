@@ -24,7 +24,7 @@ class UploadMediaRequest extends ApiRequest
     public function rules(): array
     {
         return [
-            "file"=> "required",
+            "image" => "required|file",
             "type" => ["required", new Enum(Type::class)],
         ];
     }

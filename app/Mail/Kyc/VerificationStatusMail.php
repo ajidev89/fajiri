@@ -26,7 +26,7 @@ class VerificationStatusMail extends Mailable
      */
     public function envelope(): Envelope
     {
-        $subject = ($this->status == "resubmission") ? "Your Driver Verification needs {$this->status}" : "Your Driver Verification has been {$this->status}";
+        $subject = ($this->status == "resubmission") ? "Your Verification needs {$this->status}" : "Your Verification has been {$this->status}";
 
         return new Envelope(
             subject: $subject

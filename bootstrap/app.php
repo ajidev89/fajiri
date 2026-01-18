@@ -20,17 +20,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->append([
-            \App\Http\Middleware\IdentifyAppMiddleware::class,
-        ]);
         $middleware->alias([
             'identify' => \App\Http\Middleware\IdentifyAppMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->renderable(function (Exception $exception, $request) {
-            if ($request->is('v1/*')) {
-
+        $exceptions->render(function (Throwable $exception, $request) {
+                
                 if ($exception instanceof ValidationException) {
                     return response()->json([
                         "status" => false, 
@@ -83,7 +79,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
                 // Log the exception
                 // event_log($exception->getMessage(), 'error', "{$exception->getFile()}:{$exception->getLine()}");
-                return response()->json([  'error' => "{$exception->getFile()}:{$exception->getLine()}", 'message' =>  $exception->getMessage()], 500);
-            }
+                return response()->json(['error' => "{$exception->getFile()}:{$exception->getLine()}", 'message' =>  $exception->getMessage()], 500);
+
+
         });
     })->create();

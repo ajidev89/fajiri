@@ -1,10 +1,12 @@
 <?php
 
-namespace App\Jobs;
+namespace App\Jobs\Kyc;
 
+use App\Mail\Kyc\VerificationStatusMail;
 use App\Models\User;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Mail;
 
 class VerificationJob implements ShouldQueue
 {
@@ -23,6 +25,6 @@ class VerificationJob implements ShouldQueue
      */
     public function handle(): void
     {
-        
+        Mail::to($this->user->email)->send(new VerificationStatusMail($this->status));
     }
 }
