@@ -2,6 +2,7 @@
 
 namespace App\Http\Repository;
 
+use App\Enums\Kyc\Status;
 use App\Http\Repository\Contracts\AuthRepositoryInterface;
 use App\Http\Resources\User\UserResource;
 use App\Http\Traits\AuthUserTrait;
@@ -61,6 +62,7 @@ class AuthRepository implements AuthRepositoryInterface {
                 "first_name" => $request->first_name,
                 "last_name" => $request->last_name,
                 "dob" => $request->dob,
+                "gender" => $request->gender,
             ]);
 
             $user->address()->create([  
@@ -70,7 +72,9 @@ class AuthRepository implements AuthRepositoryInterface {
                 "state" => $request->state,
                 "postal_code" => $request->postal_code ?? null, 
                 "country_id" => $request->country_id
-            ]);
+            ]);                             
+
+            $user->kyc()->create();                                 
 
             DB::commit();
 

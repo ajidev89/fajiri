@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\CountryController;
+use App\Http\Controllers\API\KycController;
 use App\Http\Controllers\API\OtpController;
 use App\Http\Controllers\API\UserController;
 use Illuminate\Support\Facades\Route;
@@ -33,5 +34,14 @@ Route::controller(CountryController::class)->group(function () {
 Route::controller(UserController::class)->middleware(['auth:sanctum'])->group(function () { 
     Route::group(['prefix' => 'user'], function () {
         Route::get('/', 'index');
+    });
+});
+
+
+Route::controller(KycController::class)->middleware(['auth:sanctum'])->group(function () { 
+    Route::group(['prefix' => 'session'], function () {
+        Route::post('/', 'create');
+        Route::post('{session}/upload', 'uploadMedia');
+        Route::put('{session}/submit', 'submitVerification');
     });
 });

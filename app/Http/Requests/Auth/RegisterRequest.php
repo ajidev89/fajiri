@@ -2,9 +2,11 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Enums\Profile\Gender;
 use App\Http\Requests\ApiRequest;
 use App\Rules\ValidatePhoneNumber;
 use App\Rules\ValidateToken;
+use Illuminate\Validation\Rules\Enum;
 
 class RegisterRequest extends ApiRequest
 {
@@ -37,6 +39,7 @@ class RegisterRequest extends ApiRequest
                 'date', 
                 'before_or_equal:' . now()->subYears(18)->format('Y-m-d'),
             ],
+            "gender" => ["required", new Enum(Gender::class)],
             "line_1" => "required",
             "line_2" => "nullable",
             "city"  => "required",
