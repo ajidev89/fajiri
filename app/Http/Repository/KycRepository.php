@@ -55,8 +55,6 @@ class KycRepository implements KycRepositoryInterface {
             ]
         );
 
-        info($response);
-
         $url = $this->cloudinary->uploadImage($file);
 
         $document = $this->document->create([
