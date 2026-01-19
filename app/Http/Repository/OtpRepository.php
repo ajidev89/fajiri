@@ -27,7 +27,7 @@ class OtpRepository implements OtpRepositoryInterface
 
         SendOneTimePasswordJob::dispatchAfterResponse($otp, $code);
 
-        return $this->handleSuccessResponse('Successfully sent otp', [], 204);
+        return $this->handleSuccessResponse('Successfully sent otp', []);
     }
 
 
