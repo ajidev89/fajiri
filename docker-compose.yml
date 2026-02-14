@@ -11,7 +11,7 @@ services:
       - laravel-app
   app:
     image: "app"
-    container_name: "tecbank"
+    container_name: "fajiri"
     restart: unless-stopped
     working_dir: /var/www/html
     build:
