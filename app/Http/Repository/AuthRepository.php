@@ -13,6 +13,7 @@ use App\Models\Profile;
 use App\Models\Role;
 use App\Models\User;
 use Exception;
+use Google_Client;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -168,6 +169,34 @@ class AuthRepository implements AuthRepositoryInterface {
         return $this->handleSuccessResponse('Successfully verified otp', [
             "token" => $token,
             "type" => "bearer"
+        ]);
+    }
+
+    public function loginWithGoogle($request)
+    {
+        $client = new Google_Client([
+            'client_id' => config('services.google.client_id')
+        ]);
+
+        $payload = $client->verifyIdToken($request->id_token);
+
+        if (!$payload) {
+            return response()->json(['error' => 'Invalid token'], 401);
+        }
+
+        $user = User::updateOrCreate(
+            ['email' => $payload['email']],
+            [
+                'name' => $payload['name'],
+                'google_id' => $payload['sub'],
+            ]
+        );
+
+        $token = $user->createToken('auth')->plainTextToken;
+
+        return response()->json([
+            'token' => $token,
+            'user' => $user,
         ]);
     }
 

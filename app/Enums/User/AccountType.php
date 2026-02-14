@@ -8,8 +8,11 @@ enum AccountType: string
 {
     use EnumTrait;
     
-    case PERSONAL = 'personal';
-    case BUSINESS = 'business';
+    case IDENTIFIED_MEMBERSHIP = 'identified-membership';
+
+    case PROJECT_MEMBERSHIP = 'project-membership';
+
+    case CORPORATE_MEMBERSHIP = 'corporate-membership';
 
 
 }

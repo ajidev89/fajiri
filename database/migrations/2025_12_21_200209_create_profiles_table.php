@@ -20,7 +20,10 @@ return new class extends Migration
             $table->string("last_name");
             $table->string("middle_name")->nullable();
             $table->date("dob");
-            $table->enum("gender", Gender::values());
+            $table->enum("gender", Gender::values())->nullable();
+            $table->string("address")->nullable();
+            $table->string("occupation")->nullable();
+            $table->string("avatar")->nullable();
             $table->timestamps();
         });
     }
