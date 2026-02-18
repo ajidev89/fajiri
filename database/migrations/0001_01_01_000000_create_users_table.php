@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\User\AccountType;
+use App\Enums\User\SubAccountType;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -21,6 +22,7 @@ return new class() extends Migration
             $table->string('google_id')->nullable();
             $table->timestamp('phone_verified_at')->nullable();
             $table->enum('account_type', AccountType::values());
+            $table->enum('sub_account_type', SubAccountType::values())->nullable();
             $table->string('notification_token')->nullable();
             $table->string('password')->nullable();
             $table->rememberToken();

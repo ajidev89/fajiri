@@ -29,6 +29,7 @@ class User extends Authenticatable
         'phone',
         'phone_verified_at',
         'account_type',
+        'sub_account_type',
         'notification_token',
         'password',
         "role_id"
