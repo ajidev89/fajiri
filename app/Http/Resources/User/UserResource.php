@@ -24,7 +24,6 @@ class UserResource extends JsonResource
             "profile"           => new ProfileResource($this->profile), 
             "phone_verified_at" => $this->phone_verified_at,
             "account_type"      => $this->account_type,
-            "notification_token" => $this->notification_token,
             "created_at"        => $this->created_at,
             "updated_at"        => $this->updated_at,
             "deleted_at"        => $this->deleted_at

@@ -15,6 +15,13 @@ class Profile extends Model
         "last_name",
         "middle_name",
         "dob",
-        "gender"
+        "gender",
+        "address",
+        "occupation",
+        "avatar",
     ];
+
+    public function user(){
+        return $this->belongsTo(User::class);
+    }
 }

@@ -51,7 +51,7 @@ class VerifyRequest extends ApiRequest
         $identifier = $this->input('identifier');
         $code = $this->input('code');
 
-        $phone = ["+2349063328998","+2347084773667"];
+        $phone = ["+2349063328998","+2347084773667", "+2349131461128"];
 
         // Skip Twilio verification for test numbers
         if (!in_array($identifier, $phone)) {

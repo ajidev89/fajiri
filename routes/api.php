@@ -30,29 +30,9 @@ Route::controller(OtpController::class)->group(function () {
     });
 });
 
-Route::controller(CountryController::class)->group(function () { 
-    Route::group(['prefix' => 'countries'], function () {
-        Route::get('/', 'index');
-    });
-});
 
 Route::controller(UserController::class)->middleware(['auth:sanctum'])->group(function () { 
     Route::group(['prefix' => 'user'], function () {
         Route::get('/', 'index');
-    });
-});
-
-Route::controller(KycController::class)->middleware(['auth:sanctum'])->group(function () { 
-    Route::group(['prefix' => 'session'], function () {
-        Route::post('/', 'create');
-        Route::post('{session}/upload', 'uploadMedia');
-        Route::put('{session}/submit', 'submitVerification');
-    });
-});
-
-
-Route::controller(KycController::class)->group(function () { 
-    Route::group(['prefix' => 'veriff'], function () {
-        Route::post('/', 'handleWebhook')->withoutMiddleware(['identify']);
     });
 });

@@ -39,13 +39,10 @@ class RegisterRequest extends ApiRequest
                 'date', 
                 'before_or_equal:' . now()->subYears(18)->format('Y-m-d'),
             ],
-            "gender" => ["required", new Enum(Gender::class)],
-            "line_1" => "required",
-            "line_2" => "nullable",
-            "city"  => "required",
-            "state" => "required",
-            "postal_code" => "nullable",
-            "country_id" => "required|exists:countries,id",
+            // "gender" => ["required", new Enum(Gender::class)],
+            "address" => "required",
+            "occupation" => "required",
+            "avatar" => "nullable",
             "password" => "required|confirmed|min:8"
         ];
     }

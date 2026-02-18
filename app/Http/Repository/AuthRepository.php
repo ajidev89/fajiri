@@ -33,19 +33,15 @@ class AuthRepository implements AuthRepositoryInterface {
 
         try{
 
-            $appName = $request->header('X-App-Name');
-
             $phone = decryptToken($request->phone['token']);
             $email = decryptToken($request->email['token']);
 
-            $slug = ($appName == "personal") ? "user" : "business-owner";
-
-            $role = $this->role->where('slug', $slug)->first();
+            $role = $this->role->where('slug', "user")->first();
 
             $user = $this->model->create([
                 "email" => $request->email['value'],
                 "phone" => $request->phone['value'],
-                "account_type" => $appName,
+                "account_type" => $request->account_type,
                 "password" => Hash::make($request->password),
                 "role_id" => $role->id
             ]);
@@ -64,18 +60,10 @@ class AuthRepository implements AuthRepositoryInterface {
                 "last_name" => $request->last_name,
                 "dob" => $request->dob,
                 "gender" => $request->gender,
-            ]);
-
-            $user->address()->create([  
-                "line_1" => $request->line_1,
-                "line_2" => $request->line_2,
-                "city" => $request->city,
-                "state" => $request->state,
-                "postal_code" => $request->postal_code ?? null, 
-                "country_id" => $request->country_id
-            ]);                             
-
-            $user->kyc()->create();                                 
+                "address" => $request->address,
+                "occupation" => $request->occupation,
+                "avatar" => $request->avatar,
+            ]);                                 
 
             DB::commit();
 
@@ -86,6 +74,7 @@ class AuthRepository implements AuthRepositoryInterface {
         }
 
         catch(Exception $e) {
+            info($e);
             DB::rollBack();
             return $this->handleErrorResponse($e->getMessage(), 400);
         }
@@ -102,11 +91,6 @@ class AuthRepository implements AuthRepositoryInterface {
 
 
         if (Auth::attempt($credentials)) {
-
-            if($request->app_name != $this->user()->account_type){
-                
-                return $this->handleErrorResponse('Your account does not have the necessary permissions for this application. Please log in with the appropriate credentials.',401);
-            }
 
             // if($this->user()->status != "active"){
             //     return $this->handleErrorResponse('Your account is not active contact support via email',401);
