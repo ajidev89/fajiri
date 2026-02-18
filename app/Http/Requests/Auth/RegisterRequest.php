@@ -3,6 +3,8 @@
 namespace App\Http\Requests\Auth;
 
 use App\Enums\Profile\Gender;
+use App\Enums\User\AccountType;
+use App\Enums\User\SubAccountType;
 use App\Http\Requests\ApiRequest;
 use App\Rules\ValidatePhoneNumber;
 use App\Rules\ValidateToken;
@@ -31,6 +33,7 @@ class RegisterRequest extends ApiRequest
             "email.value" => "required|email|unique:users,email",
             "email.token" => ["required", new ValidateToken()],
             "phone.value" => ["required", 
+            
             // new ValidatePhoneNumber(), 
             "unique:users,phone"],
             "phone.token" => ["required", new ValidateToken()],
@@ -40,6 +43,8 @@ class RegisterRequest extends ApiRequest
                 'before_or_equal:' . now()->subYears(18)->format('Y-m-d'),
             ],
             // "gender" => ["required", new Enum(Gender::class)],
+            "account_type" => ["required", new Enum(AccountType::class)],
+            "sub_account_type" => ["nullable", new Enum(SubAccountType::class)],
             "address" => "required",
             "occupation" => "required",
             "avatar" => "nullable",
