@@ -30,13 +30,24 @@ class RegisterRequest extends ApiRequest
         return [
             "first_name" => "required",
             "last_name"  => "required",
-            "email.value" => "required|email|unique:users,email",
-            "email.token" => ["required", new ValidateToken()],
-            "phone.value" => ["required", 
-            
-            // new ValidatePhoneNumber(), 
-            "unique:users,phone"],
-            "phone.token" => ["required", new ValidateToken()],
+            "email.value" => [
+                "required_without:phone.value",
+                "email",
+                "unique:users,email",
+            ],
+            "email.token" => [
+                "required_without:phone.value",
+                new ValidateToken(),
+            ],
+            "phone.value" => [
+                "required_without:email.value",
+                "unique:users,phone",
+                // new ValidatePhoneNumber(),
+            ],
+            "phone.token" => [
+                "required_without:email.value",
+                new ValidateToken(),
+            ],
             'dob' => [
                 'required',
                 'date', 
