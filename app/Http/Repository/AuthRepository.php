@@ -33,6 +33,8 @@ class AuthRepository implements AuthRepositoryInterface {
 
         try{
 
+            $phone = null;
+
             if ($request->input('phone.token')) {
                 $phone = decryptToken($request->input('phone.token'));
             }
@@ -44,7 +46,7 @@ class AuthRepository implements AuthRepositoryInterface {
             $role = $this->role->where('slug', "user")->first();
 
             $user = $this->model->create([
-                "email" => $request->email['value'] ?? null,
+                "email" => $request->input('email.value'),
                 "phone" => $request->phone['value'] ?? null,
                 "account_type" => $request->account_type,
                 "sub_account_type" => $request->sub_account_type,
