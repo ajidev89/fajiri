@@ -33,12 +33,12 @@ class AuthRepository implements AuthRepositoryInterface {
 
         try{
 
-            if($request->phone['token']){
-                $phone = decryptToken($request->phone['token']);
+            if ($request->input('phone.token')) {
+                $phone = decryptToken($request->input('phone.token'));
             }
 
-            if($request->email['token']){
-                $email = decryptToken($request->email['token']);
+            if ($request->input('email.token')) {
+                $email = decryptToken($request->input('email.token'));
             }
 
             $role = $this->role->where('slug', "user")->first();
