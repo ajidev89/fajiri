@@ -55,7 +55,7 @@ class RegisterRequest extends ApiRequest
             ],
             // "gender" => ["required", new Enum(Gender::class)],
             "account_type" => ["required", new Enum(AccountType::class)],
-            "sub_account_type" => ["required_if:account_type,corporate-membership" new Enum(SubAccountType::class)],
+            "sub_account_type" => ["required_if:account_type,corporate-membership", new Enum(SubAccountType::class)],
             "address" => "required",
             "occupation" => "required",
             "avatar" => "nullable",
