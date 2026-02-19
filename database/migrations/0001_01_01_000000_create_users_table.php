@@ -17,7 +17,7 @@ return new class() extends Migration
             $table->uuid("id")->primary();
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
-            $table->string('phone');
+            $table->string('phone')->nullable();
             $table->foreignId('role_id');
             $table->string('google_id')->nullable();
             $table->timestamp('phone_verified_at')->nullable();
