@@ -1,12 +1,9 @@
 <?php
 
 namespace App\Http\Requests\Auth;
-
-use App\Enums\Profile\Gender;
 use App\Enums\User\AccountType;
 use App\Enums\User\SubAccountType;
 use App\Http\Requests\ApiRequest;
-use App\Rules\ValidatePhoneNumber;
 use App\Rules\ValidateToken;
 use Illuminate\Validation\Rules\Enum;
 
