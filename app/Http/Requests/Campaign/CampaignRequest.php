@@ -3,6 +3,8 @@
 namespace App\Http\Requests\Campaign;
 
 use App\Http\Requests\ApiRequest;
+use Illuminate\Validation\Rules\Enum;
+use App\Enums\Campagin\Status;
 
 class CampaignRequest extends ApiRequest
 {
@@ -19,6 +21,7 @@ class CampaignRequest extends ApiRequest
             'currency' => 'required|string|exists:countries,currency',
             'images' => 'nullable|array',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'status' => ['required', new Enum(Status::class)],
             'goal_amount' => 'required|numeric|min:0.01',
         ];
     }
