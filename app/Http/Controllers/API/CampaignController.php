@@ -8,6 +8,7 @@ use App\Http\Repository\Contracts\DonationRepositoryInterface;
 use App\Http\Requests\Campaign\CampaignRequest;
 use App\Http\Requests\Campaign\DonationRequest;
 use App\Http\Resources\CampaignResource;
+use App\Models\Campaign;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -39,27 +40,20 @@ class CampaignController extends Controller
         return new CampaignResource($campaign);
     }
 
-    public function update(CampaignRequest $request, $id)
+    public function update(CampaignRequest $request,Campaign $campaign)
     {
-        $campaign = $this->campaignRepository->find($id);
-        
-        if ($campaign->added_by !== auth()->id()) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-
-        $campaign = $this->campaignRepository->update($id, $request->validated());
+        $campaign = $this->campaignRepository->update($campaign->id, $request->validated());
         return new CampaignResource($campaign);
     }
 
-    public function destroy($id)
+    public function destroy(Campaign $campaign)
     {
-        $campaign = $this->campaignRepository->find($id);
 
         if ($campaign->added_by !== auth()->id()) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        $this->campaignRepository->delete($id);
+        $this->campaignRepository->delete($campaign->id);
         return response()->json(['message' => 'Campaign deleted successfully']);
     }
 }

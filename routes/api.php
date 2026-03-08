@@ -47,9 +47,9 @@ Route::controller(CampaignController::class)->group(function () {
     Route::group(['prefix' => 'campaigns'], function () {
         Route::get('/', 'index');
         Route::post('/', 'store')->middleware(['auth:sanctum', 'admin']);
-        Route::get('/{id}', 'show');
-        Route::put('/{id}', 'update')->middleware(['auth:sanctum', 'admin']);
-        Route::delete('/{id}', 'destroy')->middleware(['auth:sanctum', 'admin']);
+        Route::get('/{campaign}', 'show');
+        Route::put('/{campaign}', 'update')->middleware(['auth:sanctum', 'admin']);
+        Route::delete('/{campaign}', 'destroy')->middleware(['auth:sanctum', 'admin']);
     });
 });
 
