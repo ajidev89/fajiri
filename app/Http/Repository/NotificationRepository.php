@@ -22,6 +22,11 @@ class NotificationRepository implements NotificationRepositoryInterface
         }
     }
 
+    public function create(array $data)
+    {
+        return Notification::create($data);
+    }
+
     public function destroy(string $id)
     {
         try {

@@ -44,12 +44,41 @@ class PaystackJob implements ShouldQueue
                     $user = User::find($userId);
                     if ($user) {
                         $user->deposit($amount, "Wallet funding via Paystack", $reference);
+
+                        // Create notification
+                        \App\Models\Notification::create([
+                            'user_id' => $user->id,
+                            'title' => 'Wallet Funded',
+                            'message' => "Your wallet has been credited with {$user->wallet->currency} " . number_format($amount, 2) . " via Paystack.",
+                            'type' => 'wallet_funding',
+                            'data' => [
+                                'amount' => $amount,
+                                'reference' => $reference,
+                                'currency' => $user->wallet->currency
+                            ]
+                        ]);
                     }
                 }
             } elseif ($type === 'campaign_donation') {
                 $donation = Donation::where('reference', $reference)->first();
                 if ($donation && $donation->status === 'pending') {
                     $donation->update(['status' => 'completed']);
+
+                    // Notify donor if they are a registered user
+                    if ($donation->user_id) {
+                        \App\Models\Notification::create([
+                            'user_id' => $donation->user_id,
+                            'title' => 'Donation Successful',
+                            'message' => "Your donation of {$donation->currency} " . number_format($donation->amount, 2) . " to '{$donation->campaign->title}' was successful.",
+                            'type' => 'campaign_donation',
+                            'data' => [
+                                'donation_id' => $donation->id,
+                                'campaign_id' => $donation->campaign_id,
+                                'amount' => $donation->amount,
+                                'currency' => $donation->currency
+                            ]
+                        ]);
+                    }
                 }
             }
         }

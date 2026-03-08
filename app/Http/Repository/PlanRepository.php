@@ -69,6 +69,20 @@ class PlanRepository implements PlanRepositoryInterface
                 'auto_renew' => $autoRenew,
             ]);
 
+            // Create notification
+            \App\Models\Notification::create([
+                'user_id' => $user->id,
+                'title' => 'Plan Subscribed',
+                'message' => "You have successfully subscribed to the '{$plan->name}' plan.",
+                'type' => 'plan_subscription',
+                'data' => [
+                    'plan_id' => $plan->id,
+                    'plan_name' => $plan->name,
+                    'amount' => $plan->price,
+                    'currency' => $plan->currency
+                ]
+            ]);
+
             return $user->currentPlan();
         });
     }
@@ -118,6 +132,20 @@ class PlanRepository implements PlanRepositoryInterface
                 'expires_at' => $expiresAt,
                 'status' => 'active',
                 'auto_renew' => true,
+            ]);
+
+            // Create notification
+            \App\Models\Notification::create([
+                'user_id' => $user->id,
+                'title' => 'Plan Renewed',
+                'message' => "Your subscription to the '{$plan->name}' plan has been successfully renewed.",
+                'type' => 'plan_renewal',
+                'data' => [
+                    'plan_id' => $plan->id,
+                    'plan_name' => $plan->name,
+                    'amount' => $plan->price,
+                    'currency' => $plan->currency
+                ]
             ]);
 
             return $user->currentPlan();

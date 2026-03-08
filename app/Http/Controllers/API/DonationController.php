@@ -51,6 +51,21 @@ class DonationController extends Controller
                     'reference' => 'WAL_' . uniqid(),
                 ]);
 
+                // Notify donor
+                \App\Models\Notification::create([
+                    'user_id' => $user->id,
+                    'title' => 'Donation Successful',
+                    'message' => "Your donation of {$donorCurrency} " . number_format($amount, 2) . " to '{$campaign->title}' was successful.",
+                    'type' => 'campaign_donation',
+                    'data' => [
+                        'donation_id' => $donation->id,
+                        'campaign_id' => $campaign->id,
+                        'amount' => $amount,
+                        'currency' => $donorCurrency
+                    ]
+                ]);
+
+
                 return response()->json([
                     'message' => 'Donation successful',
                     'donation' => $donation,

@@ -55,5 +55,9 @@ class RepositoryServiceProvider extends ServiceProvider
     public function boot(): void
     {
         //
+        $this->app->bind(
+            \App\Http\Repository\Contracts\PreferenceRepositoryInterface::class,
+            \App\Http\Repository\PreferenceRepository::class
+        );
     }
 }

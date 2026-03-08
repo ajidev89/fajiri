@@ -40,6 +40,8 @@ Route::controller(UserController::class)->middleware(['auth:sanctum'])->group(fu
         Route::get('/', 'index');
         Route::post('/change-password', 'changePassword');
         Route::post('/avatar', 'updateAvatar');
+        Route::get('/preferences', [\App\Http\Controllers\API\PreferenceController::class, 'index']);
+        Route::put('/preferences', [\App\Http\Controllers\API\PreferenceController::class, 'update']);
     });
 });
 
