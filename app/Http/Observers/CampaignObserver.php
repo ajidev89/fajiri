@@ -12,13 +12,15 @@ class CampaignObserver
      */
     public function creating(Campaign $campaign): void
     {
-        $campaign->images = app(CloudinaryService::class)->uploadMultiple($campaign->images);
+        if(request()->hasFile('images')) {
+            $campaign->images = app(CloudinaryService::class)->uploadMultiple(request()->file('images'));
+        }
     }
 
     public function updating(Campaign $campaign): void
-    {
-        if ($campaign->isDirty('images')) {
-            $campaign->images = app(CloudinaryService::class)->uploadMultiple($campaign->images);
+    {   
+        if(request()->hasFile('images')) {
+            $campaign->images = app(CloudinaryService::class)->uploadMultiple(request()->file('images'));
         }
     }
 
