@@ -15,14 +15,15 @@ class AddAdminAccount extends Seeder
      */
     public function run(): void
     {
-        if(User::where('email','nouser124@tec-bank.com')->exists()){
+        if(User::where('email','nouser124@fajiri.com')->exists()){
             return;
         }
 
         $role = Role::where('name', 'Super Admin')->first();
         User::create([
             'phone' => '+12345678901',
-            'email' => 'nouser124@tec-bank.com',
+            'email' => 'nouser124@fajiri.com',
+            'country_id' => 1,
             'password' =>  Hash::make("R@ndom4Nnow"),
             'email_verified_at' => now(),
             'phone_verified_at' => now(),
