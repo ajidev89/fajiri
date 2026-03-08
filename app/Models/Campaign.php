@@ -58,9 +58,9 @@ class Campaign extends Model
         );
     }
 
-    protected $attributes = [
-        'status' => 'pending',
-    ];
+    // protected $attributes = [
+    //     'status' => 'pending',
+    // ];
 
     protected $appends = [
         'collected_amount',
