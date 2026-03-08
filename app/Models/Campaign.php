@@ -17,6 +17,7 @@ class Campaign extends Model
         'title',
         'body',
         'type',
+        'campaign_type',
         'status',
         'images',
         'goal_amount',
@@ -26,6 +27,7 @@ class Campaign extends Model
         'images' => 'array',
         'goal_amount' => 'float',
         'type' => \App\Enums\Campagin\Type::class,
+        'campaign_type' => \App\Enums\Campagin\CampaignType::class,
         'status' => \App\Enums\Campagin\Status::class,
     ];
 

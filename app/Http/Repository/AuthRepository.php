@@ -43,6 +43,7 @@ class AuthRepository implements AuthRepositoryInterface {
             }
 
             $role = $this->role->where('slug', "user")->first();
+            $country = \App\Models\Country::findOrFail($request->country_id);
 
             $user = $this->model->create([
                 "email" => $request->input('email.value'),
@@ -50,7 +51,14 @@ class AuthRepository implements AuthRepositoryInterface {
                 "account_type" => $request->account_type,
                 "sub_account_type" => $request->sub_account_type,
                 "password" => Hash::make($request->password),
-                "role_id" => $role->id
+                "role_id" => $role->id,
+                "country_id" => $request->country_id
+            ]);
+
+            // Create wallet with country currency
+            $user->wallet()->create([
+                'currency' => $country->currency ?? 'NGN',
+                'balance' => 0
             ]);
 
 

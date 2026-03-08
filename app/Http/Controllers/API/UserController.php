@@ -19,4 +19,8 @@ class UserController extends Controller
         return $this->userRepositoryInterface->changePassword($request);
     }
 
+    public function updateAvatar(\Illuminate\Http\Request $request){
+        return $this->userRepositoryInterface->updateAvatar($request);
+    }
+
 }

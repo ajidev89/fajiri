@@ -18,7 +18,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             // CountrySeeder::class,
            RoleSeeder::class,
-            AddAdminAccount::class
+            AddAdminAccount::class,
+            PlanSeeder::class
         ]);
     }
 }

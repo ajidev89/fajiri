@@ -8,16 +8,22 @@ use App\Http\Repository\Contracts\CountryRepositoryInterface;
 use App\Http\Repository\Contracts\GoogleRepositoryInterface;
 use App\Http\Repository\Contracts\KycRepositoryInterface;
 use App\Http\Repository\Contracts\OtpRepositoryInterface;
+use App\Http\Repository\Contracts\PlanRepositoryInterface;
+use App\Http\Repository\Contracts\NotificationRepositoryInterface;
 use App\Http\Repository\Contracts\UserRepositoryInterface;
 use App\Http\Repository\CountryRepository;
 use App\Http\Repository\GoogleRepository;
 use App\Http\Repository\KycRepository;
 use App\Http\Repository\OtpRepository;
+use App\Http\Repository\PlanRepository;
+use App\Http\Repository\NotificationRepository;
 use App\Http\Repository\UserRepository;
 use App\Http\Repository\CampaignRepository;
 use App\Http\Repository\DonationRepository;
 use App\Http\Repository\Contracts\CampaignRepositoryInterface;
 use App\Http\Repository\Contracts\DonationRepositoryInterface;
+use App\Http\Repository\Contracts\PaymentRepositoryInterface;
+use App\Http\Repository\PaymentRepository;
 use Illuminate\Support\ServiceProvider;
 
 class RepositoryServiceProvider extends ServiceProvider
@@ -31,6 +37,9 @@ class RepositoryServiceProvider extends ServiceProvider
         GoogleRepositoryInterface::class => GoogleRepository::class,
         CampaignRepositoryInterface::class => CampaignRepository::class,
         DonationRepositoryInterface::class => DonationRepository::class,
+        PaymentRepositoryInterface::class => PaymentRepository::class,
+        NotificationRepositoryInterface::class => NotificationRepository::class,
+        PlanRepositoryInterface::class => PlanRepository::class,
     ];
     /**
      * Register services.

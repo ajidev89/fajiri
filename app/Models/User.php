@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class User extends Authenticatable
 {
@@ -32,7 +33,8 @@ class User extends Authenticatable
         'sub_account_type',
         'notification_token',
         'password',
-        "role_id"
+        "role_id",
+        "country_id"
     ];
 
     /**
@@ -70,11 +72,6 @@ class User extends Authenticatable
         return $this->hasOne(Profile::class, 'user_id', 'id');
     }
 
-    public function address(): HasOne
-    {
-        return $this->hasOne(Address::class, 'user_id', 'id');
-    }
-
     public function role(): BelongsTo
     {
         return $this->belongsTo(Role::class, 'role_id', 'id');
@@ -98,5 +95,32 @@ class User extends Authenticatable
     public function donations(): HasMany
     {
         return $this->hasMany(Donation::class);
+    }
+
+    public function plans(): BelongsToMany
+    {
+        return $this->belongsToMany(Plan::class, 'user_plans')
+            ->withPivot(['id', 'started_at', 'expires_at', 'status', 'auto_renew'])
+            ->withTimestamps();
+    }
+
+    public function currentPlan()
+    {
+        return $this->plans()->where('user_plans.status', 'active')->latest('user_plans.started_at')->first();
+    }
+
+    public function preference(): HasOne
+    {
+        return $this->hasOne(Preference::class);
+    }
+
+    public function country(): BelongsTo
+    {
+        return $this->belongsTo(Country::class);
+    }
+
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(Notification::class);
     }
 }

@@ -25,6 +25,7 @@ class RegisterRequest extends ApiRequest
     public function rules(): array
     {
         return [
+            "country_id" => "required|exists:countries,id",
             "first_name" => "required",
             "last_name"  => "required",
             "email.value" => [

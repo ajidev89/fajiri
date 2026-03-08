@@ -11,14 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('subscriptions', function (Blueprint $table) {
+        Schema::create('plans', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('name');
-            $table->string('slug');
-            $table->text('description');
+            $table->string('slug')->unique();
+            $table->text('description')->nullable();
             $table->decimal('price', 10, 2);
-            $table->integer('duration');
-            $table->longText("features");
+            $table->string('currency')->default('USD');
+            $table->integer('duration')->comment('Duration in days');
+            $table->json("features")->nullable();
             $table->boolean("status")->default(true);
             $table->timestamps();
         });
@@ -29,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('subscriptions');
+        Schema::dropIfExists('plans');
     }
 };
