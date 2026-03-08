@@ -53,6 +53,16 @@ class PaymentRepository implements PaymentRepositoryInterface
                 // Credit wallet using the HasWallet trait
                 $user->deposit($amount, "Wallet funding via Paystack", $reference);
 
+                //add notification  
+                $user->notifications->create([
+                    'type' => 'wallet_funded',
+                    'message' => "Wallet funded successfully",
+                    'data' => [
+                        'amount' => $amount,
+                        'reference' => $reference
+                    ]
+                ]);
+
                 return $this->handleSuccessResponse('Wallet funded successfully', $user->wallet);
             }
 

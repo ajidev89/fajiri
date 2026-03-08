@@ -22,7 +22,7 @@ trait HasWallet
         }
 
         return DB::transaction(function () use ($amount, $description, $reference) {
-            $wallet = $this->wallet()->firstOrCreate(['user_id' => $this->id]);
+            $wallet = $this->wallet()->lockForUpdate()->firstOrCreate(['user_id' => $this->id]);
             $wallet->increment('balance', $amount);
 
             return $wallet->transactions()->create([
@@ -42,7 +42,7 @@ trait HasWallet
         }
 
         return DB::transaction(function () use ($amount, $description, $reference) {
-            $wallet = $this->wallet()->firstOrCreate(['user_id' => $this->id]);
+            $wallet = $this->wallet()->lockForUpdate()->firstOrCreate(['user_id' => $this->id]);
 
             if ($wallet->balance < $amount) {
                 throw new Exception("Insufficient wallet balance.");
