@@ -24,7 +24,7 @@ class CampaignRepository implements CampaignRepositoryInterface
 
     public function update($id, array $data)
     {
-        $campaign = $this->find($id);
+        $campaign = Campaign::findOrFail($id);
         $campaign->update($data);
         return $campaign;
     }
