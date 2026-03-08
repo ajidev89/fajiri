@@ -14,13 +14,21 @@ class PlanSeeder extends Seeder
     {
         $plans = [
             [
-                'name' => 'Free',
-                'slug' => 'free',
+                'name' => 'Fajiri Identified Member',
+                'slug' => 'fajiri-identified-member',
                 'description' => 'Perfect for getting started.',
-                'price' => 0.00,
-                'currency' => 'USD',
-                'duration' => 30,
-                'features' => json_encode(['Basic Support', '1 Campaign', 'Limited Analytics']),
+                'price' => 50000.00,
+                'currency' => 'NGN',
+                'duration' => 12,
+                'features' => [
+                    "Support and recognition for birthdays and special occasions",
+                    "Access to basic healthcare, life insurance, and wellness support programs",
+                    "Connect, unite, and collaborate with family members and partners worldwide",
+                    "Guidance, encouragement, and support to achieve personal and life goals",
+                    "Initiate, support, and participate in impactful humanitarian campaigns",
+                    "Recognition for humanitarian service, impact, and participation",
+                    "Participate in Fajiri programs and global empowerment initiatives"
+                ],
                 'status' => true,
             ],
             [

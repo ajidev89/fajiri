@@ -11,12 +11,16 @@ class CampaignResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'user' => new User\UserResource($this->whenLoaded('user')),
+            'user' => new User\UserResource($this->whenLoaded('addedBy')),
             'title' => $this->title,
             'body' => $this->body,
             'images' => $this->images,
             'goal_amount' => $this->goal_amount,
+            'goal_amount_converted' => $this->goal_amount_in_user_currency,
             'collected_amount' => $this->collected_amount,
+            'collected_amount_converted' => $this->collected_amount_in_user_currency,
+            'currency' => $this->currency ?? 'NGN',
+            'target_currency' => auth()->user()->wallet->currency ?? 'NGN',
             'donors_count' => $this->donors_count,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

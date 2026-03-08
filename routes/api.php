@@ -3,6 +3,7 @@
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\CampaignController;
 use App\Http\Controllers\API\CountryController;
+use App\Http\Controllers\API\DonationController;
 use App\Http\Controllers\API\KycController;
 use App\Http\Controllers\API\NotificationController;
 use App\Http\Controllers\API\OtpController;
@@ -42,14 +43,21 @@ Route::controller(UserController::class)->middleware(['auth:sanctum'])->group(fu
     });
 });
 
-Route::controller(CampaignController::class)->middleware(['auth:sanctum'])->group(function () { 
+Route::controller(CampaignController::class)->group(function () { 
     Route::group(['prefix' => 'campaigns'], function () {
         Route::get('/', 'index');
-        Route::post('/', 'store');
+        Route::post('/', 'store')->middleware(['auth:sanctum', 'admin']);
         Route::get('/{id}', 'show');
-        Route::put('/{id}', 'update');
-        Route::delete('/{id}', 'destroy');
-        Route::post('/{id}/donate', 'donate');
+        Route::put('/{id}', 'update')->middleware(['auth:sanctum', 'admin']);
+        Route::delete('/{id}', 'destroy')->middleware(['auth:sanctum', 'admin']);
+    });
+});
+
+Route::controller(DonationController::class)->group(function () {
+    Route::group(['prefix' => 'donations'], function () {
+        Route::post('/{campaignId}/wallet', 'donateViaWallet')->middleware(['auth:sanctum']);
+        Route::post('/{campaignId}/paystack/initialize', 'initializePaystack');
+        Route::get('/verify', 'verifyPaystack');
     });
 });
 

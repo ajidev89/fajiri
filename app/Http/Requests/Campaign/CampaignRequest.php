@@ -2,9 +2,9 @@
 
 namespace App\Http\Requests\Campaign;
 
-use Illuminate\Foundation\Http\FormRequest;
+use App\Http\Requests\ApiRequest;
 
-class CampaignRequest extends FormRequest
+class CampaignRequest extends ApiRequest
 {
     public function authorize(): bool
     {
@@ -16,6 +16,7 @@ class CampaignRequest extends FormRequest
         return [
             'title' => 'required|string|max:255',
             'body' => 'required|string',
+            'currency' => 'required|string|exists:currencies,currency',
             'images' => 'nullable|array',
             'images.*' => 'string|url', // Assuming images are URLs
             'goal_amount' => 'required|numeric|min:0.01',

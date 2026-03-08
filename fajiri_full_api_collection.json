@@ -1,0 +1,559 @@
+{
+    "info": {
+        "_postman_id": "fajiri-api-complete-collection",
+        "name": "Fajiri API (Full)",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Auth",
+            "item": [
+                {
+                    "name": "Login",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"user@example.com\",\n    \"password\": \"password123\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/login",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "login"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Register",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"country_id\": 1,\n    \"first_name\": \"John\",\n    \"last_name\": \"Doe\",\n    \"email\": {\n        \"value\": \"john@example.com\",\n        \"token\": \"valid-token-here\"\n    },\n    \"dob\": \"1990-01-01\",\n    \"account_type\": \"individual\",\n    \"address\": \"123 Street, Lagos\",\n    \"occupation\": \"Software Engineer\",\n    \"password\": \"password123\",\n    \"password_confirmation\": \"password123\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/register",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "register"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Change Password (Auth)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"current_password\": \"password123\",\n    \"password\": \"newpassword123\",\n    \"password_confirmation\": \"newpassword123\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/change-password",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "change-password"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Logout",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/auth/logout",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "auth", "logout"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Google Login",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"token\": \"google-id-token-here\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/google/login",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "google", "login"]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "OTP",
+            "item": [
+                {
+                    "name": "Send OTP",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"channel\": \"email\",\n    \"identifier\": \"user@example.com\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/otp/send",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "otp", "send"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Verify OTP",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"channel\": \"email\",\n    \"identifier\": \"user@example.com\",\n    \"code\": \"123456\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/otp/verify",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "otp", "verify"]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "User",
+            "item": [
+                {
+                    "name": "Get Profile",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/user",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "user"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Avatar",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"avatar\": \"data:image/jpeg;base64,...(base64 string)\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/user/avatar",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "user", "avatar"]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Campaigns",
+            "item": [
+                {
+                    "name": "List Campaigns",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/campaigns",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "campaigns"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create Campaign (Admin)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"title\": \"Support for local school\",\n    \"body\": \"We are raising funds to buy books and stationery for children in need.\",\n    \"currency\": \"NGN\",\n    \"goal_amount\": 500000,\n    \"images\": [\n        \"https://example.com/image1.jpg\"\n    ]\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/campaigns",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "campaigns"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Campaign Detail",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/campaigns/{{campaign_id}}",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "campaigns", "{{campaign_id}}"]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Donations",
+            "item": [
+                {
+                    "name": "Donate via Wallet",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"amount\": 5000\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/donations/{{campaign_id}}/wallet",
+                            "host": ["{{base_url}}"],
+                            "path": [
+                                "api",
+                                "donations",
+                                "{{campaign_id}}",
+                                "wallet"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Initialize Paystack Donation (Guest Support)",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"amount\": 10000,\n    \"email\": \"guest@example.com\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/donations/{{campaign_id}}/paystack/initialize",
+                            "host": ["{{base_url}}"],
+                            "path": [
+                                "api",
+                                "donations",
+                                "{{campaign_id}}",
+                                "paystack",
+                                "initialize"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Verify Paystack Donation",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/donations/verify?reference=PAY_67cca7e5e3478",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "donations", "verify"],
+                            "query": [
+                                {
+                                    "key": "reference",
+                                    "value": "PAY_67cca7e5e3478"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Plans",
+            "item": [
+                {
+                    "name": "List Plans",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/plans",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "plans"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Subscribe to Plan",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"plan_id\": \"uuid-here\",\n    \"duration\": 12\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/plans/subscribe",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "plans", "subscribe"]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Payments (Wallet Funding)",
+            "item": [
+                {
+                    "name": "Initialize Wallet Funding",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"amount\": 20000,\n    \"email\": \"user@example.com\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/payments/initialize",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "payments", "initialize"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Verify Wallet Funding",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/payments/verify?reference=REF_123",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "payments", "verify"],
+                            "query": [
+                                {
+                                    "key": "reference",
+                                    "value": "REF_123"
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Notifications",
+            "item": [
+                {
+                    "name": "List Notifications",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/notifications",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "notifications"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete Notification",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/notifications/{{notification_id}}",
+                            "host": ["{{base_url}}"],
+                            "path": [
+                                "api",
+                                "notifications",
+                                "{{notification_id}}"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ],
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:8000"
+        },
+        {
+            "key": "token",
+            "value": "your-auth-token-here"
+        },
+        {
+            "key": "campaign_id",
+            "value": "campaign-uuid-here"
+        },
+        {
+            "key": "notification_id",
+            "value": "notification-uuid-here"
+        }
+    ]
+}

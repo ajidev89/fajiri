@@ -13,7 +13,7 @@ class Campaign extends Model
     use HasUuids, SoftDeletes;
 
     protected $fillable = [
-        'user_id',
+        'added_by',
         'title',
         'body',
         'type',
@@ -21,6 +21,7 @@ class Campaign extends Model
         'status',
         'images',
         'goal_amount',
+        'currency',
     ];
 
     protected $casts = [
@@ -31,6 +32,32 @@ class Campaign extends Model
         'status' => \App\Enums\Campagin\Status::class,
     ];
 
+    /**
+     * Get the goal amount converted to the authenticated user's currency.
+     */
+    public function getGoalAmountInUserCurrencyAttribute(): float
+    {
+        $userCurrency = auth()->user()->wallet->currency ?? 'NGN';
+        return app(\App\Services\CurrencyService::class)->convert(
+            $this->goal_amount, 
+            $this->currency ?? 'NGN', 
+            $userCurrency
+        );
+    }
+
+    /**
+     * Get the collected amount converted to the authenticated user's currency.
+     */
+    public function getCollectedAmountInUserCurrencyAttribute(): float
+    {
+        $userCurrency = auth()->user()->wallet->currency ?? 'NGN';
+        return app(\App\Services\CurrencyService::class)->convert(
+            $this->collected_amount, 
+            $this->currency ?? 'NGN', 
+            $userCurrency
+        );
+    }
+
     protected $attributes = [
         'status' => 'pending',
     ];
@@ -40,9 +67,9 @@ class Campaign extends Model
         'donors_count',
     ];
 
-    public function user(): BelongsTo
+    public function addedBy(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'added_by');
     }
 
     public function donations(): HasMany
@@ -52,7 +79,7 @@ class Campaign extends Model
 
     public function getCollectedAmountAttribute(): float
     {
-        return $this->donations()->where('status', 'completed')->sum('amount');
+        return $this->donations()->where('status', 'completed')->sum('converted_amount');
     }
 
     public function getDonorsCountAttribute(): int

@@ -2,9 +2,9 @@
 
 namespace App\Http\Requests\Campaign;
 
-use Illuminate\Foundation\Http\FormRequest;
+use App\Http\Requests\ApiRequest;
 
-class DonationRequest extends FormRequest
+class DonationRequest extends ApiRequest
 {
     public function authorize(): bool
     {
@@ -15,6 +15,7 @@ class DonationRequest extends FormRequest
     {
         return [
             'amount' => 'required|numeric|min:1',
+            'email' => auth()->check() ? 'nullable|email' : 'required|email',
         ];
     }
 }

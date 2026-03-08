@@ -60,5 +60,10 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
+    'exchangerate_api' => [
+        'key' => env('EXCHANGERATE_API_KEY'),
+        'base_url' => 'https://v6.exchangerate-api.com/v6/',
+    ],
+
 
 ];

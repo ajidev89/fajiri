@@ -8,6 +8,7 @@ use App\Http\Traits\ResponseTrait;
 use App\Services\PaystackService;
 use App\Models\User;
 use App\Models\Transaction;
+use App\Models\Donation;
 use Exception;
 
 class PaymentRepository implements PaymentRepositoryInterface
@@ -68,21 +69,7 @@ class PaymentRepository implements PaymentRepositoryInterface
             return response()->json(['status' => 'error'], 400);
         }
 
-        if ($event['event'] === 'charge.success') {
-            $data = $event['data'];
-            $reference = $data['reference'];
-            
-            // Check if already processed to avoid double crediting
-            $transactionExists = Transaction::where('reference', $reference)->exists();
-
-            if (!$transactionExists) {
-                $userId = $data['metadata']['user_id'];
-                $amount = $data['amount'] / 100;
-
-                $user = User::find($userId);
-                $user->deposit($amount, "Wallet funding via Paystack (Webhook)", $reference);
-            }
-        }
+        \App\Jobs\Paystack\PaystackJob::dispatchAfterResponse($event);
 
         return response()->json(['status' => 'success'], 200);
     }

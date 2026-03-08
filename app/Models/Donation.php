@@ -14,7 +14,11 @@ class Donation extends Model
         'campaign_id',
         'user_id',
         'amount',
+        'currency',
+        'converted_amount',
+        'rate',
         'status',
+        'reference',
     ];
 
     protected $casts = [

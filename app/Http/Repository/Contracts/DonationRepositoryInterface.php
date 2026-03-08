@@ -6,4 +6,5 @@ interface DonationRepositoryInterface
 {
     public function create(array $data);
     public function findByCampaign($campaignId);
+    public function findByReference(string $reference);
 }

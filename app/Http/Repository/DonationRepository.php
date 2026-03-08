@@ -16,4 +16,9 @@ class DonationRepository implements DonationRepositoryInterface
     {
         return Donation::where('campaign_id', $campaignId)->get();
     }
+
+    public function findByReference(string $reference)
+    {
+        return Donation::where('reference', $reference)->first();
+    }
 }
