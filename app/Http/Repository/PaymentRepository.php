@@ -54,7 +54,7 @@ class PaymentRepository implements PaymentRepositoryInterface
                 $user->deposit($amount, "Wallet funding via Paystack", $reference);
 
                 //add notification  
-                $user->notifications->create([
+                $user->notifications()->create([
                     'type' => 'wallet_funded',
                     'message' => "Wallet funded successfully",
                     'data' => [
