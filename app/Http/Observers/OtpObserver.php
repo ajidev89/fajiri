@@ -2,9 +2,7 @@
 
 namespace App\Http\Observers;
 
-use App\Jobs\Otp\SendOneTimePasswordJob;
 use App\Models\Otp;
-use Illuminate\Support\Facades\Hash;
 
 class OtpObserver
 {

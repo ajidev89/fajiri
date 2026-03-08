@@ -16,7 +16,16 @@ class UserRepository implements UserRepositoryInterface {
         return $this->handleSuccessResponse("Successfully fetched user", new UserResource($this->user()));
     }
 
+    public function changePassword($request) {
+        try {
+            $user = $this->user();
+            $user->update([
+                'password' => \Illuminate\Support\Facades\Hash::make($request->password)
+            ]);
 
-
-
+            return $this->handleSuccessResponse("Password successfully updated");
+        } catch (\Exception $e) {
+            return $this->handleErrorResponse($e->getMessage(), 400);
+        }
+    }
 }

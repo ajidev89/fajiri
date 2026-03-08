@@ -15,4 +15,8 @@ class UserController extends Controller
         return $this->userRepositoryInterface->index();
     }
 
+    public function changePassword(\App\Http\Requests\User\UpdatePasswordRequest $request){
+        return $this->userRepositoryInterface->changePassword($request);
+    }
+
 }

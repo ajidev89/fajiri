@@ -16,7 +16,7 @@ use Laravel\Sanctum\HasApiTokens;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasUuids, HasFactory, Notifiable, HasUuids, HasApiTokens;
+    use HasUuids, HasFactory, Notifiable, HasUuids, HasApiTokens, \App\Traits\HasWallet;
 
     /**
      * The attributes that are mass assignable.
@@ -88,5 +88,15 @@ class User extends Authenticatable
     public function documents(): HasMany
     {
         return $this->hasMany(Document::class, 'user_id', 'id');
+    }
+
+    public function campaigns(): HasMany
+    {
+        return $this->hasMany(Campaign::class);
+    }
+
+    public function donations(): HasMany
+    {
+        return $this->hasMany(Donation::class);
     }
 }

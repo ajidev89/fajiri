@@ -3,6 +3,7 @@
 namespace App\Http\Resources\User;
 
 use App\Http\Resources\Profile\ProfileResource;
+use App\Http\Resources\Wallet\WalletResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -22,6 +23,7 @@ class UserResource extends JsonResource
             "phone"             => $this->phone,
             "role"              => $this->role,
             "profile"           => new ProfileResource($this->profile), 
+            "wallet"            => new WalletResource($this->wallet),
             "phone_verified_at" => $this->phone_verified_at,
             "account_type"      => $this->account_type,
             "created_at"        => $this->created_at,

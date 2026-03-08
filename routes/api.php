@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\API\AuthController;
+use App\Http\Controllers\API\CampaignController;
 use App\Http\Controllers\API\CountryController;
 use App\Http\Controllers\API\KycController;
 use App\Http\Controllers\API\OtpController;
@@ -34,5 +35,17 @@ Route::controller(OtpController::class)->group(function () {
 Route::controller(UserController::class)->middleware(['auth:sanctum'])->group(function () { 
     Route::group(['prefix' => 'user'], function () {
         Route::get('/', 'index');
+        Route::post('/change-password', 'changePassword');
+    });
+});
+
+Route::controller(CampaignController::class)->middleware(['auth:sanctum'])->group(function () { 
+    Route::group(['prefix' => 'campaigns'], function () {
+        Route::get('/', 'index');
+        Route::post('/', 'store');
+        Route::get('/{id}', 'show');
+        Route::put('/{id}', 'update');
+        Route::delete('/{id}', 'destroy');
+        Route::post('/{id}/donate', 'donate');
     });
 });

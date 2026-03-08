@@ -2,7 +2,6 @@
 
 namespace App\Http\Repository;
 
-use App\Enums\Kyc\Status;
 use App\Http\Repository\Contracts\AuthRepositoryInterface;
 use App\Http\Resources\User\UserResource;
 use App\Http\Traits\AuthUserTrait;

@@ -14,6 +14,10 @@ use App\Http\Repository\GoogleRepository;
 use App\Http\Repository\KycRepository;
 use App\Http\Repository\OtpRepository;
 use App\Http\Repository\UserRepository;
+use App\Http\Repository\CampaignRepository;
+use App\Http\Repository\DonationRepository;
+use App\Http\Repository\Contracts\CampaignRepositoryInterface;
+use App\Http\Repository\Contracts\DonationRepositoryInterface;
 use Illuminate\Support\ServiceProvider;
 
 class RepositoryServiceProvider extends ServiceProvider
@@ -25,6 +29,8 @@ class RepositoryServiceProvider extends ServiceProvider
         UserRepositoryInterface::class => UserRepository::class,
         KycRepositoryInterface::class => KycRepository::class,
         GoogleRepositoryInterface::class => GoogleRepository::class,
+        CampaignRepositoryInterface::class => CampaignRepository::class,
+        DonationRepositoryInterface::class => DonationRepository::class,
     ];
     /**
      * Register services.
