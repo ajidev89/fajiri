@@ -16,7 +16,7 @@ class CampaignRequest extends ApiRequest
         return [
             'title' => 'required|string|max:255',
             'body' => 'required|string',
-            'currency' => 'required|string|exists:currencies,currency',
+            'currency' => 'required|string|exists:countries,currency',
             'images' => 'nullable|array',
             'images.*' => 'string|url', // Assuming images are URLs
             'goal_amount' => 'required|numeric|min:0.01',
