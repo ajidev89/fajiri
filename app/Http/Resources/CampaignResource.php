@@ -14,6 +14,8 @@ class CampaignResource extends JsonResource
             'user' => new User\UserResource($this->whenLoaded('addedBy')),
             'title' => $this->title,
             'body' => $this->body,
+            'type' => $this->type,
+            'campaign_type' => $this->campaign_type,
             'images' => $this->images,
             'status' => $this->status,
             'goal_amount' => $this->goal_amount,
