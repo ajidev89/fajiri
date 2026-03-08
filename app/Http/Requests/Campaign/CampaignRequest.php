@@ -18,7 +18,7 @@ class CampaignRequest extends ApiRequest
             'body' => 'required|string',
             'currency' => 'required|string|exists:countries,currency',
             'images' => 'nullable|array',
-            'images.*' => 'string|url', // Assuming images are URLs
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'goal_amount' => 'required|numeric|min:0.01',
         ];
     }
