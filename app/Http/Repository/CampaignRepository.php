@@ -14,7 +14,7 @@ class CampaignRepository implements CampaignRepositoryInterface
 
     public function find($id)
     {
-        return Campaign::where('status', 'active')->findOrFail($id);
+        return Campaign::findOrFail($id);
     }
 
     public function create(array $data)
