@@ -21,5 +21,6 @@ class AppServiceProvider extends ServiceProvider
     {
         \App\Models\Campaign::observe(\App\Http\Observers\CampaignObserver::class);
         \App\Models\User::observe(\App\Observers\UserObserver::class);
+        
     }
 }
