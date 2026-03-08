@@ -19,7 +19,7 @@ class CampaignObserver
 
     public function updating(Campaign $campaign): void
     {   
-        if(request()->hasFile('images')) {
+        if(request()->hasFile('images') && request()->file('images')->isValid()) {
             $campaign->images = app(CloudinaryService::class)->uploadMultiple(request()->file('images'));
         }
     }

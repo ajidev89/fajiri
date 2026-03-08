@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Http\Repository\Contracts\PlanRepositoryInterface;
+use App\Http\Requests\Plan\UpdateRequest;
 use App\Http\Resources\PlanResource;
 use Illuminate\Http\Request;
 
@@ -34,6 +35,16 @@ class PlanController extends Controller
 
         return response()->json([
             'message' => 'Subscribed successfully',
+            'data' => new PlanResource($plan),
+        ]);
+    }
+
+    public function update(UpdateRequest $request, $id)
+    {
+        $plan = $this->planRepository->update($id, $request->validated());
+
+        return response()->json([
+            'message' => 'Plan updated successfully',
             'data' => new PlanResource($plan),
         ]);
     }

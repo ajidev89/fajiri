@@ -65,6 +65,7 @@ Route::controller(PlanController::class)->middleware(['auth:sanctum'])->group(fu
     Route::group(['prefix' => 'plans'], function () {
         Route::get('/', 'index');
         Route::post('/subscribe', 'subscribe');
+        Route::put('/{id}', 'update')->middleware(['admin']);
     });
 });
 

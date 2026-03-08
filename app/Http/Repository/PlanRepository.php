@@ -3,19 +3,28 @@
 namespace App\Http\Repository;
 
 use App\Http\Repository\Contracts\PlanRepositoryInterface;
+use App\Http\Traits\AuthUserTrait;
 use App\Models\Plan;
 use Illuminate\Support\Facades\DB;
 
 class PlanRepository implements PlanRepositoryInterface
 {
+    use AuthUserTrait;
     public function all()
     {
-        return Plan::where('status', true)->get();
+        return Plan::where('status', true)->where('currency', $this->user()->wallet->currency)->get();
     }
 
     public function findById($id)
     {
         return Plan::findOrFail($id);
+    }
+
+    public function update($id, array $data)
+    {
+        $plan = $this->findById($id);
+        $plan->update($data);
+        return $plan;
     }
 
     public function subscribeUser($user, $planId, $duration = null, $autoRenew = true)
