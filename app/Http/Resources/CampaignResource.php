@@ -18,6 +18,7 @@ class CampaignResource extends JsonResource
             'campaign_type' => $this->campaign_type,
             'images' => $this->images,
             'status' => $this->status,
+            'end_date' => $this->end_date,
             'goal_amount' => $this->goal_amount,
             'goal_amount_converted' => $this->goal_amount_in_user_currency,
             'collected_amount' => $this->collected_amount,

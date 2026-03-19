@@ -22,6 +22,7 @@ class Campaign extends Model
         'images',
         'goal_amount',
         'currency',
+        'end_date',
     ];
 
     protected $casts = [
@@ -30,6 +31,7 @@ class Campaign extends Model
         'type' => \App\Enums\Campagin\Type::class,
         'campaign_type' => \App\Enums\Campagin\CampaignType::class,
         'status' => \App\Enums\Campagin\Status::class,
+        'end_date' => 'datetime',
     ];
 
     /**

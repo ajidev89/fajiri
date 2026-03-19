@@ -27,6 +27,7 @@ class CampaignRequest extends ApiRequest
             'campaign_type' => ['required', new Enum(CampaignType::class)],
             'status' => ['required', new Enum(Status::class)],
             'goal_amount' => 'required|numeric|min:0.01',
+            'end_date' => 'nullable|date|after:now',
         ];
     }
 }

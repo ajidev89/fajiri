@@ -33,8 +33,7 @@ class PlanController extends Controller
         $user = $request->user();
         $plan = $this->planRepository->subscribeUser($user, $request->plan_id, $request->duration);
 
-        return response()->json([
-            'message' => 'Subscribed successfully',
+        return $this->handleSuccessResponse('Subscribed successfully', [
             'data' => new PlanResource($plan),
         ]);
     }
@@ -43,8 +42,7 @@ class PlanController extends Controller
     {
         $plan = $this->planRepository->update($id, $request->validated());
 
-        return response()->json([
-            'message' => 'Plan updated successfully',
+        return $this->handleSuccessResponse('Plan updated successfully', [
             'data' => new PlanResource($plan),
         ]);
     }

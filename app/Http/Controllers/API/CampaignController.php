@@ -24,6 +24,11 @@ class CampaignController extends Controller
         $campaigns = $this->campaignRepository->all();
         return CampaignResource::collection($campaigns);
     }
+    public function urgentCampaigns()
+    {
+        $campaigns = $this->campaignRepository->urgentCampaigns();
+        return CampaignResource::collection($campaigns);
+    }
 
     public function store(CampaignRequest $request)
     {
@@ -50,10 +55,10 @@ class CampaignController extends Controller
     {
 
         if ($campaign->added_by !== auth()->id()) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return $this->handleErrorResponse('Unauthorized', 403);
         }
 
         $this->campaignRepository->delete($campaign->id);
-        return response()->json(['message' => 'Campaign deleted successfully']);
+        return $this->handleSuccessResponse('Campaign deleted successfully');
     }
 }

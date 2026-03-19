@@ -66,14 +66,12 @@ class DonationController extends Controller
                 ]);
 
 
-                return response()->json([
-                    'message' => 'Donation successful',
-                    'donation' => $donation,
-                    'campaign' => new CampaignResource($campaign->fresh())
+                return $this->handleSuccessResponse('Donation successful', [
+                    'donation' => $donation
                 ]);
             });
         } catch (Exception $e) {
-            return response()->json(['message' => $e->getMessage()], 400);
+            return $this->handleErrorResponse($e->getMessage(), 400);
         }
     }
 
@@ -122,12 +120,9 @@ class DonationController extends Controller
 
             $result = $this->paystackService->initializeTransaction($payload);
 
-            return response()->json([
-                'message' => 'Transaction initialized',
-                'data' => $result
-            ]);
+            return $this->handleSuccessResponse('Transaction initialized', $result);
         } catch (Exception $e) {
-            return response()->json(['message' => $e->getMessage()], 400);
+            return $this->handleErrorResponse($e->getMessage(), 400);
         }
     }
 
@@ -149,17 +144,16 @@ class DonationController extends Controller
                 
                 if ($donation && $donation->status === 'pending') {
                     $donation->update(['status' => 'completed']);
-                    return response()->json([
-                        'message' => 'Donation verified successfully',
+                    return $this->handleSuccessResponse('Donation verified successfully', [
                         'donation' => $donation,
                         'campaign' => new CampaignResource($donation->campaign->fresh())
                     ]);
                 }
             }
 
-            return response()->json(['message' => 'Donation verification failed'], 400);
+            return $this->handleErrorResponse('Donation verification failed', 400);
         } catch (Exception $e) {
-            return response()->json(['message' => $e->getMessage()], 400);
+            return $this->handleErrorResponse($e->getMessage(), 400);
         }
     }
 }

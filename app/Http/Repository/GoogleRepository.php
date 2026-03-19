@@ -15,6 +15,7 @@ class GoogleRepository implements GoogleRepositoryInterface
     public function generateGoogleUrl()
     {
         $url = Socialite::driver('google')
+            ->stateless()
             ->redirect()
             ->getTargetUrl();
 
@@ -25,7 +26,9 @@ class GoogleRepository implements GoogleRepositoryInterface
 
     public function handleGoogleCallback()
     {
-        $googleUser = Socialite::driver('google')->user();
+        $googleUser = Socialite::driver('google')->stateless()->user();
+
+        info((array) $googleUser);
 
         $user = $this->user->updateOrCreate(
             ['email' => $googleUser->getEmail()],
@@ -34,6 +37,7 @@ class GoogleRepository implements GoogleRepositoryInterface
                 'email_verified_at' => now(),   
             ]
         );
+        
 
         $name = $googleUser->getName();
         $nameArray = explode(' ', $name);

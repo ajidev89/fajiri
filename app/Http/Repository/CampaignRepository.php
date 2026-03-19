@@ -12,6 +12,17 @@ class CampaignRepository implements CampaignRepositoryInterface
         return Campaign::where('status', 'active')->latest()->paginate(10);
     }
 
+    public function urgentCampaigns()
+    {
+        $now = now();
+        $tenDaysFromNow = now()->addDays(10);
+
+        return Campaign::where('status', 'active')
+            ->whereBetween('end_date', [$now, $tenDaysFromNow])
+            ->latest()
+            ->paginate(10);
+    }
+
     public function find($id)
     {
         return Campaign::findOrFail($id);

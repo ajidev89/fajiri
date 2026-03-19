@@ -2,10 +2,9 @@
 
 namespace App\Http\Repository\Contracts;
 
-interface CampaignRepositoryInterface
+interface InitiativeRepositoryInterface
 {
-    public function all();
-    public function urgentCampaigns();
+    public function index();
     public function find($id);
     public function create(array $data);
     public function update($id, array $data);

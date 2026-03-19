@@ -2,9 +2,8 @@
 
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\CampaignController;
-use App\Http\Controllers\API\CountryController;
 use App\Http\Controllers\API\DonationController;
-use App\Http\Controllers\API\KycController;
+use App\Http\Controllers\API\InitiativeController;
 use App\Http\Controllers\API\NotificationController;
 use App\Http\Controllers\API\OtpController;
 use App\Http\Controllers\API\PaymentController;
@@ -48,10 +47,21 @@ Route::controller(UserController::class)->middleware(['auth:sanctum'])->group(fu
 Route::controller(CampaignController::class)->group(function () { 
     Route::group(['prefix' => 'campaigns'], function () {
         Route::get('/', 'index');
+        Route::get('/urgent', 'urgentCampaigns');
         Route::post('/', 'store')->middleware(['auth:sanctum', 'admin']);
         Route::get('/{campaign}', 'show');
         Route::put('/{campaign}', 'update')->middleware(['auth:sanctum', 'admin']);
         Route::delete('/{campaign}', 'destroy')->middleware(['auth:sanctum', 'admin']);
+    });
+});
+
+Route::controller(InitiativeController::class)->group(function () { 
+    Route::group(['prefix' => 'initiatives'], function () {
+        Route::get('/', 'index');
+        Route::post('/', 'store')->middleware(['auth:sanctum']);
+        Route::get('/{initiative}', 'show');
+        Route::put('/{initiative}', 'update')->middleware(['auth:sanctum']);
+        Route::delete('/{initiative}', 'destroy')->middleware(['auth:sanctum', 'admin']);
     });
 });
 

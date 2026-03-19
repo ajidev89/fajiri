@@ -35,7 +35,7 @@ class PaymentController extends Controller
         $reference = $request->reference;
 
         if (!$reference) {
-            return response()->json(['status' => 'error', 'message' => 'No reference provided'], 400);
+            return $this->handleErrorResponse('No reference provided', 400);
         }
 
         return $this->paymentRepository->verify($reference);
