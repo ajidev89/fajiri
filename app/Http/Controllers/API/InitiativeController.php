@@ -47,7 +47,7 @@ class InitiativeController extends Controller
             return $this->handleErrorResponse('Unauthorized', 403);
         }
 
-        Initiative::delete($initiative->id);
+        $this->initiativeRepositoryInterface->delete($initiative->id);
 
         return $this->handleSuccessResponse('Initiative deleted successfully');
     }
