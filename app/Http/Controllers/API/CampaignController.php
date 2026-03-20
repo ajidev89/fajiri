@@ -6,11 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Repository\Contracts\CampaignRepositoryInterface;
 use App\Http\Repository\Contracts\DonationRepositoryInterface;
 use App\Http\Requests\Campaign\CampaignRequest;
-use App\Http\Requests\Campaign\DonationRequest;
 use App\Http\Resources\CampaignResource;
 use App\Models\Campaign;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class CampaignController extends Controller
 {
@@ -19,9 +17,9 @@ class CampaignController extends Controller
         protected DonationRepositoryInterface $donationRepository
     ) {}
 
-    public function index()
+    public function index(Request $request)
     {
-        $campaigns = $this->campaignRepository->all();
+        $campaigns = $this->campaignRepository->all($request);
         return CampaignResource::collection($campaigns);
     }
     public function urgentCampaigns()
