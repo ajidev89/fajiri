@@ -23,4 +23,7 @@ class UserController extends Controller
         return $this->userRepositoryInterface->updateAvatar($request);
     }
 
+    public function updatePin(\App\Http\Requests\User\CreatePinRequest $request){
+        return $this->userRepositoryInterface->updatePin($request);
+    }
 }

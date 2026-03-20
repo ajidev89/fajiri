@@ -23,6 +23,8 @@ class Campaign extends Model
         'goal_amount',
         'currency',
         'end_date',
+        'age',
+        'location',
     ];
 
     protected $casts = [

@@ -2,14 +2,24 @@
 
 namespace App\Http\Repository;
 
+use App\Enums\Campagin\CampaignType;
 use App\Http\Repository\Contracts\CampaignRepositoryInterface;
 use App\Models\Campaign;
 
 class CampaignRepository implements CampaignRepositoryInterface
 {
-    public function all()
+    public function all($request)
     {
-        return Campaign::where('status', 'active')->latest()->paginate(10);
+        return Campaign::query()
+            ->when($request->campaign_type, function ($query) use ($request) {
+                $query->where('campaign_type', $request->campaign_type);
+            })
+            ->when($request->type, function ($query) use ($request) {
+                $query->where('type', $request->type);
+            })
+            ->where('status', 'active')
+            ->latest()
+            ->paginate(10);
     }
 
     public function urgentCampaigns()

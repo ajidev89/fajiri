@@ -8,6 +8,7 @@ use App\Http\Services\CloudinaryService;
 use App\Http\Traits\ResponseTrait;
 use App\Http\Traits\AuthUserTrait;
 use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 
 class UserRepository implements UserRepositoryInterface {
 
@@ -52,6 +53,24 @@ class UserRepository implements UserRepositoryInterface {
             }
 
             return $this->handleErrorResponse("Avatar file not found", 400);
+        } catch (\Exception $e) {
+            return $this->handleErrorResponse($e->getMessage(), 400);
+        }
+    }
+
+    public function updatePin($request) {
+        try {
+            $user = $this->user();
+            if($user->pin) {
+                if(!Hash::check($request->current_pin, $user->pin)) {
+                    return $this->handleErrorResponse("Incorrect current pin", 400);
+                }
+            }
+            $user->update([
+                'pin' => Hash::make($request->pin)
+            ]);
+
+            return $this->handleSuccessResponse("Pin successfully updated");
         } catch (\Exception $e) {
             return $this->handleErrorResponse($e->getMessage(), 400);
         }

@@ -9,6 +9,7 @@ use App\Http\Controllers\API\OtpController;
 use App\Http\Controllers\API\PaymentController;
 use App\Http\Controllers\API\PlanController;
 use App\Http\Controllers\API\UserController;
+use App\Http\Controllers\API\InsuranceController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -41,6 +42,7 @@ Route::controller(UserController::class)->middleware(['auth:sanctum'])->group(fu
         Route::post('/avatar', 'updateAvatar');
         Route::get('/preferences', [\App\Http\Controllers\API\PreferenceController::class, 'index']);
         Route::put('/preferences', [\App\Http\Controllers\API\PreferenceController::class, 'update']);
+        Route::post('/pin', 'updatePin');
     });
 });
 
@@ -58,10 +60,21 @@ Route::controller(CampaignController::class)->group(function () {
 Route::controller(InitiativeController::class)->group(function () { 
     Route::group(['prefix' => 'initiatives'], function () {
         Route::get('/', 'index');
-        Route::post('/', 'store')->middleware(['auth:sanctum']);
+        Route::post('/', 'store')->middleware(['auth:sanctum', 'admin']);
         Route::get('/{initiative}', 'show');
-        Route::put('/{initiative}', 'update')->middleware(['auth:sanctum']);
+        Route::put('/{initiative}', 'update')->middleware(['auth:sanctum', 'admin']);
         Route::delete('/{initiative}', 'destroy')->middleware(['auth:sanctum', 'admin']);
+    });
+});
+
+Route::controller(InsuranceController::class)->group(function () { 
+    Route::group(['prefix' => 'insurances'], function () {
+        Route::get('/', 'index')->middleware(['auth:sanctum']);
+        Route::get('/all', 'all');
+        Route::post('/', 'create')->middleware(['auth:sanctum']);
+        Route::get('/{insurance}', 'show');
+        Route::put('/{insurance}', 'update')->middleware(['auth:sanctum']);
+        Route::delete('/{insurance}', 'destroy')->middleware(['auth:sanctum']);
     });
 });
 

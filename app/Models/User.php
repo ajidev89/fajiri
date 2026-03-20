@@ -34,7 +34,8 @@ class User extends Authenticatable
         'notification_token',
         'password',
         "role_id",
-        "country_id"
+        "country_id",
+        "pin"
     ];
 
     /**

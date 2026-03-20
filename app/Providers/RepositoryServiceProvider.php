@@ -29,6 +29,8 @@ use App\Http\Repository\Contracts\InitiativeRepositoryInterface;
 use App\Http\Repository\PaymentRepository;
 use App\Http\Repository\InitiativeRepository;
 use Illuminate\Support\ServiceProvider;
+use App\Http\Repository\Contracts\InsuranceRepositoryInterface;
+use App\Http\Repository\InsuranceRepository;
 
 class RepositoryServiceProvider extends ServiceProvider
 {
@@ -46,6 +48,7 @@ class RepositoryServiceProvider extends ServiceProvider
         PlanRepositoryInterface::class => PlanRepository::class,
         InitiativeRepositoryInterface::class => InitiativeRepository::class,
         PreferenceRepositoryInterface::class => PreferenceRepository::class,
+        InsuranceRepositoryInterface::class => InsuranceRepository::class,
     ];
     /**
      * Register services.

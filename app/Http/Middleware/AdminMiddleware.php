@@ -17,7 +17,7 @@ class AdminMiddleware
     {
         if (!auth()->check()) {
             return response()->json([
-                'status' => false,
+                'status' => false,  
                 'message' => 'Unauthenticated access'
             ], 401);
         }
