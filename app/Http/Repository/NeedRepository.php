@@ -4,8 +4,9 @@ namespace App\Http\Repository;
 
 use App\Models\Need;
 
+use App\Http\Repository\Contracts\NeedRepositoryInterface;
 
-class NeedRepository {
+class NeedRepository implements NeedRepositoryInterface {
 
     public function __construct(public Need $need)
     {

@@ -11,33 +11,33 @@ use Illuminate\Http\Request;
 
 class NeedController extends Controller
 {
-    public function __construct(private NeedRepositoryInterface $needRepository)
+    public function __construct(private NeedRepositoryInterface $needRepositoryInterface)
     {
     }
 
     public function index()
     {
-        return $this->handleSuccessCollectionResponse('Needs fetched successfully',  NeedResource::collection( $this->needRepository->index()));
+        return $this->handleSuccessCollectionResponse('Needs fetched successfully',  NeedResource::collection( $this->needRepositoryInterface->index()));
     }
 
     public function find(Need $need)
     {
-        return $this->handleSuccessResponse('Need fetched successfully', new NeedResource($this->needRepository->find($need)));
+        return $this->handleSuccessResponse('Need fetched successfully', new NeedResource($this->needRepositoryInterface->find($need)));
     }
 
     public function create(CreateRequest $request)
     {
-        return $this->handleSuccessResponse('Need created successfully', new NeedResource($this->needRepository->create($request->validated())));
+        return $this->handleSuccessResponse('Need created successfully', new NeedResource($this->needRepositoryInterface->create($request->validated())));
     }
 
     public function update(Need $need, CreateRequest $request)
     {
-        return $this->handleSuccessResponse('Need updated successfully', new NeedResource($this->needRepository->update($need, $request->validated())));
+        return $this->handleSuccessResponse('Need updated successfully', new NeedResource($this->needRepositoryInterface->update($need, $request->validated())));
     }
 
     public function delete(Need $need)
     {
-        $this->needRepository->delete($need);
+        $this->needRepositoryInterface->delete($need);
         return $this->handleSuccessResponse('Need deleted successfully');
     }
 }

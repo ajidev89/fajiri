@@ -26,10 +26,11 @@ class CreateRequest extends ApiRequest
         $rules = [
             'name' => 'required|string|max:255',
             'description' => 'required|string',
-            'amount' => 'required|numeric|min:0',
+            'amount' => 'nullable|numeric|min:0',
             'currency' => 'nullable|string|exists:countries,currency',
             'urgency' => ['required', Rule::in(Urgency::values())],
             'location' => 'required|string|max:255',
+            'age' => 'nullable|integer|min:0',
         ];
 
         if ($this->isMethod('put') || $this->isMethod('patch')) {

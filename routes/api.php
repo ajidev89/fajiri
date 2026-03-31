@@ -68,10 +68,10 @@ Route::controller(CampaignController::class)->group(function () {
 Route::controller(NeedController::class)->group(function () { 
     Route::group(['prefix' => 'needs'], function () {
         Route::get('/', 'index');
-        Route::post('/', 'create')->middleware(['auth:sanctum', 'admin']);
+        Route::post('/', 'create')->middleware(['auth:sanctum']);
         Route::get('/{need}', 'find');
-        Route::put('/{need}', 'update')->middleware(['auth:sanctum', 'admin']);
-        Route::delete('/{need}', 'delete')->middleware(['auth:sanctum', 'admin']);
+        Route::put('/{need}', 'update')->middleware(['auth:sanctum']);
+        Route::delete('/{need}', 'delete')->middleware(['auth:sanctum']);
     });
 });
 
