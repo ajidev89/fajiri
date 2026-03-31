@@ -5,6 +5,6 @@ namespace App\Http\Repository\Contracts;
 interface DonationRepositoryInterface
 {
     public function create(array $data);
-    public function findByCampaign($campaignId);
+    public function findByDonatable(string $type, $id);
     public function findByReference(string $reference);
 }

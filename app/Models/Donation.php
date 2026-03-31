@@ -11,7 +11,8 @@ class Donation extends Model
     use HasUuids;
 
     protected $fillable = [
-        'campaign_id',
+        'donatable_id',
+        'donatable_type',
         'user_id',
         'amount',
         'currency',
@@ -25,9 +26,9 @@ class Donation extends Model
         'amount' => 'float',
     ];
 
-    public function campaign(): BelongsTo
+    public function donatable()
     {
-        return $this->belongsTo(Campaign::class);
+        return $this->morphTo();
     }
 
     public function user(): BelongsTo

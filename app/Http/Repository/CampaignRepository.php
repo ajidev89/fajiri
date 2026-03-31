@@ -8,9 +8,13 @@ use App\Models\Campaign;
 
 class CampaignRepository implements CampaignRepositoryInterface
 {
+    public function __construct(public Campaign $campaign)
+    {
+    }
+
     public function all($request)
     {
-        return Campaign::query()
+        return $this->campaign->query()
             ->when($request->campaign_type, function ($query) use ($request) {
                 $query->where('campaign_type', $request->campaign_type);
             })
@@ -27,7 +31,7 @@ class CampaignRepository implements CampaignRepositoryInterface
         $now = now();
         $tenDaysFromNow = now()->addDays(10);
 
-        return Campaign::where('status', 'active')
+        return $this->campaign->where('status', 'active')
             ->whereBetween('end_date', [$now, $tenDaysFromNow])
             ->latest()
             ->paginate(10);

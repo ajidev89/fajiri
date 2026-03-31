@@ -7,24 +7,29 @@ use App\Models\Initiative;
 
 class InitiativeRepository implements InitiativeRepositoryInterface 
 {
+    public function __construct(Initiative $model)
+    {
+        $this->model = $model;
+    }
+
     public function index()
     {
-        return Initiative::where('status', 'active')->latest()->paginate(10);
+        return $this->model->where('status', 'active')->latest()->paginate(10);
     }
 
     public function find($id)
     {
-        return Initiative::findOrFail($id);
+        return $this->model->findOrFail($id);
     }
 
     public function create(array $data)
     {
-        return Initiative::create($data);
+        return $this->model->create($data);
     }
 
     public function update($id, array $data)
     {
-        $initiative = Initiative::findOrFail($id);
+        $initiative = $this->model->findOrFail($id);
         $initiative->update($data);
         return $initiative;
     }

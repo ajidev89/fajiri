@@ -5,6 +5,7 @@ use App\Http\Controllers\API\CampaignController;
 use App\Http\Controllers\API\CountryController;
 use App\Http\Controllers\API\DonationController;
 use App\Http\Controllers\API\InitiativeController;
+use App\Http\Controllers\API\NeedController;
 use App\Http\Controllers\API\NotificationController;
 use App\Http\Controllers\API\OtpController;
 use App\Http\Controllers\API\PaymentController;
@@ -64,6 +65,17 @@ Route::controller(CampaignController::class)->group(function () {
     });
 });
 
+Route::controller(NeedController::class)->group(function () { 
+    Route::group(['prefix' => 'needs'], function () {
+        Route::get('/', 'index');
+        Route::post('/', 'create')->middleware(['auth:sanctum', 'admin']);
+        Route::get('/{need}', 'find');
+        Route::put('/{need}', 'update')->middleware(['auth:sanctum', 'admin']);
+        Route::delete('/{need}', 'delete')->middleware(['auth:sanctum', 'admin']);
+    });
+});
+
+
 Route::controller(InitiativeController::class)->group(function () { 
     Route::group(['prefix' => 'initiatives'], function () {
         Route::get('/', 'index');
@@ -87,8 +99,8 @@ Route::controller(InsuranceController::class)->group(function () {
 
 Route::controller(DonationController::class)->group(function () {
     Route::group(['prefix' => 'donations'], function () {
-        Route::post('/{campaignId}/wallet', 'donateViaWallet')->middleware(['auth:sanctum']);
-        Route::post('/{campaignId}/paystack/initialize', 'initializePaystack');
+        Route::post('/{type}/{id}/wallet', 'donateViaWallet')->middleware(['auth:sanctum']);
+        Route::post('/{type}/{id}/paystack/initialize', 'initializePaystack');
         Route::get('/verify', 'verifyPaystack');
     });
 });

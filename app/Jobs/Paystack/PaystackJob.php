@@ -59,21 +59,26 @@ class PaystackJob implements ShouldQueue
                         ]);
                     }
                 }
-            } elseif ($type === 'campaign_donation') {
+            } elseif (in_array($type, ['campaign_donation', 'need_donation'])) {
                 $donation = Donation::where('reference', $reference)->first();
                 if ($donation && $donation->status === 'pending') {
                     $donation->update(['status' => 'completed']);
 
                     // Notify donor if they are a registered user
                     if ($donation->user_id) {
+                        $title = $donation->donatable_type === \App\Models\Campaign::class 
+                            ? $donation->donatable->title 
+                            : $donation->donatable->name;
+                            
                         \App\Models\Notification::create([
                             'user_id' => $donation->user_id,
                             'title' => 'Donation Successful',
-                            'message' => "Your donation of {$donation->currency} " . number_format($donation->amount, 2) . " to '{$donation->campaign->title}' was successful.",
-                            'type' => 'campaign_donation',
+                            'message' => "Your donation of {$donation->currency} " . number_format($donation->amount, 2) . " to '{$title}' was successful.",
+                            'type' => $type,
                             'data' => [
                                 'donation_id' => $donation->id,
-                                'campaign_id' => $donation->campaign_id,
+                                'donatable_id' => $donation->donatable_id,
+                                'donatable_type' => $donation->donatable_type,
                                 'amount' => $donation->amount,
                                 'currency' => $donation->currency
                             ]

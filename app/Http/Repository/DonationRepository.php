@@ -12,9 +12,9 @@ class DonationRepository implements DonationRepositoryInterface
         return Donation::create($data);
     }
 
-    public function findByCampaign($campaignId)
+    public function findByDonatable(string $type, $id)
     {
-        return Donation::where('campaign_id', $campaignId)->get();
+        return Donation::where('donatable_type', $type)->where('donatable_id', $id)->get();
     }
 
     public function findByReference(string $reference)

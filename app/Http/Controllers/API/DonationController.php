@@ -7,6 +7,8 @@ use App\Http\Repository\Contracts\CampaignRepositoryInterface;
 use App\Http\Repository\Contracts\DonationRepositoryInterface;
 use App\Http\Requests\Campaign\DonationRequest;
 use App\Http\Resources\CampaignResource;
+use App\Models\Campaign;
+use App\Models\Need;
 use App\Services\CurrencyService;
 use App\Services\PaystackService;
 use Exception;
@@ -22,26 +24,48 @@ class DonationController extends Controller
         protected PaystackService $paystackService
     ) {}
 
+    protected function getDonatable($type, $id)
+    {
+        if ($type === 'campaign') {
+            return Campaign::findOrFail($id);
+        } elseif ($type === 'need') {
+            return Need::findOrFail($id);
+        }
+        abort(404, 'Invalid donation type');
+    }
+
+    protected function getDonatableTitle($donatable, $type)
+    {
+        return $type === 'campaign' ? $donatable->title : $donatable->name;
+    }
+
+    protected function getDonatableCurrency($donatable, $type)
+    {
+        return $type === 'campaign' ? ($donatable->currency ?? 'NGN') : 'NGN';
+    }
+
     /**
      * Donate using wallet balance
      */
-    public function donateViaWallet(DonationRequest $request, $campaignId)
+    public function donateViaWallet(DonationRequest $request, $type, $id)
     {
-        $campaign = $this->campaignRepository->find($campaignId);
+        $donatable = $this->getDonatable($type, $id);
+        $title = $this->getDonatableTitle($donatable, $type);
         $user = auth()->user();
         $donorCurrency = $user->wallet->currency ?? 'NGN';
-        $campaignCurrency = $campaign->currency ?? 'NGN';
+        $targetCurrency = $this->getDonatableCurrency($donatable, $type);
 
         $amount = $request->amount;
-        $rate = $this->currencyService->getExchangeRate($donorCurrency, $campaignCurrency);
+        $rate = $this->currencyService->getExchangeRate($donorCurrency, $targetCurrency);
         $convertedAmount = round($amount * $rate, 2);
 
         try {
-            return DB::transaction(function () use ($campaign, $user, $amount, $donorCurrency, $convertedAmount, $rate) {
-                $user->withdraw($amount, "Donation to campaign: {$campaign->title}");
+            return DB::transaction(function () use ($donatable, $type, $title, $user, $amount, $donorCurrency, $convertedAmount, $rate) {
+                $user->withdraw($amount, "Donation to {$type}: {$title}");
 
                 $donation = $this->donationRepository->create([
-                    'campaign_id' => $campaign->id,
+                    'donatable_id' => $donatable->id,
+                    'donatable_type' => get_class($donatable),
                     'user_id' => $user->id,
                     'amount' => $amount,
                     'currency' => $donorCurrency,
@@ -55,16 +79,16 @@ class DonationController extends Controller
                 \App\Models\Notification::create([
                     'user_id' => $user->id,
                     'title' => 'Donation Successful',
-                    'message' => "Your donation of {$donorCurrency} " . number_format($amount, 2) . " to '{$campaign->title}' was successful.",
-                    'type' => 'campaign_donation',
+                    'message' => "Your donation of {$donorCurrency} " . number_format($amount, 2) . " to '{$title}' was successful.",
+                    'type' => "{$type}_donation",
                     'data' => [
                         'donation_id' => $donation->id,
-                        'campaign_id' => $campaign->id,
+                        'donatable_id' => $donatable->id,
+                        'donatable_type' => get_class($donatable),
                         'amount' => $amount,
                         'currency' => $donorCurrency
                     ]
                 ]);
-
 
                 return $this->handleSuccessResponse('Donation successful', [
                     'donation' => $donation
@@ -78,17 +102,17 @@ class DonationController extends Controller
     /**
      * Initialize Paystack donation
      */
-    public function initializePaystack(DonationRequest $request, $campaignId)
+    public function initializePaystack(DonationRequest $request, $type, $id)
     {
-        $campaign = $this->campaignRepository->find($campaignId);
+        $donatable = $this->getDonatable($type, $id);
         $user = auth()->user();
         
-        $donorCurrency = $user ? ($user->wallet->currency ?? 'NGN') : ($campaign->currency ?? 'NGN');
-        $campaignCurrency = $campaign->currency ?? 'NGN';
+        $targetCurrency = $this->getDonatableCurrency($donatable, $type);
+        $donorCurrency = $user ? ($user->wallet->currency ?? 'NGN') : $targetCurrency;
         $email = $user ? $user->email : $request->email;
 
         $amount = $request->amount;
-        $rate = $this->currencyService->getExchangeRate($donorCurrency, $campaignCurrency);
+        $rate = $this->currencyService->getExchangeRate($donorCurrency, $targetCurrency);
         $convertedAmount = round($amount * $rate, 2);
 
         try {
@@ -96,7 +120,8 @@ class DonationController extends Controller
             
             // Create pending donation
             $this->donationRepository->create([
-                'campaign_id' => $campaign->id,
+                'donatable_id' => $donatable->id,
+                'donatable_type' => get_class($donatable),
                 'user_id' => $user->id ?? null,
                 'amount' => $amount,
                 'currency' => $donorCurrency,
@@ -112,9 +137,10 @@ class DonationController extends Controller
                 'reference' => $reference,
                 'callback_url' => config('app.url') . '/donations/verify',
                 'metadata' => [
-                    'campaign_id' => $campaign->id,
+                    'donatable_id' => $donatable->id,
+                    'donatable_type' => get_class($donatable),
                     'user_id' => $user->id ?? null,
-                    'type' => 'campaign_donation'
+                    'type' => "{$type}_donation"
                 ]
             ];
 
@@ -144,10 +170,18 @@ class DonationController extends Controller
                 
                 if ($donation && $donation->status === 'pending') {
                     $donation->update(['status' => 'completed']);
-                    return $this->handleSuccessResponse('Donation verified successfully', [
+                    
+                    $response = [
                         'donation' => $donation,
-                        'campaign' => new CampaignResource($donation->campaign->fresh())
-                    ]);
+                    ];
+                    
+                    if ($donation->donatable_type === Campaign::class) {
+                        $response['campaign'] = new CampaignResource($donation->donatable->fresh());
+                    } else {
+                        $response['need'] = $donation->donatable->fresh(); // No NeedResource yet
+                    }
+
+                    return $this->handleSuccessResponse('Donation verified successfully', $response);
                 }
             }
 

@@ -49,6 +49,7 @@ class RepositoryServiceProvider extends ServiceProvider
         InitiativeRepositoryInterface::class => InitiativeRepository::class,
         PreferenceRepositoryInterface::class => PreferenceRepository::class,
         InsuranceRepositoryInterface::class => InsuranceRepository::class,
+        \App\Http\Repository\Contracts\NeedRepositoryInterface::class => \App\Http\Repository\NeedRepository::class,
     ];
     /**
      * Register services.
