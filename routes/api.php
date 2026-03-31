@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\CampaignController;
+use App\Http\Controllers\API\CountryController;
 use App\Http\Controllers\API\DonationController;
 use App\Http\Controllers\API\InitiativeController;
 use App\Http\Controllers\API\NotificationController;
@@ -32,6 +33,12 @@ Route::controller(OtpController::class)->group(function () {
     Route::group(['prefix' => 'otp'], function () {
         Route::post('/send', 'index');
         Route::post('/verify', 'verify');
+    });
+});
+
+Route::controller(CountryController::class)->group(function () { 
+    Route::group(['prefix' => 'countries'], function () {
+        Route::get('/', 'index');
     });
 });
 
