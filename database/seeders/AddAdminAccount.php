@@ -13,21 +13,34 @@ class AddAdminAccount extends Seeder
     /**
      * Run the database seeds.
      */
-    public function run(): void
+    public function run($email = 'admin@fajiri.com'): void
     {
-        if(User::where('email','nouser124@fajiri.com')->exists()){
+        // If called via $this->call(), it might pass an array
+        if (is_array($email)) {
+            $email = $email['email'] ?? 'admin@fajiri.com';
+        }
+
+        if(User::where('email', $email)->exists()){
             return;
         }
 
         $role = Role::where('name', 'Super Admin')->first();
-        User::create([
-            'phone' => '+12345678901',
-            'email' => 'nouser124@fajiri.com',
+        $user = User::create([
+            'phone' => '+2348100000000',
+            'email' => $email,            
             'country_id' => 1,
             'password' =>  Hash::make("R@ndom4Nnow"),
             'email_verified_at' => now(),
             'phone_verified_at' => now(),
             'role_id' => $role->id
+        ]);
+
+        $user->profile()->create([
+            'first_name' => 'Admin',
+            'last_name' => 'User',
+            'gender' => 'Male',
+            'date_of_birth' => '1990-01-01',
+            'avatar' => 'https://ui-avatars.com/api/?name=Admin+User',
         ]);
     }
 }
