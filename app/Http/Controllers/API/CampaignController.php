@@ -22,6 +22,13 @@ class CampaignController extends Controller
         $campaigns = $this->campaignRepository->all($request);
         return CampaignResource::collection($campaigns);
     }
+
+    public function types()
+    {
+        $types = $this->campaignRepository->types();
+        return $this->handleSuccessResponse('Types fetched successfully', $types);
+    }
+
     public function urgentCampaigns()
     {
         $campaigns = $this->campaignRepository->urgentCampaigns();

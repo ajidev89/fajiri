@@ -3,6 +3,7 @@
 namespace App\Http\Repository;
 
 use App\Enums\Campagin\CampaignType;
+use App\Enums\Campagin\Type;
 use App\Http\Repository\Contracts\CampaignRepositoryInterface;
 use App\Models\Campaign;
 
@@ -58,5 +59,10 @@ class CampaignRepository implements CampaignRepositoryInterface
     {
         $campaign = $this->find($id);
         return $campaign->delete();
+    }
+
+    public function types()
+    {
+        return Type::cases();
     }
 }
