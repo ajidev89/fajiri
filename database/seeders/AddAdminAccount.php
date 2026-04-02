@@ -35,8 +35,8 @@ class AddAdminAccount extends Seeder
         $user->profile()->create([
             'first_name' => 'Admin',
             'last_name' => 'User',
-            'gender' => 'Male',
-            'date_of_birth' => '1990-01-01',
+            'gender' => 'male',
+            'dob' => '1990-01-01',
             'avatar' => 'https://ui-avatars.com/api/?name=Admin+User',
         ]);
     }
