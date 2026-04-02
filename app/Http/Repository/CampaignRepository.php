@@ -63,6 +63,6 @@ class CampaignRepository implements CampaignRepositoryInterface
 
     public function types()
     {
-        return Type::cases();
+        return Type::toArray();
     }
 }
