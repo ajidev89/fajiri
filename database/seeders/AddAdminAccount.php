@@ -13,12 +13,9 @@ class AddAdminAccount extends Seeder
     /**
      * Run the database seeds.
      */
-    public function run($email = 'admin@fajiri.com'): void
+    public function run(): void
     {
-        // If called via $this->call(), it might pass an array
-        if (is_array($email)) {
-            $email = $email['email'] ?? 'admin@fajiri.com';
-        }
+        $email = 'admin.fajiri@yopmail.com';
 
         if(User::where('email', $email)->exists()){
             return;
