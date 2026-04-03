@@ -18,6 +18,7 @@ class UsersRepository implements UsersRepositoryInterface {
         return $user;
     }
 
+
     public function update(User $user, array $data) {
         $user->update($data);
         return $user;

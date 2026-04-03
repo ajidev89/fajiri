@@ -93,6 +93,7 @@ Route::controller(UsersController::class)->group(function () {
     Route::group(['prefix' => 'users', 'middleware' => ['auth:sanctum', 'admin']], function () {
         Route::get('/', 'index');
         Route::get('/{user}', 'show');
+        Route::put('/{user}', 'update');
         Route::delete('/{user}', 'destroy');
     });
 });
