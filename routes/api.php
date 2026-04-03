@@ -12,6 +12,7 @@ use App\Http\Controllers\API\PaymentController;
 use App\Http\Controllers\API\PlanController;
 use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\InsuranceController;
+use App\Http\Controllers\API\UsersController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -85,6 +86,14 @@ Route::controller(InitiativeController::class)->group(function () {
         Route::get('/{initiative}', 'show');
         Route::put('/{initiative}', 'update')->middleware(['auth:sanctum', 'admin']);
         Route::delete('/{initiative}', 'destroy')->middleware(['auth:sanctum', 'admin']);
+    });
+});
+
+Route::controller(UsersController::class)->group(function () { 
+    Route::group(['prefix' => 'users', 'middleware' => ['auth:sanctum', 'admin']], function () {
+        Route::get('/', 'index');
+        Route::get('/{user}', 'show');
+        Route::delete('/{user}', 'destroy');
     });
 });
 

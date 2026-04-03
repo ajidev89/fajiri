@@ -13,6 +13,7 @@ use App\Http\Repository\Contracts\PlanRepositoryInterface;
 use App\Http\Repository\Contracts\NotificationRepositoryInterface;
 use App\Http\Repository\Contracts\PreferenceRepositoryInterface;
 use App\Http\Repository\Contracts\UserRepositoryInterface;
+use App\Http\Repository\Contracts\UsersRepositoryInterface;
 use App\Http\Repository\CountryRepository;
 use App\Http\Repository\GoogleRepository;
 use App\Http\Repository\KycRepository;
@@ -51,6 +52,7 @@ class RepositoryServiceProvider extends ServiceProvider
         PreferenceRepositoryInterface::class => PreferenceRepository::class,
         InsuranceRepositoryInterface::class => InsuranceRepository::class,
         NeedRepositoryInterface::class => \App\Http\Repository\NeedRepository::class,
+        UsersRepositoryInterface::class => \App\Http\Repository\UsersRepository::class,
     ];
     /**
      * Register services.
