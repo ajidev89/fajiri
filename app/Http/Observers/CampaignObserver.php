@@ -15,12 +15,16 @@ class CampaignObserver
         if(request()->hasFile('images')) {
             $campaign->images = app(CloudinaryService::class)->uploadMultiple(request()->file('images'));
         }
+        $campaign->end_date = now()->addDays(request()->days);
     }
 
     public function updating(Campaign $campaign): void
     {   
         if(request()->hasFile('images') && request()->file('images')->isValid()) {
             $campaign->images = app(CloudinaryService::class)->uploadMultiple(request()->file('images'));
+        }
+        if(request()->has('days')) {
+            $campaign->end_date = now()->addDays(request()->days);
         }
     }
 

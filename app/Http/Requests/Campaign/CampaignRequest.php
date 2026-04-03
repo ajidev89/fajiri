@@ -29,6 +29,7 @@ class CampaignRequest extends ApiRequest
             'location' => 'required_if:campaign_type,personal|string|max:255',
             'status' => ['required', new Enum(Status::class)],
             'goal_amount' => 'required|numeric|min:0.01',
+            'days' => 'required|integer|min:1',
             'end_date' => 'nullable|date|after:now',
         ];
     }
