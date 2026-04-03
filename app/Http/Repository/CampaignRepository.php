@@ -20,6 +20,8 @@ class CampaignRepository implements CampaignRepositoryInterface
             'total_percentage_change' => $this->calculatePercentageChange(),
             'active_campaigns' => $this->campaign->where('status', 'active')->count(),
             'active_percentage_change' => $this->calculatePercentageChange('active'),
+            'pending_campaigns' => $this->campaign->where('status', 'pending')->count(),
+            'pending_percentage_change' => $this->calculatePercentageChange('pending'),
             'completed_campaigns' => $this->campaign->where('status', 'completed')->count(),
             'completed_percentage_change' => $this->calculatePercentageChange('completed'),
             'rejected_campaigns' => $this->campaign->where('status', 'rejected')->count(),
