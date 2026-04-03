@@ -35,7 +35,8 @@ class User extends Authenticatable
         'password',
         "role_id",
         "country_id",
-        "pin"
+        "pin",
+        "status"
     ];
 
     /**
