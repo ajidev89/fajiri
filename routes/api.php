@@ -94,6 +94,8 @@ Route::controller(UsersController::class)->group(function () {
         Route::get('/', 'index');
         Route::get('/{user}', 'show');
         Route::put('/{user}', 'update');
+        Route::put('/{user}/suspend', 'suspend');
+        Route::put('/{user}/unsuspend', 'unsuspend');
         Route::delete('/{user}', 'destroy');
     });
 });

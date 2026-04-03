@@ -12,5 +12,9 @@ interface UsersRepositoryInterface
 
     public function update(User $user, array $data);
 
+    public function suspend(User $user);
+
+    public function unsuspend(User $user);
+
     public function delete(User $user);
 }

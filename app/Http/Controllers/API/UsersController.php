@@ -29,6 +29,16 @@ class UsersController extends Controller
         return $this->handleSuccessResponse("Successfully updated user", $user);
     }
 
+    public function suspend(User $user){
+        $user = $this->usersRepositoryInterface->suspend($user);
+        return $this->handleSuccessResponse("Successfully suspended user", $user);
+    }
+
+    public function unsuspend(User $user){
+        $user = $this->usersRepositoryInterface->unsuspend($user);
+        return $this->handleSuccessResponse("Successfully unsuspended user", $user);
+    }
+
     public function delete(User $user){
         $user = $this->usersRepositoryInterface->delete($user);
         return $this->handleSuccessResponse("Successfully deleted user", $user);
