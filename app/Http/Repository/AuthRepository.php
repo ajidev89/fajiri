@@ -125,6 +125,8 @@ class AuthRepository implements AuthRepositoryInterface {
                 $this->user()->update(['notification_token' => $request->notification_token]);
             }
 
+            $this->user()->update(['last_login_at' => now()]);
+
             SendOneTimePasswordJob::dispatchAfterResponse($otp, $code);
 
             return $this->handleSuccessResponse('Successfully sent otp',new UserResource($this->user())); 
