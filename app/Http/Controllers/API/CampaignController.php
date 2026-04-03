@@ -17,6 +17,12 @@ class CampaignController extends Controller
         protected DonationRepositoryInterface $donationRepository
     ) {}
 
+    public function analytics()
+    {
+        $analytics = $this->campaignRepository->analytics();
+        return $this->handleSuccessResponse('Analytics fetched successfully', $analytics);
+    }
+    
     public function index(Request $request)
     {
         $campaigns = $this->campaignRepository->all($request);
