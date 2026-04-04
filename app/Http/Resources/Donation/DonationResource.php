@@ -19,6 +19,7 @@ class DonationResource extends JsonResource
             "name" => $this->name ?? $this->user?->profile?->first_name . ' ' . $this->user?->profile?->last_name ?? "Anonymous",
             "email" => $this->email ?? $this->user?->email ?? "Anonymous",
             "user_id" => $this->user_id,
+            "medium" => $this->medium,
             "donatable" => $this->donatable,
             "donatable_type" => $this->donatable_type,
             "amount" => $this->amount,
