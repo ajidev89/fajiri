@@ -7,6 +7,7 @@ use App\Http\Repository\Contracts\CampaignRepositoryInterface;
 use App\Http\Repository\Contracts\DonationRepositoryInterface;
 use App\Http\Requests\Campaign\DonationRequest;
 use App\Http\Resources\CampaignResource;
+use App\Http\Resources\Donation\DonationResource;
 use App\Models\Campaign;
 use App\Models\Need;
 use App\Services\CurrencyService;
@@ -23,6 +24,14 @@ class DonationController extends Controller
         protected CurrencyService $currencyService,
         protected PaystackService $paystackService
     ) {}
+
+    public function index()
+    {
+        $donations = $this->donationRepository->index();
+        return $this->handleSuccessResponse('Donations fetched successfully', [
+            'donations' => DonationResource::collection($donations)
+        ]);
+    }
 
     protected function getDonatable($type, $id)
     {

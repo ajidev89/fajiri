@@ -21,26 +21,26 @@ class UsersController extends Controller
 
     public function show(User $user){
         $user = $this->usersRepositoryInterface->find($user);
-        return $this->handleSuccessResponse("Successfully fetched user", $user);
+        return $this->handleSuccessResponse("Successfully fetched user", new UserResource($user));
     }
 
     public function update(User $user, UpdateRequest $request){
         $user = $this->usersRepositoryInterface->update($user, $request->validated());
-        return $this->handleSuccessResponse("Successfully updated user", $user);
+        return $this->handleSuccessResponse("Successfully updated user", new UserResource($user));
     }
 
     public function suspend(User $user){
         $user = $this->usersRepositoryInterface->suspend($user);
-        return $this->handleSuccessResponse("Successfully suspended user", $user);
+        return $this->handleSuccessResponse("Successfully suspended user", new UserResource($user));
     }
 
     public function unsuspend(User $user){
         $user = $this->usersRepositoryInterface->unsuspend($user);
-        return $this->handleSuccessResponse("Successfully unsuspended user", $user);
+        return $this->handleSuccessResponse("Successfully unsuspended user", new UserResource($user));
     }
 
     public function delete(User $user){
         $user = $this->usersRepositoryInterface->delete($user);
-        return $this->handleSuccessResponse("Successfully deleted user", $user);
+        return $this->handleSuccessResponse("Successfully deleted user", new UserResource($user));
     }
 }

@@ -7,6 +7,11 @@ use App\Models\Donation;
 
 class DonationRepository implements DonationRepositoryInterface
 {
+    
+    public function index(){
+        return Donation::latest()->paginate(10);
+    }
+
     public function create(array $data)
     {
         return Donation::create($data);
