@@ -29,9 +29,7 @@ class DonationController extends Controller
     public function index()
     {
         $donations = $this->donationRepository->index();
-        return $this->handleSuccessResponse('Donations fetched successfully', [
-            'donations' => DonationResource::collection($donations)
-        ]);
+        return $this->handleSuccessCollectionResponse('Donations fetched successfully', DonationResource::collection($donations));
     }
 
     protected function getDonatable($type, $id)
