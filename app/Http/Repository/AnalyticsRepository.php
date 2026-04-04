@@ -24,8 +24,8 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
             "total_donations_amount" => $this->donatedCurrency(),
             "active_campaigns" => $this->campaign->where('status', 'active')->count(),
             "active_campaigns_percentage_change" => $this->calculatePercentageChange($this->campaign, ['status' => 'active']),
-            "active_needs" => $this->need->where('status', 'active')->count(),
-            "active_needs_percentage_change" => $this->calculatePercentageChange($this->need, ['status' => 'active']),
+            "active_needs" => $this->need->count(),
+            "active_needs_percentage_change" => $this->calculatePercentageChange($this->need),
             "total_users" => $this->user->whereHas('role', function ($query) {
                 $query->where('name', 'user');
             })->count(),
