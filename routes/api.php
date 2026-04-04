@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\API\AnalyticsController;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\CampaignController;
 use App\Http\Controllers\API\CountryController;
@@ -140,5 +141,13 @@ Route::controller(NotificationController::class)->middleware(['auth:sanctum'])->
     Route::group(['prefix' => 'notifications'], function () {
         Route::get('/', 'index');
         Route::delete('/{id}', 'destroy');
+    });
+});
+
+Route::controller(AnalyticsController::class)->middleware(['auth:sanctum'])->group(function () {
+    Route::group(['prefix' => 'analytics'], function () {
+        Route::get('/', 'index');
+        Route::get('/donation-chartly-annualy', 'donationChartlyAnnualy');
+        Route::get('/top-performing-campaigns', 'topPerformingCampaigns');
     });
 });
