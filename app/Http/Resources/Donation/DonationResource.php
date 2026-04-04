@@ -16,6 +16,7 @@ class DonationResource extends JsonResource
     {
         return [
             "id" => $this->id,
+            "name" => $this->user->profile->first_name . ' ' . $this->user->profile->last_name,
             "user_id" => $this->user_id,
             "donatable" => $this->donatable,
             "donatable_type" => $this->donatable_type,

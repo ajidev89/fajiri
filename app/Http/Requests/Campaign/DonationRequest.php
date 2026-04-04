@@ -16,6 +16,7 @@ class DonationRequest extends ApiRequest
         return [
             'amount' => 'required|numeric|min:1',
             'email' => auth()->check() ? 'nullable|email' : 'required|email',
+            'name' => auth()->check() ? 'nullable|string|max:255' : 'required|string|max:255',
         ];
     }
 }

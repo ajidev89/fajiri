@@ -15,6 +15,7 @@ use App\Services\PaystackService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Enums\Donations\Medium;
 
 class DonationController extends Controller
 {
@@ -80,6 +81,9 @@ class DonationController extends Controller
                     'currency' => $donorCurrency,
                     'converted_amount' => $convertedAmount,
                     'rate' => $rate,
+                    'medium' => Medium::WALLET,
+                    'name' => $user->profile->first_name . ' ' . $user->profile->last_name,
+                    'email' => $user->email,
                     'status' => 'completed',
                     'reference' => 'WAL_' . uniqid(),
                 ]);
@@ -119,6 +123,7 @@ class DonationController extends Controller
         $targetCurrency = $this->getDonatableCurrency($donatable, $type);
         $donorCurrency = $user ? ($user->wallet->currency ?? 'NGN') : $targetCurrency;
         $email = $user ? $user->email : $request->email;
+        $name = $user ? $user->profile->first_name . ' ' . $user->profile->last_name : $request->name;
 
         $amount = $request->amount;
         $rate = $this->currencyService->getExchangeRate($donorCurrency, $targetCurrency);
@@ -134,6 +139,9 @@ class DonationController extends Controller
                 'user_id' => $user->id ?? null,
                 'amount' => $amount,
                 'currency' => $donorCurrency,
+                'medium' => Medium::PAYSTACK,
+                'name' => $name,
+                'email' => $email,
                 'converted_amount' => $convertedAmount,
                 'rate' => $rate,
                 'status' => 'pending',
@@ -147,9 +155,8 @@ class DonationController extends Controller
                 'callback_url' => config('app.url') . '/donations/verify',
                 'metadata' => [
                     'donatable_id' => $donatable->id,
-                    'donatable_type' => get_class($donatable),
                     'user_id' => $user->id ?? null,
-                    'type' => "{$type}_donation"
+                    'type' => "donation"
                 ]
             ];
 
