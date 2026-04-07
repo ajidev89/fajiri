@@ -31,6 +31,20 @@ class UserRepository implements UserRepositoryInterface {
         }
     }
 
+    public function transactions($request) {
+        $user = $this->user();
+        $transactions = $user->transactions()->latest()->when($request->type, function ($query) use ($request) {
+            return $query->where('type', $request->type);
+        })->when($request->status, function ($query) use ($request) {
+            return $query->where('status', $request->status);
+        })->when($request->start_date, function ($query) use ($request) {
+            return $query->where('created_at', '>=', $request->start_date);
+        })->when($request->end_date, function ($query) use ($request) {
+            return $query->where('created_at', '<=', $request->end_date);
+        })->paginate(10);
+        return $this->handleSuccessResponse("Transactions successfully fetched", $transactions);
+    }
+
     public function updateAvatar($request) {
         $request->validate([
             'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',

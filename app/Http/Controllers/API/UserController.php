@@ -26,4 +26,8 @@ class UserController extends Controller
     public function updatePin(\App\Http\Requests\User\CreatePinRequest $request){
         return $this->userRepositoryInterface->updatePin($request);
     }
+
+    public function transactions(\Illuminate\Http\Request $request){
+        return $this->userRepositoryInterface->transactions($request);
+    }
 }
