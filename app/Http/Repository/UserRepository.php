@@ -32,7 +32,7 @@ class UserRepository implements UserRepositoryInterface {
     }
 
     public function transactions($request) {
-        $wallet = $this->user()->wallet();
+        $wallet = $this->user()->wallet;
         $transactions = $wallet->transactions()->latest()->when($request->type, function ($query) use ($request) {
             return $query->where('type', $request->type);
         })->when($request->status, function ($query) use ($request) {
