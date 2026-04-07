@@ -47,6 +47,26 @@ class PaystackService
         return $response->json('data');
     }
 
+    public function banks($query = [] ){
+        $response = Http::withToken($this->secretKey)->get('/bank',$query);
+        return $response->json('data');
+    }
+
+    public function resolveBankAccount($query = []){
+        $response = Http::withToken($this->secretKey)->get('/bank/resolve',$query);
+        return $response->json('data');
+    }
+
+    public function createRecipent($data){
+        $response = Http::withToken($this->secretKey)->post('/transferrecipient',$data);
+        return $response->json('data');
+    }   
+
+    public function transfer($data){
+        $response = Http::withToken($this->secretKey)->post('/transfer',$data);
+        return $response->json('data');
+    }   
+    
     /**
      * Handle Webhook Signature Verification
      */

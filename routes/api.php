@@ -14,6 +14,7 @@ use App\Http\Controllers\API\PlanController;
 use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\InsuranceController;
 use App\Http\Controllers\API\UsersController;
+use App\Http\Controllers\API\WithdrawalController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -142,6 +143,17 @@ Route::controller(NotificationController::class)->middleware(['auth:sanctum'])->
     Route::group(['prefix' => 'notifications'], function () {
         Route::get('/', 'index');
         Route::delete('/{id}', 'destroy');
+    });
+});
+
+Route::controller(WithdrawalController::class)->middleware(['auth:sanctum'])->group(function () {
+    Route::group(['prefix' => 'withdrawals'], function () {
+        Route::get('/', 'index');
+        Route::post('/', 'store');
+        Route::delete('/{id}', 'destroy');
+        Route::get('/banks', 'banks');
+        Route::post('/resolve-bank-account', 'resolveBankAccount');
+        Route::post('/withdraw', 'withdraw');
     });
 });
 

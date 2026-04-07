@@ -131,4 +131,13 @@ class User extends Authenticatable
     {
         return $this->hasMany(Transaction::class);
     }
+
+    public function canUsePaystack() {
+        return $this->country->currency === 'NGN';
+    }
+
+    public function withdrawalAccounts(): HasMany
+    {
+        return $this->hasMany(WithdrawalAccount::class);
+    }
 }
