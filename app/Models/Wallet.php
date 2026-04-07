@@ -28,12 +28,6 @@ class Wallet extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function currency(): Attribute
-    {
-        return Attribute::make(
-            get: fn () => optional($this?->user?->country)?->currency,
-        );
-    }
 
     public function transactions(): HasMany
     {
