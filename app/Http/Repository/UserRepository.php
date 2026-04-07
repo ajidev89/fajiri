@@ -3,6 +3,7 @@
 namespace App\Http\Repository;
 
 use App\Http\Repository\Contracts\UserRepositoryInterface;
+use App\Http\Resources\Transaction\TransactionResource;
 use App\Http\Resources\User\UserResource;
 use App\Http\Services\CloudinaryService;
 use App\Http\Traits\ResponseTrait;
@@ -42,7 +43,7 @@ class UserRepository implements UserRepositoryInterface {
         })->when($request->end_date, function ($query) use ($request) {
             return $query->where('created_at', '<=', $request->end_date);
         })->paginate(10);
-        return $this->handleSuccessResponse("Transactions successfully fetched", $transactions);
+        return $this->handleSuccessCollectionResponse("Transactions successfully fetched", TransactionResource::collection($transactions));
     }
 
     public function updateAvatar($request) {
