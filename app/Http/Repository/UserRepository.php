@@ -10,10 +10,13 @@ use App\Http\Traits\ResponseTrait;
 use App\Http\Traits\AuthUserTrait;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class UserRepository implements UserRepositoryInterface {
 
     use ResponseTrait, AuthUserTrait;
+
+    public function __construct(private User $user) {}
 
     public function index() {
         return $this->handleSuccessResponse("Successfully fetched user", new UserResource($this->user()));
@@ -44,6 +47,41 @@ class UserRepository implements UserRepositoryInterface {
             return $query->where('created_at', '<=', $request->end_date);
         })->paginate(10);
         return $this->handleSuccessCollectionResponse("Transactions successfully fetched", TransactionResource::collection($transactions));
+    }
+
+    public function transfer($request) {
+        return DB::transaction(function () use ($request) {
+            $user = $this->user();
+
+            // 1. Verify PIN
+            if (!Hash::check($request->pin, $user->pin)) {
+                return $this->handleErrorResponse("Invalid transaction PIN", 400);
+            }
+
+            // 2. Find Recipient
+            $recipient = $this->user->where('username', $request->username)->first();
+            if (!$recipient) {
+                return $this->handleErrorResponse("Recipient not found", 404);
+            }
+
+            // 3. Prevent self-transfer
+            if ($recipient->id === $user->id) {
+                return $this->handleErrorResponse("You cannot transfer money to yourself", 400);
+            }
+
+            try {
+                // Perform Transfer
+                // Deposit to recipient first
+                $recipient->deposit((float)$request->amount, "Transfer from {$user->username}");
+
+                // Withdraw from sender (HasWallet trait handles balance check)
+                $withdrawal = $user->withdraw((float)$request->amount, "Transfer to {$recipient->username}");
+
+                return $this->handleSuccessResponse("Transfer successful", new TransactionResource($withdrawal));
+            } catch (\Exception $e) {
+                return $this->handleErrorResponse($e->getMessage(), 400);
+            }
+        });
     }
 
     public function updateAvatar($request) {

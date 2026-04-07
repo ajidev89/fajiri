@@ -3,7 +3,8 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
-use App\Http\Repository\Contracts\UserRepositoryInterface;  
+use App\Http\Repository\Contracts\UserRepositoryInterface;
+use App\Http\Requests\User\TransferRequest;  
 
 class UserController extends Controller
 {
@@ -29,5 +30,9 @@ class UserController extends Controller
 
     public function transactions(\Illuminate\Http\Request $request){
         return $this->userRepositoryInterface->transactions($request);
+    }
+
+    public function transfer(TransferRequest $request){
+        return $this->userRepositoryInterface->transfer($request);
     }
 }
