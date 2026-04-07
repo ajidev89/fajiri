@@ -31,7 +31,7 @@ class Wallet extends Model
     public function currency(): Attribute
     {
         return Attribute::make(
-            get: fn () => optional($this->user->country)->currency,
+            get: fn () => optional($this?->user?->country)?->currency,
         );
     }
 
