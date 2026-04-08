@@ -35,6 +35,10 @@ use App\Http\Repository\InitiativeRepository;
 use Illuminate\Support\ServiceProvider;
 use App\Http\Repository\Contracts\InsuranceRepositoryInterface;
 use App\Http\Repository\InsuranceRepository;
+use App\Http\Repository\Contracts\CategoryRepositoryInterface;
+use App\Http\Repository\CategoryRepository;
+use App\Http\Repository\Contracts\PostRepositoryInterface;
+use App\Http\Repository\PostRepository;
 
 class RepositoryServiceProvider extends ServiceProvider
 {
@@ -57,6 +61,8 @@ class RepositoryServiceProvider extends ServiceProvider
         UsersRepositoryInterface::class => \App\Http\Repository\UsersRepository::class,
         AnalyticsRepositoryInterface::class => \App\Http\Repository\AnalyticsRepository::class,
         WithdrawalRepositoryInterface::class => \App\Http\Repository\WithdrawalRepository::class,
+        CategoryRepositoryInterface::class => CategoryRepository::class,
+        PostRepositoryInterface::class => PostRepository::class,
     ];
     /**
      * Register services.

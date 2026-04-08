@@ -15,6 +15,8 @@ use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\InsuranceController;
 use App\Http\Controllers\API\UsersController;
 use App\Http\Controllers\API\WithdrawalController;
+use App\Http\Controllers\API\CategoryController;
+use App\Http\Controllers\API\PostController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -162,5 +164,24 @@ Route::controller(AnalyticsController::class)->middleware(['auth:sanctum'])->gro
         Route::get('/', 'index');
         Route::get('/donation-chartly-annualy', 'donationChartlyAnnualy');
         Route::get('/top-performing-campaigns', 'topPerformingCampaigns');
+    });
+});
+
+Route::controller(CategoryController::class)->group(function () {
+    Route::group(['prefix' => 'categories'], function () {
+        Route::get('/', 'index');
+        Route::post('/', 'store')->middleware(['auth:sanctum', 'admin']);
+        Route::put('/{id}', 'update')->middleware(['auth:sanctum', 'admin']);
+        Route::delete('/{id}', 'destroy')->middleware(['auth:sanctum', 'admin']);
+    });
+});
+
+Route::controller(PostController::class)->group(function () {
+    Route::group(['prefix' => 'posts'], function () {
+        Route::get('/', 'index');
+        Route::get('/{slug}', 'show');
+        Route::post('/', 'store')->middleware(['auth:sanctum', 'admin']);
+        Route::put('/{id}', 'update')->middleware(['auth:sanctum', 'admin']);
+        Route::delete('/{id}', 'destroy')->middleware(['auth:sanctum', 'admin']);
     });
 });
