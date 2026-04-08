@@ -49,7 +49,7 @@ class PaystackService
 
     public function banks($query = [] ){
         $response = Http::withToken($this->secretKey)->get('/bank',$query);
-        return $response->json('data');
+        return $response->json();
     }
 
     public function resolveBankAccount($query = []){
