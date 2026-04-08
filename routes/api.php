@@ -159,7 +159,7 @@ Route::controller(WithdrawalController::class)->middleware(['auth:sanctum'])->gr
     });
 });
 
-Route::controller(AnalyticsController::class)->middleware(['auth:sanctum'])->group(function () {
+Route::controller(AnalyticsController::class)->middleware(['auth:sanctum','admin'])->group(function () {
     Route::group(['prefix' => 'analytics'], function () {
         Route::get('/', 'index');
         Route::get('/donation-chartly-annualy', 'donationChartlyAnnualy');
