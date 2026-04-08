@@ -22,6 +22,7 @@ class UserResource extends JsonResource
             "email_verified_at" => $this->email_verified_at,
             "phone"             => $this->phone,
             "role"              => $this->role,
+            "username"          => $this->username,
             "profile"           => new ProfileResource($this->profile), 
             "wallet"            => new WalletResource($this->wallet),
             "phone_verified_at" => $this->phone_verified_at,
