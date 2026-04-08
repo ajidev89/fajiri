@@ -59,7 +59,7 @@ class PaystackJob implements ShouldQueue
                         ]);
                     }
                 }
-            } elseif (in_array($type, ['campaign_donation', 'need_donation'])) {
+            } elseif (in_array($type, ['campaign_donation', 'need_donation', 'donation'])) {
                 $donation = Donation::where('reference', $reference)->first();
                 if ($donation && $donation->status === 'pending') {
                     $donation->update(['status' => 'completed']);
@@ -81,6 +81,25 @@ class PaystackJob implements ShouldQueue
                                 'donatable_type' => $donation->donatable_type,
                                 'amount' => $donation->amount,
                                 'currency' => $donation->currency
+                            ]
+                        ]);
+                    }
+                }
+            } elseif ($type === 'event_attendance') {
+                $attendee = \App\Models\EventAttendee::where('code', $reference)->first();
+                if ($attendee && $attendee->status === \App\Enums\Attendee\Status::INACTIVE->value) {
+                    $attendee->update(['status' => \App\Enums\Attendee\Status::ACTIVE->value]);
+                    
+                    // Notify user if registered
+                    if ($attendee->user_id) {
+                        \App\Models\Notification::create([
+                            'user_id' => $attendee->user_id,
+                            'title' => 'Event Registration Successful',
+                            'message' => "Your payment for the event '{$attendee->event->title}' was successful. Your code is: {$attendee->code}",
+                            'type' => 'event_registration',
+                            'data' => [
+                                'event_id' => $attendee->event_id,
+                                'attendee_code' => $attendee->code
                             ]
                         ]);
                     }

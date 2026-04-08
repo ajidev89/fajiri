@@ -63,6 +63,7 @@ class RepositoryServiceProvider extends ServiceProvider
         WithdrawalRepositoryInterface::class => \App\Http\Repository\WithdrawalRepository::class,
         CategoryRepositoryInterface::class => CategoryRepository::class,
         PostRepositoryInterface::class => PostRepository::class,
+        \App\Http\Repository\Contracts\EventRepositoryInterface::class => \App\Http\Repository\EventRepository::class,
     ];
     /**
      * Register services.
