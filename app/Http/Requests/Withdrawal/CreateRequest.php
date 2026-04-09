@@ -24,7 +24,7 @@ class CreateRequest extends ApiRequest
         return [
             'account_number' => 'required|string',
             'bank_code' => 'required|string',
-            'amount' => 'required|numeric',
+            'account_name' => 'required|string',
             'pin' => 'required|string',
         ];
     }
@@ -34,7 +34,7 @@ class CreateRequest extends ApiRequest
         return [
             'account_number.required' => 'Account number is required',
             'bank_code.required' => 'Bank code is required',
-            'amount.required' => 'Amount is required',
+            'account_name.required' => 'Account name is required',
             'pin.required' => 'Pin is required',
         ];
     }
