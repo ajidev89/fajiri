@@ -128,4 +128,17 @@ class UserRepository implements UserRepositoryInterface {
             return $this->handleErrorResponse($e->getMessage(), 400);
         }
     }
+
+    public function withdrawAccount() {
+        try {
+            $withdrawalAccount = $this->user()->withdrawalAccounts()->where("default", true)->first();
+            if(!$withdrawalAccount) {
+                return $this->handleErrorResponse("No default withdrawal account found", 404);
+            }
+
+            return $this->handleSuccessResponse("Withdrawal successful", $withdrawalAccount);
+        } catch (\Exception $e) {
+            return $this->handleErrorResponse($e->getMessage(), 400);
+        }
+    }
 }

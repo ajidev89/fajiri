@@ -59,6 +59,7 @@ Route::controller(UserController::class)->middleware(['auth:sanctum'])->group(fu
         Route::put('/preferences', [\App\Http\Controllers\API\PreferenceController::class, 'update']);
         Route::post('/pin', 'updatePin');
         Route::post('transfer', 'transfer');
+        Route::get('withdraw-account', 'withdrawAccount');
     });
 });
 
@@ -152,7 +153,7 @@ Route::controller(NotificationController::class)->middleware(['auth:sanctum'])->
 
 Route::controller(WithdrawalController::class)->middleware(['auth:sanctum'])->group(function () {
     Route::group(['prefix' => 'withdrawals'], function () {
-        Route::get('/', 'index');
+        Route::get('/', 'index')->middleware(['admin']);
         Route::post('/', 'store');
         Route::delete('/{id}', 'destroy');
         Route::get('/banks', 'banks');

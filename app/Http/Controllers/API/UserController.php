@@ -35,4 +35,8 @@ class UserController extends Controller
     public function transfer(TransferRequest $request){
         return $this->userRepositoryInterface->transfer($request);
     }
+
+    public function withdrawAccount(){
+        return $this->userRepositoryInterface->withdrawAccount();
+    }
 }
