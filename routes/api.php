@@ -156,7 +156,7 @@ Route::controller(WithdrawalController::class)->middleware(['auth:sanctum'])->gr
         Route::post('/', 'store');
         Route::delete('/{id}', 'destroy');
         Route::get('/banks', 'banks');
-        Route::post('/resolve-bank-account', 'resolveBankAccount');
+        Route::get('/resolve-bank-account', 'resolveBankAccount');
         Route::post('/withdraw', 'withdraw');
     });
 });
