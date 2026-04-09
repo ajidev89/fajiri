@@ -48,22 +48,22 @@ class PaystackService
     }
 
     public function banks($query = [] ){
-        $response = Http::withToken($this->secretKey)->get('/bank',$query);
+        $response = Http::withToken($this->secretKey)->get("{$this->baseUrl}/bank",$query);
         return $response->json('data');
     }
 
     public function resolveBankAccount($query = []){
-        $response = Http::withToken($this->secretKey)->get('/bank/resolve',$query);
+        $response = Http::withToken($this->secretKey)->get("{$this->baseUrl}/bank/resolve",$query);
         return $response->json('data');
     }
 
     public function createRecipent($data){
-        $response = Http::withToken($this->secretKey)->post('/transferrecipient',$data);
+        $response = Http::withToken($this->secretKey)->post("{$this->baseUrl}/transferrecipient",$data);
         return $response->json('data');
     }   
 
     public function transfer($data){
-        $response = Http::withToken($this->secretKey)->post('/transfer',$data);
+        $response = Http::withToken($this->secretKey)->post("{$this->baseUrl}/transfer",$data);
         return $response->json('data');
     }   
     
