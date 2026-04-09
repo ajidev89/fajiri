@@ -151,7 +151,7 @@ class WithdrawalRepository implements WithdrawalRepositoryInterface {
                 }
 
                 // Log the transaction and deduct balance
-                $transaction = $user->withdraw($request->amount, "Withdrawal to {$account->bank_name}");
+                $transaction = $user->withdraw($request->amount, "Withdrawal to {$account->account_name}");
 
                 return $this->handleSuccessResponse("Withdrawal initiated successfully", $transaction);
             } catch (\Exception $e) {
