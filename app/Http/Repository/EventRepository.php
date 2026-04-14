@@ -3,6 +3,7 @@
 namespace App\Http\Repository;
 
 use App\Http\Repository\Contracts\EventRepositoryInterface;
+use App\Http\Resources\Event\EventResource;
 use App\Http\Services\CloudinaryService;
 use App\Http\Traits\ResponseTrait;
 use App\Http\Traits\AuthUserTrait;
@@ -39,7 +40,7 @@ class EventRepository implements EventRepositoryInterface
             ->latest()
             ->paginate($request->per_page ?? 15);
 
-        return $this->handleSuccessResponse("Events fetched successfully", $events);
+        return $this->handleSuccessCollectionResponse("Events fetched successfully", EventResource::collection($events));
     }
 
     public function show($slug)
