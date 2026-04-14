@@ -47,7 +47,7 @@ class EventRepository implements EventRepositoryInterface
     {
         try {
             $event = $this->event->with(['category', 'addedBy', 'attendees'])->where('slug', $slug)->firstOrFail();
-            return $this->handleSuccessResponse("Event fetched successfully", $event);
+            return $this->handleSuccessResponse("Event fetched successfully", new EventResource($event));
         } catch (\Exception $e) {
             return $this->handleErrorResponse("Event not found", 404);
         }
@@ -77,7 +77,7 @@ class EventRepository implements EventRepositoryInterface
                 'is_featured' => $request->is_featured ?? false,
             ]);
 
-            return $this->handleSuccessResponse("Event created successfully", $event);
+            return $this->handleSuccessResponse("Event created successfully", new EventResource($event));
         } catch (\Exception $e) {
             return $this->handleErrorResponse($e->getMessage());
         }
@@ -104,7 +104,7 @@ class EventRepository implements EventRepositoryInterface
 
             $event->update($data);
 
-            return $this->handleSuccessResponse("Event updated successfully", $event);
+            return $this->handleSuccessResponse("Event updated successfully", new EventResource($event));
         } catch (\Exception $e) {
             return $this->handleErrorResponse($e->getMessage());
         }
