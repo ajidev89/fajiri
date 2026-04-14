@@ -536,6 +536,351 @@
                     "response": []
                 }
             ]
+        },
+        {
+            "name": "Categories",
+            "item": [
+                {
+                    "name": "List Categories",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/categories",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "categories"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create Category (Admin)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Health\",\n    \"description\": \"Medical and wellness cases\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/categories",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "categories"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Category (Admin)",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Health & Wellness\",\n    \"description\": \"Updated description\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/categories/{{category_id}}",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "categories", "{{category_id}}"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete Category (Admin)",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/categories/{{category_id}}",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "categories", "{{category_id}}"]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Posts",
+            "item": [
+                {
+                    "name": "List Posts",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/posts",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "posts"],
+                            "query": [
+                                { "key": "category_id", "value": "1", "disabled": true },
+                                { "key": "status", "value": "published", "disabled": true }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Post Detail",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/posts/{{post_slug}}",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "posts", "{{post_slug}}"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create Post (Admin)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"category_id\": 1,\n    \"title\": \"Helping the Needy\",\n    \"content\": \"Full content of the post goes here...\",\n    \"status\": \"published\",\n    \"is_featured\": true\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/posts",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "posts"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Post (Admin)",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"title\": \"Updated Post Title\",\n    \"content\": \"Updated content\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/posts/{{post_id}}",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "posts", "{{post_id}}"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete Post (Admin)",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/posts/{{post_id}}",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "posts", "{{post_id}}"]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Events",
+            "item": [
+                {
+                    "name": "List Events",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/events",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "events"],
+                            "query": [
+                                { "key": "category_id", "value": "1", "disabled": true },
+                                { "key": "status", "value": "upcoming", "disabled": true }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Event Detail",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/events/{{event_slug}}",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "events", "{{event_slug}}"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create Event (Admin)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"category_id\": 1,\n    \"title\": \"Charity Gala 2026\",\n    \"description\": \"Annual charity gala for educational support.\",\n    \"location\": \"Lagos Oriental Hotel\",\n    \"start_date\": \"2026-06-15 18:00:00\",\n    \"end_date\": \"2026-06-15 22:00:00\",\n    \"amount\": 10000,\n    \"slots\": 200,\n    \"status\": \"upcoming\",\n    \"is_featured\": true\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/events",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "events"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Attend Event (Auth)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/events/{{event_id}}/attend",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "events", "{{event_id}}", "attend"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Attend Event External",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Jane Doe\",\n    \"email\": \"jane@example.com\",\n    \"phone\": \"08012345678\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/events/{{event_id}}/attend-external",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "events", "{{event_id}}", "attend-external"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Initialize Paystack Payment",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"jane@example.com\",\n    \"name\": \"Jane Doe\",\n    \"phone\": \"08012345678\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/events/{{event_id}}/paystack/initialize",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "events", "{{event_id}}", "paystack", "initialize"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Verify Paystack Payment",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/events/paystack/verify?reference=REF123",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "events", "paystack", "verify"],
+                            "query": [
+                                { "key": "reference", "value": "REF123" }
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
         }
     ],
     "variable": [
@@ -554,6 +899,26 @@
         {
             "key": "notification_id",
             "value": "notification-uuid-here"
+        },
+        {
+            "key": "category_id",
+            "value": "1"
+        },
+        {
+            "key": "post_id",
+            "value": "1"
+        },
+        {
+            "key": "post_slug",
+            "value": "post-slug-here"
+        },
+        {
+            "key": "event_id",
+            "value": "1"
+        },
+        {
+            "key": "event_slug",
+            "value": "event-slug-here"
         }
     ]
 }

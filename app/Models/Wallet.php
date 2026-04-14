@@ -23,6 +23,10 @@ class Wallet extends Model
         'balance' => 'float',
     ];
 
+    protected $appends = [
+        'withdrawal_total'
+    ];
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -33,4 +37,9 @@ class Wallet extends Model
     {
         return $this->hasMany(Transaction::class);
     }
+
+    public function getWithdrawalTotalAttribute(){
+        return $this->transactions()->where('type', 'withdrawal')->where('status', 'completed')->sum('amount');
+    }
+
 }
