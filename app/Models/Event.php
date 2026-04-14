@@ -25,6 +25,8 @@ class Event extends Model
         'image',
         'status',
         'is_featured',
+        'slots',
+        'amount',
     ];
 
     protected $casts = [

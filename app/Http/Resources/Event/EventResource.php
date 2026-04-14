@@ -26,7 +26,6 @@ class EventResource extends JsonResource
             'status' => $this->status,
             'is_featured' => $this->is_featured,
             'category' => $this->category,
-            'added_by' => $this->addedBy,
             'attendees_count' => $this->attendees()->count(),
             'slots_available' => $this->slots_available,
             'created_at' => $this->created_at,
