@@ -37,7 +37,7 @@
                         "header": [],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"country_id\": 1,\n    \"first_name\": \"John\",\n    \"last_name\": \"Doe\",\n    \"email\": {\n        \"value\": \"john@example.com\",\n        \"token\": \"valid-token-here\"\n    },\n    \"dob\": \"1990-01-01\",\n    \"account_type\": \"individual\",\n    \"address\": \"123 Street, Lagos\",\n    \"occupation\": \"Software Engineer\",\n    \"password\": \"password123\",\n    \"password_confirmation\": \"password123\"\n}",
+                            "raw": "{\n    \"country_id\": 1,\n    \"first_name\": \"John\",\n    \"last_name\": \"Doe\",\n    \"email\": {\n        \"value\": \"john@example.com\",\n        \"token\": \"valid-token-here\"\n    },\n    \"dob\": \"1990-01-01\",\n    \"account_type\": \"individual\",\n    \"address\": \"123 Street, Lagos\",\n    \"occupation\": \"Software Engineer\",\n    \"password\": \"password123\",\n    \"password_confirmation\": \"password123\",\n    \"referral_code\": \"FAJ-ABCDEF\"\n}",
                             "options": {
                                 "raw": {
                                     "language": "json"
@@ -218,6 +218,25 @@
                             "raw": "{{base_url}}/api/user/avatar",
                             "host": ["{{base_url}}"],
                             "path": ["api", "user", "avatar"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Referral Details",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/user/referrals",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "user", "referrals"]
                         }
                     },
                     "response": []
@@ -881,6 +900,198 @@
                     "response": []
                 }
             ]
+        },
+        {
+            "name": "Analytics",
+            "item": [
+                {
+                    "name": "General Analytics",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/analytics",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "analytics"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Annual Donation Chart",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/analytics/donation-chartly-annualy",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "analytics", "donation-chartly-annualy"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Top Performing Campaigns",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/analytics/top-performing-campaigns",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "analytics", "top-performing-campaigns"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "User Leaderboard",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/analytics/leaderboard",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "analytics", "leaderboard"]
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Partners",
+            "item": [
+                {
+                    "name": "List Partners",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/partners",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "partners"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Partner Detail",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/partners/{{partner_slug}}",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "partners", "{{partner_slug}}"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create Partner (Admin)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                { "key": "name", "value": "Partner Name", "type": "text" },
+                                { "key": "about", "value": "About the partner...", "type": "text" },
+                                { "key": "website", "value": "https://partner-website.com", "type": "text" },
+                                { "key": "logo", "type": "file", "src": [] },
+                                { "key": "focus_areas[0]", "value": "Education", "type": "text" },
+                                { "key": "impact[0]", "value": "Built 5 schools", "type": "text" }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/partners",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "partners"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Partner (Admin)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                { "key": "_method", "value": "PUT", "type": "text" },
+                                { "key": "name", "value": "Updated Partner Name", "type": "text" },
+                                { "key": "about", "value": "Updated about text...", "type": "text" },
+                                { "key": "website", "value": "https://partner-website.com", "type": "text" },
+                                { "key": "logo", "type": "file", "src": [] },
+                                { "key": "focus_areas[0]", "value": "Education", "type": "text" },
+                                { "key": "impact[0]", "value": "Built 5 schools", "type": "text" }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/partners/{{partner_id}}",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "partners", "{{partner_id}}"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete Partner (Admin)",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/partners/{{partner_id}}",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "partners", "{{partner_id}}"]
+                        }
+                    },
+                    "response": []
+                }
+            ]
         }
     ],
     "variable": [
@@ -919,6 +1130,14 @@
         {
             "key": "event_slug",
             "value": "event-slug-here"
+        },
+        {
+            "key": "partner_id",
+            "value": "1"
+        },
+        {
+            "key": "partner_slug",
+            "value": "partner-slug-here"
         }
     ]
 }

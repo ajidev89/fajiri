@@ -13,6 +13,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Str;
 
 class User extends Authenticatable
 {
@@ -37,7 +38,9 @@ class User extends Authenticatable
         "role_id",
         "country_id",
         "pin",
-        "status"
+        "status",
+        "referral_code",
+        "referred_by"
     ];
 
     /**
@@ -62,6 +65,24 @@ class User extends Authenticatable
             'phone_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    protected static function booted()
+    {
+        static::creating(function ($user) {
+            if (!$user->referral_code) {
+                $user->referral_code = static::generateUniqueReferralCode();
+            }
+        });
+    }
+
+    public static function generateUniqueReferralCode()
+    {
+        do {
+            $code = 'FAJ-' . strtoupper(Str::random(6));
+        } while (static::where('referral_code', $code)->exists());
+
+        return $code;
     }
 
     public function markPhoneAsVerified(){
@@ -139,5 +160,20 @@ class User extends Authenticatable
     public function withdrawalAccounts(): HasMany
     {
         return $this->hasMany(WithdrawalAccount::class);
+    }
+
+    public function referredBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'referred_by');
+    }
+
+    public function referrals(): HasMany
+    {
+        return $this->hasMany(User::class, 'referred_by');
+    }
+
+    public function eventAttendees(): HasMany
+    {
+        return $this->hasMany(EventAttendee::class);
     }
 }

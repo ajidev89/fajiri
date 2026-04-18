@@ -2,7 +2,7 @@
 
 namespace App\Http\Repository\Contracts;
 
-interface   UserRepositoryInterface {
+interface UserRepositoryInterface {
     public function index();
     public function changePassword($request);
     public function transactions($request);
@@ -10,4 +10,5 @@ interface   UserRepositoryInterface {
     public function updateAvatar($request);
     public function updatePin($request);
     public function withdrawAccount();
+    public function referrals();
 }

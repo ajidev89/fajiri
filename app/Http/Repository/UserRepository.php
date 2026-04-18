@@ -141,4 +141,12 @@ class UserRepository implements UserRepositoryInterface {
             return $this->handleErrorResponse($e->getMessage(), 400);
         }
     }
+
+    public function referrals() {
+        $user = $this->user();
+        return $this->handleSuccessResponse("Referral details fetched successfully", [
+            'referral_code' => $user->referral_code,
+            'referrals_count' => $user->referrals()->count()
+        ]);
+    }
 }

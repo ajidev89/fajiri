@@ -30,6 +30,8 @@ class UserResource extends JsonResource
             "account_type"      => $this->account_type,
             "last_login_at"     => $this->last_login_at,
             "status"            => $this->status,
+            "referral_code"     => $this->referral_code,
+            "referrals_count"   => $this->referrals()->count(),
             "created_at"        => $this->created_at,
             "updated_at"        => $this->updated_at,
             "deleted_at"        => $this->deleted_at

@@ -7,4 +7,5 @@ interface AnalyticsRepositoryInterface{
     public function index();
     public function donationChartlyAnnualy();
     public function topPerformingCampaigns();
+    public function leaderboard();
 }

@@ -57,7 +57,8 @@ class RegisterRequest extends ApiRequest
             "address" => "required",
             "occupation" => "required",
             "avatar" => "nullable",
-            "password" => "required|confirmed|min:8"
+            "password" => "required|confirmed|min:8",
+            "referral_code" => "nullable|exists:users,referral_code"
         ];
     }
 }

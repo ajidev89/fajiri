@@ -45,6 +45,11 @@ class AuthRepository implements AuthRepositoryInterface {
             $role = $this->role->where('slug', "user")->first();
             $country = \App\Models\Country::findOrFail($request->country_id);
 
+            $referrer = null;
+            if ($request->referral_code) {
+                $referrer = $this->model->where('referral_code', $request->referral_code)->first();
+            }
+
             $user = $this->model->create([
                 "email" => $request->input('email.value'),
                 "phone" => $request->phone['value'] ?? null,
@@ -52,7 +57,8 @@ class AuthRepository implements AuthRepositoryInterface {
                 "sub_account_type" => $request->sub_account_type,
                 "password" => Hash::make($request->password),
                 "role_id" => $role->id,
-                "country_id" => $request->country_id
+                "country_id" => $request->country_id,
+                "referred_by" => $referrer?->id
             ]);
 
             // Create wallet with country currency

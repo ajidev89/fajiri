@@ -39,4 +39,8 @@ class UserController extends Controller
     public function withdrawAccount(){
         return $this->userRepositoryInterface->withdrawAccount();
     }
+
+    public function referrals(){
+        return $this->userRepositoryInterface->referrals();
+    }
 }

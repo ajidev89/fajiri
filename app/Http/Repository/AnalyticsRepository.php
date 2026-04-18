@@ -122,5 +122,36 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
                 ];
             });
     }
-    
+
+    public function leaderboard()
+    {
+        $limit = 50;
+        
+        return $this->user->whereHas('role', function ($query) {
+                $query->where('name', 'user');
+            })
+            ->withCount([
+                'referrals',
+                'donations as campaign_donations_count' => function ($query) {
+                    $query->where('donatable_type', Campaign::class)
+                        ->where('status', 'completed');
+                },
+                'donations as need_donations_count' => function ($query) {
+                    $query->where('donatable_type', Need::class)
+                        ->where('status', 'completed');
+                },
+                'eventAttendees as event_attendance_count'
+            ])
+            ->get(['id', 'username', 'referrals_count', 'campaign_donations_count', 'need_donations_count', 'event_attendance_count'])
+            ->map(function ($user) {
+                $user->total_engagement = $user->referrals_count + 
+                                        $user->campaign_donations_count + 
+                                        $user->need_donations_count + 
+                                        $user->event_attendance_count;
+                return $user;
+            })
+            ->sortByDesc('total_engagement')
+            ->values()
+            ->take($limit);
+    }
 }
