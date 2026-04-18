@@ -3,6 +3,7 @@
 namespace App\Http\Repository;
 
 use App\Http\Repository\Contracts\PostRepositoryInterface;
+use App\Http\Resources\Blog\PostResource;
 use App\Http\Services\CloudinaryService;
 use App\Http\Traits\ResponseTrait;
 use App\Http\Traits\AuthUserTrait;
@@ -32,14 +33,14 @@ class PostRepository implements PostRepositoryInterface
             ->latest()
             ->paginate($request->per_page ?? 15);
 
-        return $this->handleSuccessResponse("Posts fetched successfully", $posts);
+        return $this->handleSuccessResponse("Posts fetched successfully", PostResource::collection($posts));
     }
 
     public function show($slug)
     {
         try {
             $post = $this->post->with(['category', 'user'])->where('slug', $slug)->firstOrFail();
-            return $this->handleSuccessResponse("Post fetched successfully", $post);
+            return $this->handleSuccessResponse("Post fetched successfully", new PostResource($post));
         } catch (\Exception $e) {
             return $this->handleErrorResponse("Post not found", 404);
         }
@@ -65,7 +66,7 @@ class PostRepository implements PostRepositoryInterface
                 'published_at' => ($request->status == 'published') ? now() : null,
             ]);
 
-            return $this->handleSuccessResponse("Post created successfully", $post);
+            return $this->handleSuccessResponse("Post created successfully", new PostResource($post));
         } catch (\Exception $e) {
             return $this->handleErrorResponse($e->getMessage());
         }
@@ -98,7 +99,7 @@ class PostRepository implements PostRepositoryInterface
 
             $post->update($data);
 
-            return $this->handleSuccessResponse("Post updated successfully", $post);
+            return $this->handleSuccessResponse("Post updated successfully", new PostResource($post));
         } catch (\Exception $e) {
             return $this->handleErrorResponse($e->getMessage());
         }
