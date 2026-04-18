@@ -33,7 +33,7 @@ class PostRepository implements PostRepositoryInterface
             ->latest()
             ->paginate($request->per_page ?? 15);
 
-        return $this->handleSuccessResponse("Posts fetched successfully", PostResource::collection($posts));
+        return $this->handleSuccessCollectionResponse("Posts fetched successfully", PostResource::collection($posts));
     }
 
     public function show($slug)
