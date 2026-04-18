@@ -169,7 +169,7 @@ Route::controller(AnalyticsController::class)->middleware(['auth:sanctum','admin
         Route::get('/', 'index');
         Route::get('/donation-chartly-annualy', 'donationChartlyAnnualy');
         Route::get('/top-performing-campaigns', 'topPerformingCampaigns');
-        Route::get('/leaderboard', 'leaderboard');
+        Route::get('/leaderboard', 'leaderboard')->withoutMiddleware(['auth:sanctum','admin']);
     });
 });
 
