@@ -16,7 +16,6 @@ class PostResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'user_id' => $this->user_id,
             'category_id' => $this->category_id,
             'title' => $this->title,
             'slug' => $this->slug,
@@ -27,7 +26,6 @@ class PostResource extends JsonResource
             'published_at' => $this->published_at,
             'created_at' => $this->created_at,
             'category' => new CategoryResource($this->whenLoaded('category')),
-            'author' => new \App\Http\Resources\User\UserResource($this->whenLoaded('user')),
         ];
     }
 }
