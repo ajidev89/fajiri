@@ -476,6 +476,25 @@
                         }
                     },
                     "response": []
+                },
+                {
+                    "name": "Delete Plan (Admin)",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/plans/{{plan_id}}",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "plans", "{{plan_id}}"]
+                        }
+                    },
+                    "response": []
                 }
             ]
         },

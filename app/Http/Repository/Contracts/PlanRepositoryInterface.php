@@ -8,6 +8,7 @@ interface PlanRepositoryInterface
     public function findById($id);
     public function store(array $data);
     public function update($id, array $data);
+    public function delete($id);
     public function subscribeUser($user, $planId, $duration = null, $autoRenew = true);
     public function renewSubscription($userPlanId);
 }

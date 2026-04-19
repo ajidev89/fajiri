@@ -43,6 +43,17 @@ class PlanRepository implements PlanRepositoryInterface
         return $plan;
     }
 
+    public function delete($id)
+    {
+        $plan = $this->findById($id);
+
+        if ($plan->users()->exists()) {
+            throw new \Exception("Cannot delete plan '{$plan->name}' because it has existing subscribers.");
+        }
+
+        return $plan->delete();
+    }
+
     public function subscribeUser($user, $planId, $duration = null, $autoRenew = true)
     {
         return DB::transaction(function () use ($user, $planId, $duration, $autoRenew) {

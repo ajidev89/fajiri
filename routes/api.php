@@ -136,6 +136,7 @@ Route::controller(PlanController::class)->middleware(['auth:sanctum'])->group(fu
         Route::post('/', 'store')->middleware(['admin']);
         Route::post('/subscribe', 'subscribe');
         Route::put('/{id}', 'update')->middleware(['admin']);
+        Route::delete('/{id}', 'destroy')->middleware(['admin']);
     });
 });
 

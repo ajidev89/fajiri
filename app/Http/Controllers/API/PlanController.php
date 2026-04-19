@@ -56,4 +56,14 @@ class PlanController extends Controller
             'data' => new PlanResource($plan),
         ]);
     }
+
+    public function destroy($id)
+    {
+        try {
+            $this->planRepository->delete($id);
+            return $this->handleSuccessResponse('Plan deleted successfully');
+        } catch (\Exception $e) {
+            return $this->handleErrorResponse($e->getMessage(), 400);
+        }
+    }
 }
