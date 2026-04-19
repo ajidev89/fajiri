@@ -19,6 +19,7 @@ use App\Http\Controllers\API\CategoryController;
 use App\Http\Controllers\API\PostController;
 use App\Http\Controllers\API\EventController;
 use App\Http\Controllers\API\PartnerController;
+use App\Http\Controllers\API\DisbursementController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -215,5 +216,15 @@ Route::controller(PartnerController::class)->group(function () {
         Route::post('/', 'store')->middleware(['auth:sanctum', 'admin']);
         Route::put('/{id}', 'update')->middleware(['auth:sanctum', 'admin']);
         Route::delete('/{id}', 'destroy')->middleware(['auth:sanctum', 'admin']);
+    });
+});
+
+Route::controller(DisbursementController::class)->middleware(['auth:sanctum'])->group(function () {
+    Route::group(['prefix' => 'disbursements'], function () {
+        Route::get('/', 'index');
+        Route::get('/{id}', 'show');
+        Route::post('/', 'store');
+        Route::post('/{id}/disburse', 'disburse')->middleware(['admin']);
+        Route::post('/{id}/reject', 'reject')->middleware(['admin']);
     });
 });

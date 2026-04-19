@@ -1139,6 +1139,134 @@
                     "response": []
                 }
             ]
+        },
+        {
+            "name": "Disbursements",
+            "item": [
+                {
+                    "name": "List Disbursements",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/disbursements",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "disbursements"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Disbursement Detail",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/disbursements/{{disbursement_id}}",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "disbursements", "{{disbursement_id}}"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Request Disbursement",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"disbursable_id\": \"{{campaign_id}}\",\n    \"disbursable_type\": \"campaigns\",\n    \"amount\": 500000,\n    \"beneficiary_name\": \"Jeff Ned\",\n    \"payment_method\": \"Bank Transfer\",\n    \"account_name\": \"Jeff Ned\",\n    \"account_number\": \"1887131447\",\n    \"bank_name\": \"Access Bank\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/disbursements",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "disbursements"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Disburse (Upload Proof) - Admin",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "proof_of_payment",
+                                    "type": "file",
+                                    "src": []
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/disbursements/{{disbursement_id}}/disburse",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "disbursements", "{{disbursement_id}}", "disburse"]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Reject Disbursement - Admin",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"rejected_reason\": \"Invalid bank details provided.\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/disbursements/{{disbursement_id}}/reject",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "disbursements", "{{disbursement_id}}", "reject"]
+                        }
+                    },
+                    "response": []
+                }
+            ]
         }
     ],
     "variable": [
@@ -1153,6 +1281,10 @@
         {
             "key": "campaign_id",
             "value": "campaign-uuid-here"
+        },
+        {
+            "key": "disbursement_id",
+            "value": "disbursement-uuid-here"
         },
         {
             "key": "notification_id",

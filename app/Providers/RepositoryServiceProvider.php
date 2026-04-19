@@ -65,6 +65,7 @@ class RepositoryServiceProvider extends ServiceProvider
         PostRepositoryInterface::class => PostRepository::class,
         \App\Http\Repository\Contracts\EventRepositoryInterface::class => \App\Http\Repository\EventRepository::class,
         \App\Http\Repository\Contracts\PartnerRepositoryInterface::class => \App\Http\Repository\PartnerRepository::class,
+        \App\Http\Repository\Contracts\DisbursementRepositoryInterface::class => \App\Http\Repository\DisbursementRepository::class,
     ];
     /**
      * Register services.
