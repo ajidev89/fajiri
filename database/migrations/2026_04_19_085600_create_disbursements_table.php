@@ -18,6 +18,8 @@ return new class extends Migration
             $table->foreignUuid('disbursed_by')->nullable()->constrained('users')->nullOnDelete();
             $table->decimal('amount', 15, 2);
             $table->string('currency')->default('NGN');
+            $table->decimal('converted_amount', 15, 2)->nullable();
+            $table->decimal('rate', 15, 8)->nullable();
             $table->string('beneficiary_name');
             $table->string('payment_method');
             $table->string('account_name');

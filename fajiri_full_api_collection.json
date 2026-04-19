@@ -1026,6 +1026,25 @@
                         }
                     },
                     "response": []
+                },
+                {
+                    "name": "Disbursement Analytics",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/analytics/disbursements",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "analytics", "disbursements"]
+                        }
+                    },
+                    "response": []
                 }
             ]
         },

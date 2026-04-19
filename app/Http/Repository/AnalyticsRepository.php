@@ -6,6 +6,8 @@ use App\Models\Donation;
 use App\Models\Campaign;
 use App\Models\Need;
 use App\Models\User;
+use App\Models\Disbursement;
+use App\Enums\Disbursement\Status;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -13,7 +15,13 @@ use App\Http\Repository\Contracts\AnalyticsRepositoryInterface;
 
 class AnalyticsRepository implements AnalyticsRepositoryInterface {
 
-    public function __construct(protected Donation $donation, protected Campaign $campaign, protected Need $need, protected User $user){
+    public function __construct(
+        protected Donation $donation, 
+        protected Campaign $campaign, 
+        protected Need $need, 
+        protected User $user,
+        protected \App\Services\CurrencyService $currencyService
+    ){
 
     }
 
@@ -39,6 +47,44 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
 
     public function donatedCurrency(){
         return $this->donation->select('currency', DB::raw('SUM(amount) as total_amount'))->where('status', 'completed')->groupBy('currency')->get();
+    }
+
+    public function disbursementStats()
+    {
+        // 1. Calculate Total Donated in NGN
+        $donationsByCurrency = $this->donatedCurrency();
+        $totalDonatedInNgn = 0;
+        foreach ($donationsByCurrency as $item) {
+            $totalDonatedInNgn += $this->currencyService->convert($item->total_amount, $item->currency, 'NGN');
+        }
+
+        // 2. Calculate Total Disbursed in NGN (using the converted_amount we just added)
+        $totalDisbursedInNgn = Disbursement::where('status', Status::COMPLETED)->sum('converted_amount');
+
+        $availableFunds = $totalDonatedInNgn - $totalDisbursedInNgn;
+
+        $stats = Disbursement::select('status', DB::raw('count(*) as count'), DB::raw('sum(amount) as total_amount'), 'currency')
+            ->groupBy('status', 'currency')
+            ->get();
+
+        $formatedStats = [
+            'pending' => ['count' => 0, 'amounts' => []],
+            'completed' => ['count' => 0, 'amounts' => []],
+            'rejected' => ['count' => 0, 'amounts' => []],
+        ];
+
+        foreach ($stats as $stat) {
+            $status = $stat->status->value;
+            $formatedStats[$status]['count'] += $stat->count;
+            $formatedStats[$status]['amounts'][$stat->currency] = (float) $stat->total_amount;
+        }
+
+        return [
+            'available_funds_ngn' => round($availableFunds, 2),
+            'pending_disbursements' => $formatedStats['pending'],
+            'approved_disbursements' => $formatedStats['completed'],
+            'rejected_disbursements' => $formatedStats['rejected'],
+        ];
     }
 
     private function calculatePercentageChange(Model|Builder $modelOrQuery, ?array $filter = [] ): float|int

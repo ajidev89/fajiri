@@ -19,6 +19,8 @@ class Disbursement extends Model
         'disbursed_by',
         'amount',
         'currency',
+        'converted_amount',
+        'rate',
         'beneficiary_name',
         'payment_method',
         'account_name',

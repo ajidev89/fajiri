@@ -8,4 +8,5 @@ interface AnalyticsRepositoryInterface{
     public function donationChartlyAnnualy();
     public function topPerformingCampaigns();
     public function leaderboard();
+    public function disbursementStats();
 }

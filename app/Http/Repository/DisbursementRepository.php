@@ -14,10 +14,12 @@ class DisbursementRepository implements DisbursementRepositoryInterface
     use AuthUserTrait;
 
     protected $cloudinaryService;
+    protected $currencyService;
 
-    public function __construct(CloudinaryService $cloudinaryService)
+    public function __construct(CloudinaryService $cloudinaryService, \App\Services\CurrencyService $currencyService)
     {
         $this->cloudinaryService = $cloudinaryService;
+        $this->currencyService = $currencyService;
     }
 
     public function all()
@@ -42,6 +44,12 @@ class DisbursementRepository implements DisbursementRepositoryInterface
     {
         $data['requested_by'] = $this->user()->id;
         $data['status'] = Status::PENDING;
+
+        // Calculate conversion to NGN for base tracking
+        $currency = $data['currency'] ?? 'NGN';
+        $rate = $this->currencyService->getExchangeRate($currency, 'NGN');
+        $data['rate'] = $rate;
+        $data['converted_amount'] = round($data['amount'] * $rate, 2);
         
         return Disbursement::create($data);
     }

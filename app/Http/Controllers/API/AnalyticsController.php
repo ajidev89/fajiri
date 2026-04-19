@@ -31,4 +31,9 @@ class AnalyticsController extends Controller
         $data = $this->analyticsRepository->leaderboard();
         return $this->handleSuccessResponse("Successful fetched leaderboard", $data);
     }
+
+    public function disbursementStats(){
+        $data = $this->analyticsRepository->disbursementStats();
+        return $this->handleSuccessResponse("Disbursement Analytics", $data);
+    }
 }

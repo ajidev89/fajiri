@@ -173,6 +173,7 @@ Route::controller(AnalyticsController::class)->middleware(['auth:sanctum','admin
         Route::get('/donation-chartly-annualy', 'donationChartlyAnnualy');
         Route::get('/top-performing-campaigns', 'topPerformingCampaigns');
         Route::get('/leaderboard', 'leaderboard')->withoutMiddleware(['auth:sanctum','admin']);
+        Route::get('/disbursements', 'disbursementStats');
     });
 });
 
