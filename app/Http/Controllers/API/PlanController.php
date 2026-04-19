@@ -4,6 +4,7 @@ namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
 use App\Http\Repository\Contracts\PlanRepositoryInterface;
+use App\Http\Requests\Plan\StoreRequest;
 use App\Http\Requests\Plan\UpdateRequest;
 use App\Http\Resources\PlanResource;
 use Illuminate\Http\Request;
@@ -21,6 +22,15 @@ class PlanController extends Controller
     {
         $plans = $this->planRepository->all();
         return PlanResource::collection($plans);
+    }
+
+    public function store(StoreRequest $request)
+    {
+        $plan = $this->planRepository->store($request->validated());
+
+        return $this->handleSuccessResponse('Plan created successfully', [
+            'data' => new PlanResource($plan),
+        ], 201);
     }
 
     public function subscribe(Request $request)

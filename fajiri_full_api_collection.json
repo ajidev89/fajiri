@@ -448,6 +448,34 @@
                         }
                     },
                     "response": []
+                },
+                {
+                    "name": "Create Plan (Admin)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"name\": \"Premium Plan\",\n    \"description\": \"Access to exclusive features\",\n    \"price\": 5000.00,\n    \"currency\": \"NGN\",\n    \"duration\": 30,\n    \"features\": [\"Feature 1\", \"Feature 2\"],\n    \"status\": true\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/plans",
+                            "host": ["{{base_url}}"],
+                            "path": ["api", "plans"]
+                        }
+                    },
+                    "response": []
                 }
             ]
         },

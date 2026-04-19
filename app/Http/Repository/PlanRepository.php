@@ -20,6 +20,12 @@ class PlanRepository implements PlanRepositoryInterface
         return Plan::findOrFail($id);
     }
 
+    public function store(array $data)
+    {
+        $data['slug'] = \Illuminate\Support\Str::slug($data['name']);
+        return Plan::create($data);
+    }
+
     public function update($id, array $data)
     {
         $plan = $this->findById($id);
