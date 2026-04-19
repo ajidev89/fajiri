@@ -12,7 +12,17 @@ class PlanRepository implements PlanRepositoryInterface
     use AuthUserTrait;
     public function all()
     {
-        return Plan::where('status', true)->where('currency', $this->user()->wallet->currency)->get();
+        $user = $this->user();
+
+        // Admin should see all plans
+        if ($user && $user->role && $user->role->slug === 'admin') {
+            return Plan::all();
+        }
+
+        // Users see active plans in their currency
+        $currency = ($user && $user->wallet) ? $user->wallet->currency : 'NGN';
+
+        return Plan::where('status', true)->where('currency', $currency)->get();
     }
 
     public function findById($id)
