@@ -67,6 +67,7 @@ class RepositoryServiceProvider extends ServiceProvider
         \App\Http\Repository\Contracts\PartnerRepositoryInterface::class => \App\Http\Repository\PartnerRepository::class,
         \App\Http\Repository\Contracts\DisbursementRepositoryInterface::class => \App\Http\Repository\DisbursementRepository::class,
         \App\Http\Repository\Contracts\FundraiserRepositoryInterface::class => \App\Http\Repository\FundraiserRepository::class,
+        \App\Http\Repository\Contracts\MediaRepositoryInterface::class => \App\Http\Repository\MediaRepository::class,
     ];
     /**
      * Register services.

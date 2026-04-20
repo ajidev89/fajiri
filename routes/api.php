@@ -21,6 +21,7 @@ use App\Http\Controllers\API\EventController;
 use App\Http\Controllers\API\PartnerController;
 use App\Http\Controllers\API\DisbursementController;
 use App\Http\Controllers\API\FundraiserController;
+use App\Http\Controllers\API\MediaController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -165,6 +166,14 @@ Route::controller(WithdrawalController::class)->middleware(['auth:sanctum'])->gr
         Route::get('/banks', 'banks');
         Route::get('/resolve-bank-account', 'resolveBankAccount');
         Route::post('/withdraw', 'withdraw');
+    });
+});
+
+Route::controller(MediaController::class)->middleware(['auth:sanctum'])->group(function () {
+    Route::group(['prefix' => 'media'], function () {
+        Route::get('/', 'index');
+        Route::post('/', 'store');
+        Route::delete('/{id}', 'destroy');
     });
 });
 
