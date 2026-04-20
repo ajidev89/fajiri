@@ -58,6 +58,9 @@ class CampaignRepository implements CampaignRepositoryInterface
             ->when($request->type, function ($query) use ($request) {
                 $query->where('type', $request->type);
             })
+            ->when($request->added_by, function ($query) use ($request) {
+                $query->where('added_by', $request->added_by);
+            })
             ->where('status', 'active')
             ->latest()
             ->paginate(10);

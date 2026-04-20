@@ -15,9 +15,9 @@ class NeedController extends Controller
     {
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        return $this->handleSuccessCollectionResponse('Needs fetched successfully',  NeedResource::collection( $this->needRepositoryInterface->index()));
+        return $this->handleSuccessCollectionResponse('Needs fetched successfully',  NeedResource::collection( $this->needRepositoryInterface->index($request)));
     }
 
     public function find(Need $need)

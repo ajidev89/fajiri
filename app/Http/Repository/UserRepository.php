@@ -130,6 +130,31 @@ class UserRepository implements UserRepositoryInterface {
         }
     }
 
+    public function updateProfile($request) {
+        try {
+            $user = $this->user();
+            $profile = $user->profile;
+
+            $user->update([
+                'phone' => $request->phone ?? $user->phone,
+            ]);
+
+            $profile->update([
+                'first_name' => $request->first_name ?? $profile->first_name,
+                'last_name' => $request->last_name ?? $profile->last_name,
+                'middle_name' => $request->middle_name ?? $profile->middle_name,
+                'dob' => $request->dob ?? $profile->dob,
+                'gender' => $request->gender ?? $profile->gender,
+                'address' => $request->address ?? $profile->address,
+                'occupation' => $request->occupation ?? $profile->occupation,
+            ]);
+
+            return $this->handleSuccessResponse("Profile successfully updated", new UserResource($user->refresh()));
+        } catch (\Exception $e) {
+            return $this->handleErrorResponse($e->getMessage(), 400);
+        }
+    }
+
     public function withdrawAccount() {
         try {
             $withdrawalAccount = $this->user()->withdrawalAccounts()->where("default", true)->first();

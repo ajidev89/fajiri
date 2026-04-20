@@ -9,6 +9,7 @@ interface UserRepositoryInterface {
     public function transfer($request);
     public function updateAvatar($request);
     public function updatePin($request);
+    public function updateProfile($request);
     public function withdrawAccount();
     public function referrals();
 }

@@ -62,6 +62,7 @@ Route::controller(UserController::class)->middleware(['auth:sanctum'])->group(fu
         Route::get('/preferences', [\App\Http\Controllers\API\PreferenceController::class, 'index']);
         Route::put('/preferences', [\App\Http\Controllers\API\PreferenceController::class, 'update']);
         Route::post('/pin', 'updatePin');
+        Route::put('/profile', 'updateProfile');
         Route::post('transfer', 'transfer');
         Route::get('withdraw-account', 'withdrawAccount');
         Route::get('referrals', 'referrals');

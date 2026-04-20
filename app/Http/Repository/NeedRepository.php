@@ -12,9 +12,14 @@ class NeedRepository implements NeedRepositoryInterface {
     {
     }
 
-    public function index()
+    public function index($request = null)
     {
-        return $this->need->latest()->paginate(10);
+        return $this->need->query()
+            ->when($request && $request->added_by, function ($query) use ($request) {
+                $query->where('added_by', $request->added_by);
+            })
+            ->latest()
+            ->paginate(10);
     }
 
     public function find(Need $need)

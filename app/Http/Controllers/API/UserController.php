@@ -28,6 +28,10 @@ class UserController extends Controller
         return $this->userRepositoryInterface->updatePin($request);
     }
 
+    public function updateProfile(\App\Http\Requests\User\UpdateProfileRequest $request){
+        return $this->userRepositoryInterface->updateProfile($request);
+    }
+
     public function transactions(\Illuminate\Http\Request $request){
         return $this->userRepositoryInterface->transactions($request);
     }
