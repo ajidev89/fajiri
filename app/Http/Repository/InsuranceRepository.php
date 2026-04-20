@@ -10,9 +10,19 @@ class InsuranceRepository implements InsuranceRepositoryInterface
 {
     use AuthUserTrait;
     
-    public function index()
+    public function index($request = null)
     {
-        return Insurance::where('country_id', $this->user()->country_id)->paginate();
+        $query = Insurance::query()->with('country');
+
+        if ($request && $request->has('all')) {
+            return $query->latest()->paginate(10);
+        }
+
+        if ($this->user()) {
+            $query->where('country_id', $this->user()->country_id);
+        }
+
+        return $query->latest()->paginate(10);
     }
 
     public function all()

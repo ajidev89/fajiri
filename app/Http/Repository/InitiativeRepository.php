@@ -12,9 +12,19 @@ class InitiativeRepository implements InitiativeRepositoryInterface
         $this->model = $model;
     }
 
-    public function index()
+    public function index($request = null)
     {
-        return $this->model->where('status', 'active')->latest()->paginate(10);
+        $query = $this->model->query();
+
+        if ($request && $request->has('added_by')) {
+            $query->where('added_by', $request->added_by);
+        }
+
+        if ($request && $request->has('status')) {
+            $query->where('status', $request->status);
+        }
+
+        return $query->latest()->paginate(10);
     }
 
     public function find($id)

@@ -14,9 +14,9 @@ class InitiativeController extends Controller
     public function __construct(public InitiativeRepositoryInterface $initiativeRepositoryInterface) {}
 
 
-    public function index()
+    public function index(Request $request)
     {
-        $initiatives = $this->initiativeRepositoryInterface->index();
+        $initiatives = $this->initiativeRepositoryInterface->index($request);
         return InitiativeResource::collection($initiatives);
     }
 

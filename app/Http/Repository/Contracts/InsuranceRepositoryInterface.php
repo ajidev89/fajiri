@@ -4,7 +4,7 @@ namespace App\Http\Repository\Contracts;
 
 interface InsuranceRepositoryInterface
 {
-    public function index();
+    public function index($request = null);
     public function all();
     public function find($id);
     public function create($data);

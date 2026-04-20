@@ -12,9 +12,9 @@ class InsuranceController extends Controller
 {
     public function __construct(private InsuranceRepositoryInterface $insuranceRepository) {}
 
-    public function index()
+    public function index(Request $request)
     {
-        return InsuranceResource::collection($this->insuranceRepository->index());
+        return InsuranceResource::collection($this->insuranceRepository->index($request));
     }
 
     public function all()
