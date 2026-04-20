@@ -178,13 +178,13 @@ Route::controller(MediaController::class)->middleware(['auth:sanctum'])->group(f
     });
 });
 
-Route::controller(AnalyticsController::class)->middleware(['auth:sanctum','super-admin'])->group(function () {
+Route::controller(AnalyticsController::class)->middleware(['auth:sanctum','admin'])->group(function () {
     Route::group(['prefix' => 'analytics'], function () {
         Route::get('/', 'index');
         Route::get('/donation-chartly-annualy', 'donationChartlyAnnualy');
         Route::get('/top-performing-campaigns', 'topPerformingCampaigns');
         Route::get('/leaderboard', 'leaderboard')->withoutMiddleware(['auth:sanctum','admin']);
-        Route::get('/disbursements', 'disbursementStats');
+        Route::get('/disbursements', 'disbursementStats')->middleware(['super-admin']);
     });
 
     Route::controller(FundraiserController::class)->group(function () {
