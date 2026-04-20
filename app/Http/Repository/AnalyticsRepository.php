@@ -25,15 +25,29 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
 
     }
 
-    public function index()
+    public function index($request = null)
     {
+        $added_by = $request ? $request->added_by : null;
+
+        $donationQuery = $this->donation->query();
+        $campaignQuery = $this->campaign->query();
+        $needQuery = $this->need->query();
+
+        if ($added_by) {
+            $donationQuery->whereHasMorph('donatable', [\App\Models\Campaign::class, \App\Models\Need::class], function ($query) use ($added_by) {
+                $query->where('added_by', $added_by);
+            });
+            $campaignQuery->where('added_by', $added_by);
+            $needQuery->where('added_by', $added_by);
+        }
+
         return [
-            "total_donations" => $this->donation->count(),
-            "total_donations_amount" => $this->donatedCurrency(),
-            "active_campaigns" => $this->campaign->where('status', 'active')->count(),
-            "active_campaigns_percentage_change" => $this->calculatePercentageChange($this->campaign, ['status' => 'active']),
-            "active_needs" => $this->need->count(),
-            "active_needs_percentage_change" => $this->calculatePercentageChange($this->need),
+            "total_donations" => $donationQuery->count(),
+            "total_donations_amount" => $this->donatedCurrency($request),
+            "active_campaigns" => $campaignQuery->where('status', 'active')->count(),
+            "active_campaigns_percentage_change" => $this->calculatePercentageChange($this->campaign, ['status' => 'active'], $request),
+            "active_needs" => $needQuery->count(),
+            "active_needs_percentage_change" => $this->calculatePercentageChange($this->need, [], $request),
             "total_users" => $this->user->whereHas('role', function ($query) {
                 $query->where('name', 'user');
             })->count(),
@@ -45,8 +59,18 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
         ];
     }
 
-    public function donatedCurrency(){
-        return $this->donation->select('currency', DB::raw('SUM(amount) as total_amount'))->where('status', 'completed')->groupBy('currency')->get();
+    public function donatedCurrency($request = null){
+        $added_by = $request ? $request->added_by : null;
+        $query = $this->donation->select('currency', DB::raw('SUM(amount) as total_amount'))
+            ->where('status', 'completed');
+
+        if ($added_by) {
+            $query->whereHasMorph('donatable', [\App\Models\Campaign::class, \App\Models\Need::class], function ($query) use ($added_by) {
+                $query->where('added_by', $added_by);
+            });
+        }
+
+        return $query->groupBy('currency')->get();
     }
 
     public function disbursementStats()
@@ -87,14 +111,27 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
         ];
     }
 
-    private function calculatePercentageChange(Model|Builder $modelOrQuery, ?array $filter = [] ): float|int
+    private function calculatePercentageChange(Model|Builder $modelOrQuery, ?array $filter = [], $request = null): float|int
     {
+        $added_by = $request ? $request->added_by : null;
         $baseQuery = $modelOrQuery instanceof Builder 
             ? clone $modelOrQuery 
             : $modelOrQuery->newQuery();
 
         if ($filter) {
             $baseQuery->where($filter);
+        }
+
+        if ($added_by) {
+            // Check if the model has added_by or if it's Donation (needs morph check)
+            $model = $modelOrQuery instanceof Builder ? $modelOrQuery->getModel() : $modelOrQuery;
+            if ($model instanceof \App\Models\Donation) {
+                $baseQuery->whereHasMorph('donatable', [\App\Models\Campaign::class, \App\Models\Need::class], function ($query) use ($added_by) {
+                    $query->where('added_by', $added_by);
+                });
+            } else {
+                $baseQuery->where('added_by', $added_by);
+            }
         }
 
         $currentMonthQuery = (clone $baseQuery)->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()]);
@@ -111,9 +148,11 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
     }
 
 
-    public function donationChartlyAnnualy()
+    public function donationChartlyAnnualy($request = null)
     {
-        $donations = $this->donation
+        $added_by = $request ? $request->added_by : null;
+
+        $donationQuery = $this->donation
             ->select(
                 DB::raw('MONTH(created_at) as month_num'),
                 'currency',
@@ -121,9 +160,15 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
                 DB::raw('SUM(amount) as total_amount')
             )
             ->where('status', 'completed')
-            ->whereYear('created_at', now()->year)
-            ->groupBy('month_num', 'currency')
-            ->get();
+            ->whereYear('created_at', now()->year);
+
+        if ($added_by) {
+            $donationQuery->whereHasMorph('donatable', [\App\Models\Campaign::class, \App\Models\Need::class], function ($query) use ($added_by) {
+                $query->where('added_by', $added_by);
+            });
+        }
+
+        $donations = $donationQuery->groupBy('month_num', 'currency')->get();
 
         $formatted = [];
 
@@ -151,9 +196,17 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
 
 
     //piechart for top performing campaigns
-    public function topPerformingCampaigns()
+    public function topPerformingCampaigns($request = null)
     {
-        return $this->campaign
+        $added_by = $request ? $request->added_by : null;
+
+        $query = $this->campaign->query();
+
+        if ($added_by) {
+            $query->where('added_by', $added_by);
+        }
+
+        return $query
             ->withSum(['donations as total_raised' => function ($query) {
                 $query->where('status', 'completed');
             }], 'converted_amount')

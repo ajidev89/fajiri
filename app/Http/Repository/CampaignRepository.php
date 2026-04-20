@@ -13,26 +13,35 @@ class CampaignRepository implements CampaignRepositoryInterface
     {
     }
 
-    public function analytics()
+    public function analytics($request = null)
     {
+        $added_by = $request ? $request->added_by : null;
+
         return [
-            'total_campaigns' => $this->campaign->count(),
-            'total_percentage_change' => $this->calculatePercentageChange(),
-            'active_campaigns' => $this->campaign->where('status', 'active')->count(),
-            'active_percentage_change' => $this->calculatePercentageChange('active'),
-            'pending_campaigns' => $this->campaign->where('status', 'pending')->count(),
-            'pending_percentage_change' => $this->calculatePercentageChange('pending'),
-            'completed_campaigns' => $this->campaign->where('status', 'completed')->count(),
-            'completed_percentage_change' => $this->calculatePercentageChange('completed'),
-            'rejected_campaigns' => $this->campaign->where('status', 'rejected')->count(),
-            'rejected_percentage_change' => $this->calculatePercentageChange('rejected'),
+            'total_campaigns' => $this->campaign->when($added_by, fn($q) => $q->where('added_by', $added_by))->count(),
+            'total_percentage_change' => $this->calculatePercentageChange(null, $request),
+            'active_campaigns' => $this->campaign->where('status', 'active')->when($added_by, fn($q) => $q->where('added_by', $added_by))->count(),
+            'active_percentage_change' => $this->calculatePercentageChange('active', $request),
+            'pending_campaigns' => $this->campaign->where('status', 'pending')->when($added_by, fn($q) => $q->where('added_by', $added_by))->count(),
+            'pending_percentage_change' => $this->calculatePercentageChange('pending', $request),
+            'completed_campaigns' => $this->campaign->where('status', 'completed')->when($added_by, fn($q) => $q->where('added_by', $added_by))->count(),
+            'completed_percentage_change' => $this->calculatePercentageChange('completed', $request),
+            'rejected_campaigns' => $this->campaign->where('status', 'rejected')->when($added_by, fn($q) => $q->where('added_by', $added_by))->count(),
+            'rejected_percentage_change' => $this->calculatePercentageChange('rejected', $request),
         ];
     }
 
-    private function calculatePercentageChange(?string $status = null): float|int
+    private function calculatePercentageChange(?string $status = null, $request = null): float|int
     {
-        $currentMonthQuery = $this->campaign->newQuery()->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()]);
-        $lastMonthQuery = $this->campaign->newQuery()->whereBetween('created_at', [now()->subMonth()->startOfMonth(), now()->subMonth()->endOfMonth()]);
+        $added_by = $request ? $request->added_by : null;
+
+        $currentMonthQuery = $this->campaign->newQuery()
+            ->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])
+            ->when($added_by, fn($q) => $q->where('added_by', $added_by));
+            
+        $lastMonthQuery = $this->campaign->newQuery()
+            ->whereBetween('created_at', [now()->subMonth()->startOfMonth(), now()->subMonth()->endOfMonth()])
+            ->when($added_by, fn($q) => $q->where('added_by', $added_by));
 
         if ($status) {
             $currentMonthQuery->where('status', $status);

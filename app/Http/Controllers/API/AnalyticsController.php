@@ -12,18 +12,18 @@ class AnalyticsController extends Controller
 
     }
 
-    public function index(){
-        $data = $this->analyticsRepository->index();
+    public function index(Request $request){
+        $data = $this->analyticsRepository->index($request);
         return $this->handleSuccessResponse("Analytics", $data);
     }
 
-    public function donationChartlyAnnualy(){
-        $data = $this->analyticsRepository->donationChartlyAnnualy();
+    public function donationChartlyAnnualy(Request $request){
+        $data = $this->analyticsRepository->donationChartlyAnnualy($request);
         return $this->handleSuccessResponse("Donation Chartly Annualy", $data);
     }
 
-    public function topPerformingCampaigns(){
-        $data = $this->analyticsRepository->topPerformingCampaigns();
+    public function topPerformingCampaigns(Request $request){
+        $data = $this->analyticsRepository->topPerformingCampaigns($request);
         return $this->handleSuccessResponse("Top Performing Campaigns", $data);
     }
 

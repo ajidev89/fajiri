@@ -4,7 +4,7 @@ namespace App\Http\Repository\Contracts;
 
 interface CampaignRepositoryInterface
 {
-    public function analytics();
+    public function analytics($request = null);
     public function all($request);
     public function urgentCampaigns();
     public function find($id);
