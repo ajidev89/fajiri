@@ -21,10 +21,16 @@ class Need extends Model
         'description',
         'image',
         'urgency',
+        'added_by',
     ];
 
     public function donations(): MorphMany
     {
         return $this->morphMany(Donation::class, 'donatable');
+    }
+
+    public function addedBy(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class, 'added_by');
     }
 }

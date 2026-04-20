@@ -27,7 +27,9 @@ class NeedController extends Controller
 
     public function create(CreateRequest $request)
     {
-        return $this->handleSuccessResponse('Need created successfully', new NeedResource($this->needRepositoryInterface->create($request->validated())));
+        $data = $request->validated();
+        $data['added_by'] = auth()->id();
+        return $this->handleSuccessResponse('Need created successfully', new NeedResource($this->needRepositoryInterface->create($data)));
     }
 
     public function update(Need $need, CreateRequest $request)

@@ -20,6 +20,7 @@ use App\Http\Controllers\API\PostController;
 use App\Http\Controllers\API\EventController;
 use App\Http\Controllers\API\PartnerController;
 use App\Http\Controllers\API\DisbursementController;
+use App\Http\Controllers\API\FundraiserController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -101,7 +102,7 @@ Route::controller(InitiativeController::class)->group(function () {
 });
 
 Route::controller(UsersController::class)->group(function () { 
-    Route::group(['prefix' => 'users', 'middleware' => ['auth:sanctum', 'admin']], function () {
+    Route::group(['prefix' => 'users', 'middleware' => ['auth:sanctum', 'super-admin']], function () {
         Route::get('/', 'index');
         Route::get('/{user}', 'show');
         Route::put('/{user}', 'update');
@@ -134,10 +135,10 @@ Route::controller(DonationController::class)->group(function () {
 Route::controller(PlanController::class)->middleware(['auth:sanctum'])->group(function () { 
     Route::group(['prefix' => 'plans'], function () {
         Route::get('/', 'index');
-        Route::post('/', 'store')->middleware(['admin']);
+        Route::post('/', 'store')->middleware(['super-admin']);
         Route::post('/subscribe', 'subscribe');
-        Route::put('/{id}', 'update')->middleware(['admin']);
-        Route::delete('/{id}', 'destroy')->middleware(['admin']);
+        Route::put('/{id}', 'update')->middleware(['super-admin']);
+        Route::delete('/{id}', 'destroy')->middleware(['super-admin']);
     });
 });
 
@@ -158,7 +159,7 @@ Route::controller(NotificationController::class)->middleware(['auth:sanctum'])->
 
 Route::controller(WithdrawalController::class)->middleware(['auth:sanctum'])->group(function () {
     Route::group(['prefix' => 'withdrawals'], function () {
-        Route::get('/', 'index')->middleware(['admin']);
+        Route::get('/', 'index')->middleware(['super-admin']);
         Route::post('/', 'store');
         Route::delete('/{id}', 'destroy');
         Route::get('/banks', 'banks');
@@ -167,7 +168,7 @@ Route::controller(WithdrawalController::class)->middleware(['auth:sanctum'])->gr
     });
 });
 
-Route::controller(AnalyticsController::class)->middleware(['auth:sanctum','admin'])->group(function () {
+Route::controller(AnalyticsController::class)->middleware(['auth:sanctum','super-admin'])->group(function () {
     Route::group(['prefix' => 'analytics'], function () {
         Route::get('/', 'index');
         Route::get('/donation-chartly-annualy', 'donationChartlyAnnualy');
@@ -175,14 +176,22 @@ Route::controller(AnalyticsController::class)->middleware(['auth:sanctum','admin
         Route::get('/leaderboard', 'leaderboard')->withoutMiddleware(['auth:sanctum','admin']);
         Route::get('/disbursements', 'disbursementStats');
     });
+
+    Route::controller(FundraiserController::class)->group(function () {
+        Route::group(['prefix' => 'fundraisers'], function () {
+            Route::get('/', 'index');
+            Route::post('/', 'store');
+            Route::post('/{user}/reset-password', 'resetPassword');
+        });
+    });
 });
 
 Route::controller(CategoryController::class)->group(function () {
     Route::group(['prefix' => 'categories'], function () {
         Route::get('/', 'index');
-        Route::post('/', 'store')->middleware(['auth:sanctum', 'admin']);
-        Route::put('/{id}', 'update')->middleware(['auth:sanctum', 'admin']);
-        Route::delete('/{id}', 'destroy')->middleware(['auth:sanctum', 'admin']);
+        Route::post('/', 'store')->middleware(['auth:sanctum', 'super-admin']);
+        Route::put('/{id}', 'update')->middleware(['auth:sanctum', 'super-admin']);
+        Route::delete('/{id}', 'destroy')->middleware(['auth:sanctum', 'super-admin']);
     });
 });
 
@@ -190,9 +199,9 @@ Route::controller(PostController::class)->group(function () {
     Route::group(['prefix' => 'posts'], function () {
         Route::get('/', 'index');
         Route::get('/{slug}', 'show');
-        Route::post('/', 'store')->middleware(['auth:sanctum', 'admin']);
-        Route::put('/{id}', 'update')->middleware(['auth:sanctum', 'admin']);
-        Route::delete('/{id}', 'destroy')->middleware(['auth:sanctum', 'admin']);
+        Route::post('/', 'store')->middleware(['auth:sanctum', 'super-admin']);
+        Route::put('/{id}', 'update')->middleware(['auth:sanctum', 'super-admin']);
+        Route::delete('/{id}', 'destroy')->middleware(['auth:sanctum', 'super-admin']);
     });
 });
 
@@ -214,9 +223,9 @@ Route::controller(PartnerController::class)->group(function () {
     Route::group(['prefix' => 'partners'], function () {
         Route::get('/', 'index');
         Route::get('/{slug}', 'show');
-        Route::post('/', 'store')->middleware(['auth:sanctum', 'admin']);
-        Route::put('/{id}', 'update')->middleware(['auth:sanctum', 'admin']);
-        Route::delete('/{id}', 'destroy')->middleware(['auth:sanctum', 'admin']);
+        Route::post('/', 'store')->middleware(['auth:sanctum', 'super-admin']);
+        Route::put('/{id}', 'update')->middleware(['auth:sanctum', 'super-admin']);
+        Route::delete('/{id}', 'destroy')->middleware(['auth:sanctum', 'super-admin']);
     });
 });
 
@@ -225,7 +234,7 @@ Route::controller(DisbursementController::class)->middleware(['auth:sanctum'])->
         Route::get('/', 'index');
         Route::get('/{id}', 'show');
         Route::post('/', 'store');
-        Route::post('/{id}/disburse', 'disburse')->middleware(['admin']);
-        Route::post('/{id}/reject', 'reject')->middleware(['admin']);
+        Route::post('/{id}/disburse', 'disburse')->middleware(['super-admin']);
+        Route::post('/{id}/reject', 'reject')->middleware(['super-admin']);
     });
 });

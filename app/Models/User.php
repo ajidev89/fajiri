@@ -113,7 +113,19 @@ class User extends Authenticatable
 
     public function campaigns(): HasMany
     {
-        return $this->hasMany(Campaign::class);
+        return $this->hasMany(Campaign::class, 'added_by');
+    }
+
+    public function needs(): HasMany
+    {
+        return $this->hasMany(Need::class, 'added_by');
+    }
+
+    public function scopeFundraisers($query)
+    {
+        return $query->whereHas('role', function ($q) {
+            $q->where('slug', 'fundraiser');
+        });
     }
 
     public function donations(): HasMany

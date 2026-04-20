@@ -6,7 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class AdminMiddleware
+class SuperAdminMiddleware
 {
     /**
      * Handle an incoming request.
@@ -24,10 +24,10 @@ class AdminMiddleware
 
         $user = auth()->user();
         
-        if (!$user->role || !in_array($user->role->slug, ['admin', 'super-admin', 'fundraiser'])) {
+        if (!$user->role || !in_array($user->role->slug, ['admin', 'super-admin'])) {
             return response()->json([
                 'status' => false,
-                'message' => 'Forbidden: Admin access only'
+                'message' => 'Forbidden: This action requires Administrator privileges'
             ], 403);
         }
 
