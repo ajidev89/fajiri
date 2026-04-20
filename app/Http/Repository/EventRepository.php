@@ -58,7 +58,8 @@ class EventRepository implements EventRepositoryInterface
         try {
             $imageUrl = null;
             if ($request->hasFile('image')) {
-                $imageUrl = $this->cloudinaryService->uploadImage($request->file('image'), 'events');
+                $upload = $this->cloudinaryService->uploadImage($request->file('image'), 'events');
+                $imageUrl = $upload['url'];
             }
 
             $event = $this->event->create([
@@ -99,7 +100,8 @@ class EventRepository implements EventRepositoryInterface
             }
 
             if ($request->hasFile('image')) {
-                $data['image'] = $this->cloudinaryService->uploadImage($request->file('image'), 'events');
+                $upload = $this->cloudinaryService->uploadImage($request->file('image'), 'events');
+                $data['image'] = $upload['url'];
             }
 
             $event->update($data);

@@ -51,7 +51,8 @@ class PostRepository implements PostRepositoryInterface
         try {
             $imageUrl = null;
             if ($request->hasFile('image')) {
-                $imageUrl = $this->cloudinaryService->uploadImage($request->file('image'), 'blogs');
+                $upload = $this->cloudinaryService->uploadImage($request->file('image'), 'blogs');
+                $imageUrl = $upload['url'];
             }
 
             $post = $this->post->create([
@@ -90,7 +91,8 @@ class PostRepository implements PostRepositoryInterface
             }
 
             if ($request->hasFile('image')) {
-                $data['image'] = $this->cloudinaryService->uploadImage($request->file('image'), 'blogs');
+                $upload = $this->cloudinaryService->uploadImage($request->file('image'), 'blogs');
+                $data['image'] = $upload['url'];
             }
 
             if ($request->status == 'published' && $post->status != 'published') {

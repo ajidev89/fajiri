@@ -13,14 +13,16 @@ class InitiativeObserver
     public function creating(Initiative $initiative): void
     {
         if(request()->hasFile('image')) {
-            $initiative->image = app(CloudinaryService::class)->uploadImage(request()->file('image'));
+            $upload = app(CloudinaryService::class)->uploadImage(request()->file('image'));
+            $initiative->image = $upload['url'];
         }
     }
 
     public function updating(Initiative $initiative): void
     {   
         if(request()->hasFile('image') && request()->file('image')->isValid()) {
-            $initiative->image = app(CloudinaryService::class)->uploadImage(request()->file('image'));
+            $upload = app(CloudinaryService::class)->uploadImage(request()->file('image'));
+            $initiative->image = $upload['url'];
         }
     }
 

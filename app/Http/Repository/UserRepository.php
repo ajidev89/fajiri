@@ -99,7 +99,8 @@ class UserRepository implements UserRepositoryInterface {
                     \Illuminate\Support\Facades\Storage::disk('public')->delete($profile->avatar);
                 }
 
-                $path = app(CloudinaryService::class)->uploadImage($request->file('avatar'));
+                $upload = app(CloudinaryService::class)->uploadImage($request->file('avatar'));
+                $path = $upload['url'];
                 $profile->update(['avatar' => $path]);
 
                 return $this->handleSuccessResponse("Avatar successfully updated", ['avatar_url' => $path]);

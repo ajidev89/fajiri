@@ -25,15 +25,16 @@ class MediaRepository implements MediaRepositoryInterface
         $type = str_contains($mimeType, 'video') ? 'video' : 'image';
 
         if ($type === 'video') {
-            $url = $this->cloudinaryService->uploadVideo($file, 'media/videos');
+            $upload = $this->cloudinaryService->uploadVideo($file, 'media/videos');
         } else {
-            $url = $this->cloudinaryService->uploadImage($file, 'media/images');
+            $upload = $this->cloudinaryService->uploadImage($file, 'media/images');
         }
 
         return $this->model->create([
             'user_id' => Auth::id(),
             'title' => $data['title'],
-            'url' => $url,
+            'url' => $upload['url'],
+            'public_id' => $upload['public_id'],
             'type' => $type,
         ]);
     }
@@ -42,9 +43,14 @@ class MediaRepository implements MediaRepositoryInterface
     {
         $media = $this->model->where('user_id', Auth::id())->findOrFail($id);
         
-        // Extract public_id from URL if not stored (though I added the field, I'm not populating it in store yet)
-        // For now, just delete the DB record. 
-        // Improvement: Store public_id during upload.
+        if ($media->public_id) {
+            try {
+                $this->cloudinaryService->delete($media->public_id, $media->type);
+            } catch (Exception $e) {
+                // Log error but continue with DB deletion
+                report($e);
+            }
+        }
         
         return $media->delete();
     }

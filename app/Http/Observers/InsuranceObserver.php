@@ -13,14 +13,16 @@ class InsuranceObserver
     public function creating(Insurance $insurance): void
     {
         if(request()->hasFile('logo')) {
-            $insurance->logo = app(CloudinaryService::class)->uploadImage(request()->file('logo'));
+            $upload = app(CloudinaryService::class)->uploadImage(request()->file('logo'));
+            $insurance->logo = $upload['url'];
         }
     }
 
     public function updating(Insurance $insurance): void
     {   
         if(request()->hasFile('logo') && request()->file('logo')->isValid()) {
-            $insurance->logo = app(CloudinaryService::class)->uploadImage(request()->file('logo'));
+            $upload = app(CloudinaryService::class)->uploadImage(request()->file('logo'));
+            $insurance->logo = $upload['url'];
         }
     }
 

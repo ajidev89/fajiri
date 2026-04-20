@@ -13,14 +13,16 @@ class NeedObserver
     public function creating(Need $need): void
     {
         if(request()->hasFile('image')) {
-            $need->image = app(CloudinaryService::class)->uploadImage(request()->file('image'));
+            $upload = app(CloudinaryService::class)->uploadImage(request()->file('image'));
+            $need->image = $upload['url'];
         }
     }
 
     public function updating(Need $need): void
     {   
         if(request()->hasFile('image') && request()->file('image')->isValid()) {
-            $need->image = app(CloudinaryService::class)->uploadImage(request()->file('image'));
+            $upload = app(CloudinaryService::class)->uploadImage(request()->file('image'));
+            $need->image = $upload['url'];
         }
     }
 

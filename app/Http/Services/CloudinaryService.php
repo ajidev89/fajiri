@@ -30,7 +30,7 @@ class CloudinaryService
      */
     public function uploadMultiple(array $files, string $folder = 'uploads'): array
     {
-        $urls = [];
+        $results = [];
 
         foreach ($files as $file) {
             if (! $file instanceof UploadedFile) {
@@ -45,16 +45,19 @@ class CloudinaryService
                 ]
             );
 
-            $urls[] = $upload['secure_url'];
+            $results[] = [
+                'url' => $upload['secure_url'],
+                'public_id' => $upload['public_id'],
+            ];
         }
 
-        return $urls;
+        return $results;
     }
 
     /**
      * Upload single image file
      */
-    public function uploadImage(UploadedFile $file, string $folder = 'uploads'): string
+    public function uploadImage(UploadedFile $file, string $folder = 'uploads'): array
     {
         $upload = $this->cloudinary->uploadApi()->upload(
             $file->getRealPath(),
@@ -64,13 +67,16 @@ class CloudinaryService
             ]
         );
 
-        return $upload['secure_url'];
+        return [
+            'url' => $upload['secure_url'],
+            'public_id' => $upload['public_id'],
+        ];
     }
 
     /**
      * Upload video file
      */
-    public function uploadVideo(UploadedFile $file, string $folder = 'videos'): string
+    public function uploadVideo(UploadedFile $file, string $folder = 'videos'): array
     {
       
         $upload = $this->cloudinary->uploadApi()->upload(
@@ -81,7 +87,10 @@ class CloudinaryService
             ]
         );
 
-        return $upload['secure_url'];
+        return [
+            'url' => $upload['secure_url'],
+            'public_id' => $upload['public_id'],
+        ];
     }
 
     /**

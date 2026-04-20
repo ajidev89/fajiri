@@ -41,7 +41,8 @@ class PartnerRepository implements PartnerRepositoryInterface
         try {
             $logoUrl = null;
             if ($request->hasFile('logo')) {
-                $logoUrl = $this->cloudinaryService->uploadImage($request->file('logo'), 'partners');
+                $upload = $this->cloudinaryService->uploadImage($request->file('logo'), 'partners');
+                $logoUrl = $upload['url'];
             }
 
             $partner = $this->partner->create([
@@ -67,7 +68,8 @@ class PartnerRepository implements PartnerRepositoryInterface
             $data = $request->only(['name', 'about', 'website', 'focus_areas', 'impact']);
 
             if ($request->hasFile('logo')) {
-                $data['logo'] = $this->cloudinaryService->uploadImage($request->file('logo'), 'partners');
+                $upload = $this->cloudinaryService->uploadImage($request->file('logo'), 'partners');
+                $data['logo'] = $upload['url'];
             }
 
             $partner->update($data);

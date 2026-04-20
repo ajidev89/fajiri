@@ -62,7 +62,8 @@ class DisbursementRepository implements DisbursementRepositoryInterface
             throw new Exception("Only pending disbursements can be processed.");
         }
 
-        $proofUrl = $this->cloudinaryService->uploadImage($proofFile, 'disbursements/proofs');
+        $upload = $this->cloudinaryService->uploadImage($proofFile, 'disbursements/proofs');
+        $proofUrl = $upload['url'];
 
         $disbursement->update([
             'status' => Status::COMPLETED,

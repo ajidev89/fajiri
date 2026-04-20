@@ -60,7 +60,7 @@ class KycRepository implements KycRepositoryInterface {
         $document = $this->document->create([
             "user_id" => $this->user()->id,
             "type" => $request->type,
-            "url" => $url,
+            "url" => $url['url'],
             "provider" => $session->provider,
             "verification_session_id" => $session->id,
             "name" => $file->getClientOriginalName(),
