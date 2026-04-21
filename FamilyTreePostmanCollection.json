@@ -1,0 +1,227 @@
+{
+	"info": {
+		"_postman_id": "8d8f4360-5ab7-4847-85a0-c62e9006b29c",
+		"name": "Fajiri Family Tree API",
+		"description": "API documentation for the Family Tree module in the Fajiri platform. Includes endpoints for managing relatives and building a hierarchical family structure.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "List Family Members",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/family-tree",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"family-tree"
+					]
+				},
+				"description": "Fetches a nested list of all family members for the authenticated user. Includes hierarchical relationships (children)."
+			},
+			"response": []
+		},
+		{
+			"name": "Add Family Member",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"full_name\": \"Jane Doe\",\n    \"dob\": \"1995-05-15\",\n    \"gender\": \"female\",\n    \"relationship\": \"daughter\",\n    \"parent_id\": null,\n    \"is_alive\": true,\n    \"married_date\": null,\n    \"photo\": null,\n    \"note\": \"This is my daughter\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/family-tree",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"family-tree"
+					]
+				},
+				"description": "Adds a new member to the family tree. \n\n**Fields:**\n- `relationship`: son, daughter, partner, spouse, father, mother\n- `gender`: male, female\n- `is_alive`: boolean"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Family Member Details",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/family-tree/:id",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"family-tree",
+						":id"
+					],
+					"variable": [
+						{
+							"key": "id",
+							"value": "1",
+							"description": "Family Member ID"
+						}
+					]
+				},
+				"description": "Fetches the details of a specific family member, including their parent and children."
+			},
+			"response": []
+		},
+		{
+			"name": "Update Family Member",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"full_name\": \"Jane Doe Smith\",\n    \"dob\": \"1995-05-15\",\n    \"gender\": \"female\",\n    \"relationship\": \"daughter\",\n    \"parent_id\": null,\n    \"is_alive\": false,\n    \"death_date\": \"2024-01-01\",\n    \"married_date\": \"2020-06-20\",\n    \"photo\": \"https://example.com/photo.jpg\",\n    \"note\": \"Updated note\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/api/family-tree/:id",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"family-tree",
+						":id"
+					],
+					"variable": [
+						{
+							"key": "id",
+							"value": "1",
+							"description": "Family Member ID"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Family Member",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/family-tree/:id",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"family-tree",
+						":id"
+					],
+					"variable": [
+						{
+							"key": "id",
+							"value": "1",
+							"description": "Family Member ID"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{auth_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"key": "auth_token",
+			"value": "YOUR_TOKEN_HERE",
+			"type": "string"
+		}
+	]
+}

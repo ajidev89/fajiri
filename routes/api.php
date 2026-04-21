@@ -22,6 +22,7 @@ use App\Http\Controllers\API\PartnerController;
 use App\Http\Controllers\API\DisbursementController;
 use App\Http\Controllers\API\FundraiserController;
 use App\Http\Controllers\API\MediaController;
+use App\Http\Controllers\API\FamilyMemberController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -246,5 +247,15 @@ Route::controller(DisbursementController::class)->middleware(['auth:sanctum'])->
         Route::post('/', 'store');
         Route::post('/{id}/disburse', 'disburse')->middleware(['super-admin']);
         Route::post('/{id}/reject', 'reject')->middleware(['super-admin']);
+    });
+});
+
+Route::controller(FamilyMemberController::class)->middleware(['auth:sanctum'])->group(function () {
+    Route::group(['prefix' => 'family-tree'], function () {
+        Route::get('/', 'index');
+        Route::post('/', 'store');
+        Route::get('/{id}', 'show');
+        Route::put('/{id}', 'update');
+        Route::delete('/{id}', 'destroy');
     });
 });

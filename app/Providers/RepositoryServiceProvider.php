@@ -39,6 +39,8 @@ use App\Http\Repository\Contracts\CategoryRepositoryInterface;
 use App\Http\Repository\CategoryRepository;
 use App\Http\Repository\Contracts\PostRepositoryInterface;
 use App\Http\Repository\PostRepository;
+use App\Http\Repository\Contracts\FamilyMemberRepositoryInterface;
+use App\Http\Repository\FamilyMemberRepository;
 
 class RepositoryServiceProvider extends ServiceProvider
 {
@@ -68,6 +70,7 @@ class RepositoryServiceProvider extends ServiceProvider
         \App\Http\Repository\Contracts\DisbursementRepositoryInterface::class => \App\Http\Repository\DisbursementRepository::class,
         \App\Http\Repository\Contracts\FundraiserRepositoryInterface::class => \App\Http\Repository\FundraiserRepository::class,
         \App\Http\Repository\Contracts\MediaRepositoryInterface::class => \App\Http\Repository\MediaRepository::class,
+        FamilyMemberRepositoryInterface::class => FamilyMemberRepository::class,
     ];
     /**
      * Register services.
