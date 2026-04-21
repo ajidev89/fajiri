@@ -30,6 +30,9 @@ class PostRepository implements PostRepositoryInterface
             ->when($request->is_featured, function ($query) use ($request) {
                 return $query->where('is_featured', $request->is_featured);
             })
+            ->when($request->added_by, function ($query) use ($request) {
+                return $query->where('user_id', $request->added_by);
+            })
             ->latest()
             ->paginate($request->per_page ?? 15);
 

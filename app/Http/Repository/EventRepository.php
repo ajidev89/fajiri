@@ -37,6 +37,9 @@ class EventRepository implements EventRepositoryInterface
             ->when($request->is_featured, function ($query) use ($request) {
                 return $query->where('is_featured', $request->is_featured);
             })
+            ->when($request->added_by, function ($query) use ($request) {
+                return $query->where('added_by', $request->added_by);
+            })
             ->latest()
             ->paginate($request->per_page ?? 15);
 
