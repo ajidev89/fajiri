@@ -28,7 +28,7 @@ class FamilyMemberRequest extends FormRequest
             'full_name' => 'required|string|max:255',
             'dob' => 'required|date',
             'gender' => 'required|string|in:male,female',
-            'photo' => 'nullable|string',
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'relationship' => ['required', new Enum(Relationship::class)],
             'married_date' => 'nullable|date',
             'is_alive' => 'required|boolean',

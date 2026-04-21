@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Http\Traits\Observable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class FamilyMember extends Model
 {
-    use HasFactory;
+    use HasFactory, Observable;
 
     protected $fillable = [
         'user_id',
