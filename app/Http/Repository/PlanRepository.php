@@ -10,6 +10,13 @@ use Illuminate\Support\Facades\DB;
 class PlanRepository implements PlanRepositoryInterface
 {
     use AuthUserTrait;
+
+    protected $revenueCatService;
+
+    public function __construct(\App\Http\Services\RevenueCatService $revenueCatService)
+    {
+        $this->revenueCatService = $revenueCatService;
+    }
     public function all()
     {
         $user = $this->user();
@@ -33,13 +40,52 @@ class PlanRepository implements PlanRepositoryInterface
     public function store(array $data)
     {
         $data['slug'] = \Illuminate\Support\Str::slug($data['name']);
-        return Plan::create($data);
+        $plan = Plan::create($data);
+
+        // Sync with RevenueCat
+        $this->syncWithRevenueCat($plan);
+
+        return $plan;
+    }
+
+    protected function syncWithRevenueCat(Plan $plan)
+    {
+        try {
+            $entitlementId = config('services.revenuecat.default_entitlement_id');
+            $offeringId = config('services.revenuecat.default_offering_id');
+
+            // 1. Ensure shared Entitlement exists
+            $this->revenueCatService->ensureEntitlementExists($entitlementId);
+            $plan->rc_entitlement_id = $entitlementId;
+
+            // 2. Ensure shared Offering exists
+            $this->revenueCatService->ensureOfferingExists($offeringId);
+            $plan->rc_offering_id = $offeringId;
+
+            // 3. Create unique Package for this Plan
+            $package = $this->revenueCatService->createPackage($offeringId, $plan->slug, $plan->name);
+            if ($package) {
+                $plan->rc_package_id = $package['id'];
+            }
+
+            // 4. Link Store Products if provided
+            // Note: This part requires the Product to be registered in RevenueCat first.
+            // If the user provided rc_product_id_ios/android, we assume they are store identifiers.
+            
+            $plan->save();
+        } catch (\Exception $e) {
+            \Log::error('RevenueCat Sync Error: ' . $e->getMessage());
+        }
     }
 
     public function update($id, array $data)
     {
         $plan = $this->findById($id);
         $plan->update($data);
+
+        // Optional: Re-sync if critical fields changed
+        $this->syncWithRevenueCat($plan);
+
         return $plan;
     }
 

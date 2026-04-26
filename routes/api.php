@@ -23,6 +23,7 @@ use App\Http\Controllers\API\DisbursementController;
 use App\Http\Controllers\API\FundraiserController;
 use App\Http\Controllers\API\MediaController;
 use App\Http\Controllers\API\FamilyMemberController;
+use App\Http\Controllers\API\RevenueCatWebhookController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -147,6 +148,7 @@ Route::controller(PlanController::class)->middleware(['auth:sanctum'])->group(fu
 
 Route::controller(PaymentController::class)->group(function () {
     Route::post('/payments/webhook', 'webhook');
+    Route::post('/revenuecat/webhook', [RevenueCatWebhookController::class, 'handle']);
     Route::group(['middleware' => ['auth:sanctum'], 'prefix' => 'payments'], function () {
         Route::post('/initialize', 'initialize');
         Route::get('/verify', 'verify');

@@ -64,6 +64,14 @@ return [
         'key' => env('EXCHANGERATE_API_KEY'),
         'base_url' => 'https://v6.exchangerate-api.com/v6/',
     ],
+    
+    'revenuecat' => [
+        'api_key' => env('REVENUE_CAT_API_KEY'),
+        'project_id' => env('REVENUE_CAT_PROJECT_ID'),
+        'webhook_key' => env('REVENUE_CAT_WEBHOOK_KEY'),
+        'default_entitlement_id' => env('REVENUE_CAT_ENTITLEMENT_ID', 'premium'),
+        'default_offering_id' => env('REVENUE_CAT_OFFERING_ID', 'default'),
+    ],
 
 
 ];

@@ -29,6 +29,8 @@ class UpdateRequest extends ApiRequest
             'duration' => 'sometimes|integer|min:1',
             'features' => 'sometimes|array',
             'status' => 'sometimes|boolean',
+            'rc_product_id_ios' => 'sometimes|string|max:255',
+            'rc_product_id_android' => 'sometimes|string|max:255',
         ];
     }
 }

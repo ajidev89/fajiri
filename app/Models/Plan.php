@@ -21,6 +21,11 @@ class Plan extends Model
         'duration',
         'features',
         'status',
+        'rc_entitlement_id',
+        'rc_offering_id',
+        'rc_package_id',
+        'rc_product_id_ios',
+        'rc_product_id_android',
     ];
 
     protected $casts = [
