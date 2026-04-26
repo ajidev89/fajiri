@@ -47,6 +47,52 @@ class RevenueCatService
         return $response->successful() || $response->status() === 409;
     }
 
+    /**
+     * Register a product in RevenueCat following v2 spec
+     */
+    public function registerProduct($storeIdentifier, $displayName, $appId, $durationDays = null)
+    {
+        if (!$appId) return null;
+
+        $payload = [
+            'app_id' => $appId,
+            'store_identifier' => $storeIdentifier,
+            'display_name' => $displayName,
+            'type' => 'subscription', // Default to subscription
+        ];
+
+        if ($durationDays) {
+            $payload['subscription'] = [
+                'duration' => $this->mapDaysToISO8601($durationDays)
+            ];
+        }
+
+        $response = Http::withHeaders($this->headers())
+            ->post("{$this->baseUrl}/projects/{$this->projectId}/products", $payload);
+
+        if ($response->successful()) {
+            return $response->json()['id'];
+        }
+
+        if ($response->status() === 409) {
+            // Already exists, return the ID if provided in error or fallback
+            return $response->json()['id'] ?? $storeIdentifier; 
+        }
+
+        Log::error('RevenueCat Create Product Failed', ['response' => $response->json(), 'payload' => $payload]);
+        return null;
+    }
+
+    protected function mapDaysToISO8601($days)
+    {
+        if ($days >= 365) return 'P1Y';
+        if ($days >= 180) return 'P6M';
+        if ($days >= 90) return 'P3M';
+        if ($days >= 30) return 'P1M';
+        if ($days >= 7) return 'P1W';
+        return 'P' . $days . 'D';
+    }
+
     public function createPackage($offeringId, $lookupKey, $displayName)
     {
         $response = Http::withHeaders($this->headers())
@@ -56,52 +102,25 @@ class RevenueCatService
             ]);
 
         if ($response->successful() || $response->status() === 409) {
-            return ['id' => $lookupKey];
+            return $lookupKey;
         }
 
-        Log::error('RevenueCat Create Package Failed', ['response' => $response->json(), 'offering' => $offeringId]);
         return null;
-    }
-
-    public function registerProduct($appId, $storeIdentifier, $displayName, $type = 'subscription')
-    {
-        // App ID is the RevenueCat App ID (e.g. app123)
-        $response = Http::withHeaders($this->headers())
-            ->post("{$this->baseUrl}/projects/{$this->projectId}/products", [
-                'app_id' => $appId,
-                'store_identifier' => $storeIdentifier,
-                'display_name' => $displayName,
-                'type' => $type,
-            ]);
-
-        if ($response->successful() || $response->status() === 409) {
-            // Note: v2 API might return a generated 'prod_xxx' ID or we use store_identifier
-            return $response->json();
-        }
-
-        Log::error('RevenueCat Register Product Failed', ['response' => $response->json()]);
-        return null;
-    }
-
-    public function linkProductToEntitlement($entitlementId, $productId)
-    {
-        $response = Http::withHeaders($this->headers())
-            ->post("{$this->baseUrl}/projects/{$this->projectId}/entitlements/{$entitlementId}/products", [
-                'product_id' => $productId,
-            ]);
-
-        return $response->successful() || $response->status() === 409;
     }
 
     public function attachProductToPackage($offeringId, $packageId, $productId)
     {
-        // In some API versions, this might be a different endpoint.
-        // Assuming v2 allows linking products to packages:
-        $response = Http::withHeaders($this->headers())
+        return Http::withHeaders($this->headers())
             ->post("{$this->baseUrl}/projects/{$this->projectId}/offerings/{$offeringId}/packages/{$packageId}/products", [
                 'product_id' => $productId,
-            ]);
+            ])->successful();
+    }
 
-        return $response->successful() || $response->status() === 409;
+    public function linkProductToEntitlement($entitlementId, $productId)
+    {
+        return Http::withHeaders($this->headers())
+            ->post("{$this->baseUrl}/projects/{$this->projectId}/entitlements/{$entitlementId}/products", [
+                'product_id' => $productId,
+            ])->successful();
     }
 }

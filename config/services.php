@@ -71,6 +71,8 @@ return [
         'webhook_key' => env('REVENUE_CAT_WEBHOOK_KEY'),
         'default_entitlement_id' => env('REVENUE_CAT_ENTITLEMENT_ID', 'premium'),
         'default_offering_id' => env('REVENUE_CAT_OFFERING_ID', 'default'),
+        'app_id_ios' => env('REVENUE_CAT_APP_ID_IOS'),
+        'app_id_android' => env('REVENUE_CAT_APP_ID_ANDROID'),
     ],
 
 

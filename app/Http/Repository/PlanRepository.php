@@ -53,24 +53,39 @@ class PlanRepository implements PlanRepositoryInterface
         try {
             $entitlementId = config('services.revenuecat.default_entitlement_id');
             $offeringId = config('services.revenuecat.default_offering_id');
+            $appIdIos = config('services.revenuecat.app_id_ios');
+            $appIdAndroid = config('services.revenuecat.app_id_android');
 
-            // 1. Ensure shared Entitlement exists
+            // 1. Ensure shared Entitlement & Offering exist
             $this->revenueCatService->ensureEntitlementExists($entitlementId);
-            $plan->rc_entitlement_id = $entitlementId;
-
-            // 2. Ensure shared Offering exists
             $this->revenueCatService->ensureOfferingExists($offeringId);
+            
+            $plan->rc_entitlement_id = $entitlementId;
             $plan->rc_offering_id = $offeringId;
 
-            // 3. Create unique Package for this Plan
-            $package = $this->revenueCatService->createPackage($offeringId, $plan->slug, $plan->name);
-            if ($package) {
-                $plan->rc_package_id = $package['id'];
+            // 2. Create the Package (The Wrapper)
+            $packageId = $this->revenueCatService->createPackage($offeringId, $plan->slug, $plan->name);
+            if ($packageId) {
+                $plan->rc_package_id = $packageId;
             }
 
-            // 4. Link Store Products if provided
-            // Note: This part requires the Product to be registered in RevenueCat first.
-            // If the user provided rc_product_id_ios/android, we assume they are store identifiers.
+            // 3. Register and Link iOS Product
+            if ($plan->rc_product_id_ios && $appIdIos) {
+                $rcProdId = $this->revenueCatService->registerProduct($plan->rc_product_id_ios, $plan->name . " (iOS)", $appIdIos, $plan->duration);
+                if ($rcProdId) {
+                    $this->revenueCatService->linkProductToEntitlement($entitlementId, $rcProdId);
+                    $this->revenueCatService->attachProductToPackage($offeringId, $plan->slug, $rcProdId);
+                }
+            }
+
+            // 4. Register and Link Android Product
+            if ($plan->rc_product_id_android && $appIdAndroid) {
+                $rcProdId = $this->revenueCatService->registerProduct($plan->rc_product_id_android, $plan->name . " (Android)", $appIdAndroid, $plan->duration);
+                if ($rcProdId) {
+                    $this->revenueCatService->linkProductToEntitlement($entitlementId, $rcProdId);
+                    $this->revenueCatService->attachProductToPackage($offeringId, $plan->slug, $rcProdId);
+                }
+            }
             
             $plan->save();
         } catch (\Exception $e) {

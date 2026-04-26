@@ -8,14 +8,23 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class RevenueCatWebhookController extends Controller
 {
     public function handle(Request $request)
     {
         $webhookKey = config('services.revenuecat.webhook_key');
-        // check header for signature verification
-        if ($request->bearerToken() !== $webhookKey) {
+        $authorizationHeader = $request->header('Authorization');
+        info("Authorization Header: " . $authorizationHeader);
+        // Extract Bearer token
+        if (Str::startsWith($authorizationHeader, 'Bearer ')) {
+            $token = Str::after($authorizationHeader, 'Bearer ');
+        } else {
+            $token = $authorizationHeader;
+        }
+
+        if ($token !== $webhookKey) {
             return response()->json(['message' => 'Invalid webhook signature'], 400);
         }
 
