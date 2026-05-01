@@ -33,13 +33,6 @@ class PlanRepository implements PlanRepositoryInterface
             $query->where('account_type', $filters['account_type']);
         }
 
-        if (isset($filters['currency'])) {
-            $query->where('currency', $filters['currency']);
-        } else {
-            $currency = ($user && $user->wallet) ? $user->wallet->currency : 'NGN';
-            $query->where('currency', $currency);
-        }
-
         return $query->get();
     }
 
