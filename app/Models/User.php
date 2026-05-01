@@ -187,9 +187,9 @@ class User extends Authenticatable
         return $this->hasMany(Notification::class);
     }
 
-    public function transactions(): HasMany
+    public function transactions(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
     {
-        return $this->hasMany(Transaction::class);
+        return $this->hasManyThrough(Transaction::class, Wallet::class);
     }
 
     public function canUsePaystack() {

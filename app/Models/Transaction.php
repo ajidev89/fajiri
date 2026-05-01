@@ -30,8 +30,8 @@ class Transaction extends Model
         return $this->belongsTo(Wallet::class);
     }
 
-    public function user(): BelongsTo
+    public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->hasOneThrough(User::class, Wallet::class, 'id', 'id', 'wallet_id', 'user_id');
     }
 }
