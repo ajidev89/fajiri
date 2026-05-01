@@ -31,8 +31,7 @@ class StoreRequest extends ApiRequest
             'duration' => 'required|integer|min:1',
             'features' => 'nullable|array',
             'status' => 'nullable|boolean',
-            'rc_product_id_ios' => 'nullable|string|max:255',
-            'rc_product_id_android' => 'nullable|string|max:255',
+            'rc_product_id_ios' => 'nullable|max:255',
         ];
     }
 }

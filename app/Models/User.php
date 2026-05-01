@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use App\Enums\User\AccountType;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Str;
 
@@ -26,6 +27,7 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
+        'member_id',
         'username',
         'email',
         'email_verified_at',
@@ -64,6 +66,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'phone_verified_at' => 'datetime',
             'password' => 'hashed',
+            'account_type' => AccountType::class,
         ];
     }
 
@@ -73,7 +76,31 @@ class User extends Authenticatable
             if (!$user->referral_code) {
                 $user->referral_code = static::generateUniqueReferralCode();
             }
+
+            if (!$user->member_id) {
+                $user->member_id = static::generateUniqueMemberId($user->account_type);
+            }
         });
+    }
+
+    public static function generateUniqueMemberId($accountType)
+    {
+        // Handle both string and enum instance
+        $type = $accountType instanceof AccountType ? $accountType->value : $accountType;
+
+        $prefix = match ($type) {
+            AccountType::IDENTIFIED_MEMBERSHIP->value => 'FIM',
+            AccountType::PROJECT_MEMBERSHIP->value => 'FPM',
+            AccountType::CORPORATE_MEMBERSHIP->value => 'FCP',
+            default => 'USR',
+        };
+
+        do {
+            $number = str_pad(mt_rand(1, 999999), 6, '0', STR_PAD_LEFT);
+            $memberId = $prefix . '_' . $number;
+        } while (static::where('member_id', $memberId)->exists());
+
+        return $memberId;
     }
 
     public static function generateUniqueReferralCode()
