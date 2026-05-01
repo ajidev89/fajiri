@@ -51,6 +51,6 @@ class UsersController extends Controller
 
     public function transactions(User $user){
         $transactions = $this->usersRepositoryInterface->transactions($user);
-        return $this->handleSuccessCollectionResponse("Successfully fetched user transactions", \App\Http\Resources\TransactionResource::collection($transactions));
+        return $this->handleSuccessCollectionResponse("Successfully fetched user transactions", \App\Http\Resources\Transaction\TransactionResource::collection($transactions));
     }
 }
