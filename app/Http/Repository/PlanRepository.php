@@ -46,13 +46,10 @@ class PlanRepository implements PlanRepositoryInterface
         $data['slug'] = \Illuminate\Support\Str::slug($data['name']);
         $plan = Plan::create($data);
 
-        // Sync with RevenueCat
-        $this->syncWithRevenueCat($plan);
-
         return $plan;
     }
 
-    protected function syncWithRevenueCat(Plan $plan)
+    public function syncWithRevenueCat(Plan $plan)
     {
         try {
             $entitlementId = config('services.revenuecat.default_entitlement_id');
@@ -101,9 +98,6 @@ class PlanRepository implements PlanRepositoryInterface
     {
         $plan = $this->findById($id);
         $plan->update($data);
-
-        // Optional: Re-sync if critical fields changed
-        $this->syncWithRevenueCat($plan);
 
         return $plan;
     }
