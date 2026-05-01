@@ -36,7 +36,7 @@ class DonationController extends Controller
     {
         if ($type === 'campaign') {
             return Campaign::findOrFail($id);
-        } elseif ($type === 'need') {
+        } elseif ($type === 'needs') {
             return Need::findOrFail($id);
         }
         abort(404, 'Invalid donation type');
