@@ -23,6 +23,8 @@ class StoreRequest extends ApiRequest
     {
         return [
             'name' => 'required|string|max:255|unique:plans,name',
+            'level' => 'required|string|max:255',
+            'account_type' => ['required', new \Illuminate\Validation\Rules\Enum(\App\Enums\User\AccountType::class)],
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
             'currency' => 'required|string|max:3',

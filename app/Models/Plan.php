@@ -14,6 +14,8 @@ class Plan extends Model
 
     protected $fillable = [
         'name',
+        'level',
+        'account_type',
         'slug',
         'description',
         'price',
@@ -32,6 +34,7 @@ class Plan extends Model
         'features' => 'array',
         'status' => 'boolean',
         'price' => 'decimal:2',
+        'account_type' => \App\Enums\User\AccountType::class,
     ];
 
     public function users(): BelongsToMany
@@ -39,5 +42,15 @@ class Plan extends Model
         return $this->belongsToMany(User::class, 'user_plans')
             ->withPivot(['id', 'started_at', 'expires_at', 'status'])
             ->withTimestamps();
+    }
+
+    public function scopeLevel($query, $level)
+    {
+        return $query->where('level', $level);
+    }
+
+    public function scopeAccountType($query, $accountType)
+    {
+        return $query->where('account_type', $accountType);
     }
 }

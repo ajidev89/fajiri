@@ -23,6 +23,8 @@ class UpdateRequest extends ApiRequest
     {
         return [
             'name' => 'sometimes|string|max:255',
+            'level' => 'sometimes|string|max:255',
+            'account_type' => ['sometimes', new \Illuminate\Validation\Rules\Enum(\App\Enums\User\AccountType::class)],
             'description' => 'sometimes|string',
             'price' => 'sometimes|numeric|min:0',
             'currency' => 'sometimes|string|max:3',

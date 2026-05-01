@@ -18,9 +18,9 @@ class PlanController extends Controller
         $this->planRepository = $planRepository;
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $plans = $this->planRepository->all();
+        $plans = $this->planRepository->all($request->only(['account_type', 'currency']));
         return PlanResource::collection($plans);
     }
 

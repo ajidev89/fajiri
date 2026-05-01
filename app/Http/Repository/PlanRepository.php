@@ -17,19 +17,30 @@ class PlanRepository implements PlanRepositoryInterface
     {
         $this->revenueCatService = $revenueCatService;
     }
-    public function all()
+    public function all(array $filters = [])
     {
         $user = $this->user();
+        $query = Plan::query();
 
-        // Admin should see all plans
+        // Admin should see all plans by default, unless filtered
         if ($user && $user->role && $user->role->slug === 'admin') {
-            return Plan::all();
+            // Keep query as is
+        } else {
+            $query->where('status', true);
         }
 
-        // Users see active plans in their currency
-        $currency = ($user && $user->wallet) ? $user->wallet->currency : 'NGN';
+        if (isset($filters['account_type'])) {
+            $query->where('account_type', $filters['account_type']);
+        }
 
-        return Plan::where('status', true)->where('currency', $currency)->get();
+        if (isset($filters['currency'])) {
+            $query->where('currency', $filters['currency']);
+        } else {
+            $currency = ($user && $user->wallet) ? $user->wallet->currency : 'NGN';
+            $query->where('currency', $currency);
+        }
+
+        return $query->get();
     }
 
     public function findById($id)

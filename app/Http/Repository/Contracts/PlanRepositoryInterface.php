@@ -4,7 +4,7 @@ namespace App\Http\Repository\Contracts;
 
 interface PlanRepositoryInterface
 {
-    public function all();
+    public function all(array $filters = []);
     public function findById($id);
     public function store(array $data);
     public function update($id, array $data);

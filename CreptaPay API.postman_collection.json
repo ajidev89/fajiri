@@ -1,0 +1,1158 @@
+{
+  "info": {
+    "_postman_id": "644fab05-2c6e-4c50-a9f4-130878787d6e",
+    "name": "CreptaPay API",
+    "description": "|  |  |\n| --- | --- |\n|  |  |",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "36810350"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"full_name\": \"John Doe\",\n    \"email\": \"john@example.com\",\n    \"account_type\": \"business\",\n    \"company_name\": \"Doe Enterprises\",\n    \"password\": \"password123\",\n    \"password_confirmation\": \"password123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"ajidagba21@gmail.com\",\n    \"password\": \"ajiDev1234@\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Send OTP",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"john@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/otp/send",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "otp",
+                "send"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"john@example.com\",\n    \"code\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/otp/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "otp",
+                "verify"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Business",
+      "item": [
+        {
+          "name": "Create Business",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"My New Business\",\n    \"status\": \"active\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/business",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "business"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Businesses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/business",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "business"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Business",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/business/:businessId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "business",
+                ":businessId"
+              ],
+              "variable": [
+                {
+                  "key": "businessId",
+                  "value": "BUSINESS_ID_HERE"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Wallet",
+      "item": [
+        {
+          "name": "List Wallets",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/business/:businessId/wallet",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "business",
+                ":businessId",
+                "wallet"
+              ],
+              "variable": [
+                {
+                  "key": "businessId",
+                  "value": "BUSINESS_ID_HERE"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Invoice",
+      "item": [
+        {
+          "name": "Create Invoice",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Service Fee\",\n    \"status\": \"pending\",\n    \"items\": [\n        {\n            \"name\": \"Web Development\",\n            \"amount\": 500,\n            \"quantity\": 1\n        }\n    ],\n    \"customer\": {\n        \"first_name\": \"Jane\",\n        \"last_name\": \"Smith\",\n        \"email\": \"jane@example.com\",\n        \"phone\": \"+1234567890\"\n    },\n    \"expires_at\": \"2025-12-31\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/business/:businessId/invoice",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "business",
+                ":businessId",
+                "invoice"
+              ],
+              "variable": [
+                {
+                  "key": "businessId",
+                  "value": "BUSINESS_ID_HERE"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Invoices",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/business/:businessId/invoice",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "business",
+                ":businessId",
+                "invoice"
+              ],
+              "variable": [
+                {
+                  "key": "businessId",
+                  "value": "BUSINESS_ID_HERE"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Invoice",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name\": \"Updated Service Fee\",\n    \"status\": \"paid\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/business/invoice/:invoice",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "business",
+                "invoice",
+                ":invoice"
+              ],
+              "variable": [
+                {
+                  "key": "businessId",
+                  "value": "BUSINESS_ID_HERE"
+                },
+                {
+                  "key": "invoice",
+                  "value": "INVOICE_ID_HERE"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Invoice",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/business/invoice/:invoice",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "business",
+                "invoice",
+                ":invoice"
+              ],
+              "variable": [
+                {
+                  "key": "businessId",
+                  "value": "BUSINESS_ID_HERE"
+                },
+                {
+                  "key": "invoice",
+                  "value": "INVOICE_ID_HERE"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "API Keys",
+      "item": [
+        {
+          "name": "List API Keys",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/business/:businessId/api-key",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "business",
+                ":businessId",
+                "api-key"
+              ],
+              "variable": [
+                {
+                  "key": "businessId",
+                  "value": "BUSINESS_ID_HERE"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "List API Keys",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/business/:businessId/api-key",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "business",
+                    ":businessId",
+                    "api-key"
+                  ],
+                  "variable": [
+                    {
+                      "key": "businessId",
+                      "value": "6999d617806cebde2b0b6b8d"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "575"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"23f-Pn3PzJTzpNozJY15cbc7WoaKncI\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Mon, 02 Mar 2026 13:42:01 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Successfully fetched API keys\",\n    \"data\": {\n        \"business\": \"6999d617806cebde2b0b6b8d\",\n        \"keys\": [\n            {\n                \"name\": \"Default Sandbox Key\",\n                \"publicKey\": \"pk_test_xajsq168raawb685afv1p\",\n                \"maskedKey\": \"sk_test_*****************htg5\",\n                \"last4\": \"htg5\",\n                \"environment\": \"sandbox\",\n                \"status\": \"active\",\n                \"permissions\": [\n                    \"*\"\n                ]\n            },\n            {\n                \"name\": \"Default Production Key\",\n                \"publicKey\": \"pk_live_p8tglaco1i8a2qzp3xyk3\",\n                \"maskedKey\": \"sk_live_*****************r8u3\",\n                \"last4\": \"r8u3\",\n                \"environment\": \"production\",\n                \"status\": \"active\",\n                \"permissions\": [\n                    \"*\"\n                ]\n            }\n        ],\n        \"createdAt\": \"2026-03-02T09:41:39.558Z\",\n        \"updatedAt\": \"2026-03-02T09:41:39.558Z\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Reveal Secret Key",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"publicKey\": \"pk_live_your_public_key_here\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/business/:businessId/api-key/reveal",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "business",
+                ":businessId",
+                "api-key",
+                "reveal"
+              ],
+              "variable": [
+                {
+                  "key": "businessId",
+                  "value": "BUSINESS_ID_HERE"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Reveal Secret Key",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{token}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"publicKey\": \"pk_test_xajsq168raawb685afv1p\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/business/:businessId/api-key/reveal",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "business",
+                    ":businessId",
+                    "api-key",
+                    "reveal"
+                  ],
+                  "variable": [
+                    {
+                      "key": "businessId",
+                      "value": "6999d617806cebde2b0b6b8d"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "99"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"63-bjZZGmJ9+pymNMTbIdyBw9VyK0Y\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Mon, 02 Mar 2026 13:52:12 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Successfully revealed secret key\",\n    \"data\": {\n        \"secretKey\": \"sk_test_1iqxxllfs1moqnub3htg5\"\n    }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Webhooks",
+      "item": [
+        {
+          "name": "List Webhooks",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/business/:businessId/webhook",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "business",
+                ":businessId",
+                "webhook"
+              ],
+              "variable": [
+                {
+                  "key": "businessId",
+                  "value": "BUSINESS_ID_HERE"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"url\": \"https://your-server.com/webhook\",\n    \"events\": [\"invoice.paid\", \"payment.created\"]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/business/:businessId/webhook",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "business",
+                ":businessId",
+                "webhook"
+              ],
+              "variable": [
+                {
+                  "key": "businessId",
+                  "value": "BUSINESS_ID_HERE"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Webhook",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"url\": \"https://your-new-server.com/webhook\",\n    \"status\": \"inactive\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/business/:businessId/webhook/:webhookId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "business",
+                ":businessId",
+                "webhook",
+                ":webhookId"
+              ],
+              "variable": [
+                {
+                  "key": "businessId",
+                  "value": "BUSINESS_ID_HERE"
+                },
+                {
+                  "key": "webhookId",
+                  "value": "WEBHOOK_ID_HERE"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Webhook",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/business/:businessId/webhook/:webhookId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "business",
+                ":businessId",
+                "webhook",
+                ":webhookId"
+              ],
+              "variable": [
+                {
+                  "key": "businessId",
+                  "value": "BUSINESS_ID_HERE"
+                },
+                {
+                  "key": "webhookId",
+                  "value": "WEBHOOK_ID_HERE"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Payments (API Key Auth)",
+      "item": [
+        {
+          "name": "Create Payment (Public Key)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{publicKey}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"description\": \"API Payment\",\n    \"items\": [\n        {\n            \"name\": \"Product 1\",\n            \"amount\": 100,\n            \"quantity\": 2\n        }\n    ],\n    \"customer\": {\n        \"first_name\": \"John\",\n        \"last_name\": \"Doe\",\n        \"email\": \"john@doe.com\"\n    },\n    \"expires_at\": \"2025-12-31\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/payment",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payment"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Create Payment (Public Key)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{publicKey}}",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"description\": \"API Payment\",\n    \"items\": [\n        {\n            \"name\": \"Product 1\",\n            \"amount\": 100,\n            \"quantity\": 2\n        }\n    ],\n    \"customer\": {\n        \"first_name\": \"John\",\n        \"last_name\": \"Doe\",\n        \"email\": \"john@doe.com\"\n    },\n    \"expires_at\": \"2025-12-31\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/payment",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "payment"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "541"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"21d-UJuJJ+DpktkDgt6uE4ymr/DmKxo\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Tue, 03 Mar 2026 09:11:44 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Sucessfully created payment\",\n    \"data\": {\n        \"id\": \"69a6a5d0a1f085bc071ec452\",\n        \"reference\": \"mfcrrl9zbdc\",\n        \"customer\": \"69a5dd28bdd028db37805dcc\",\n        \"currency\": \"USD\",\n        \"address\": \"0x242380b5eDD7e650629F3661CaF7d3a2e02832F0\",\n        \"total\": 200,\n        \"description\": \"API Payment\",\n        \"line_items\": [\n            {\n                \"name\": \"Product 1\",\n                \"amount\": 100,\n                \"quantity\": 2,\n                \"_id\": \"69a6a5d0a1f085bc071ec453\"\n            }\n        ],\n        \"status\": \"pending\",\n        \"type\": \"api\",\n        \"business\": \"6999d617806cebde2b0b6b8d\",\n        \"expires_at\": \"2025-12-31T00:00:00.000Z\",\n        \"createdAt\": \"2026-03-03T09:11:44.371Z\",\n        \"updatedAt\": \"2026-03-03T09:11:44.371Z\"\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "List Payments (Secret Key)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{secretKey}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payment?page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payment"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "List Payments (Secret Key)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{secretKey}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/payment?page=1&limit=10",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "payment"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "773"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"305-6g2tacQ5ZNtvlMNAJxIz9FsQ77g\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Tue, 03 Mar 2026 09:12:24 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Sucessfully fetched payments\",\n    \"data\": [\n        {\n            \"id\": \"69a6a5d0a1f085bc071ec452\",\n            \"reference\": \"mfcrrl9zbdc\",\n            \"customer\": {\n                \"email\": \"john@doe.com\",\n                \"first_name\": \"John\",\n                \"last_name\": \"Doe\",\n                \"phone\": null,\n                \"id\": \"69a5dd28bdd028db37805dcc\"\n            },\n            \"currency\": \"USD\",\n            \"address\": \"0x242380b5eDD7e650629F3661CaF7d3a2e02832F0\",\n            \"total\": 200,\n            \"description\": \"API Payment\",\n            \"line_items\": [\n                {\n                    \"name\": \"Product 1\",\n                    \"amount\": 100,\n                    \"quantity\": 2,\n                    \"_id\": \"69a6a5d0a1f085bc071ec453\"\n                }\n            ],\n            \"status\": \"pending\",\n            \"type\": \"api\",\n            \"business\": \"6999d617806cebde2b0b6b8d\",\n            \"expires_at\": \"2025-12-31T00:00:00.000Z\",\n            \"createdAt\": \"2026-03-03T09:11:44.371Z\",\n            \"updatedAt\": \"2026-03-03T09:11:44.371Z\"\n        }\n    ],\n    \"meta\": {\n        \"totalDocs\": 1,\n        \"limit\": 10,\n        \"totalPages\": 1,\n        \"page\": 1,\n        \"pagingCounter\": 1,\n        \"hasPrevPage\": false,\n        \"hasNextPage\": false,\n        \"prevPage\": null,\n        \"nextPage\": null\n    }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Payment Detail (Secret Key)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-api-key",
+                "value": "{{secretKey}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payment/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payment",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "PAYMENT_ID_HERE"
+                }
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Get Payment Detail (Secret Key)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "x-api-key",
+                    "value": "{{secretKey}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/payment/:id",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "payment",
+                    ":id"
+                  ],
+                  "variable": [
+                    {
+                      "key": "id",
+                      "value": "69a6a5d0a1f085bc071ec452"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "X-Powered-By",
+                  "value": "Express"
+                },
+                {
+                  "key": "Access-Control-Allow-Origin",
+                  "value": "*"
+                },
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Content-Length",
+                  "value": "591"
+                },
+                {
+                  "key": "ETag",
+                  "value": "W/\"24f-RMTjv/wBQj6K9Rf0dbVfY5YH+eA\""
+                },
+                {
+                  "key": "Date",
+                  "value": "Tue, 03 Mar 2026 09:38:40 GMT"
+                },
+                {
+                  "key": "Connection",
+                  "value": "keep-alive"
+                },
+                {
+                  "key": "Keep-Alive",
+                  "value": "timeout=5"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Sucessfully fetched payment\",\n    \"data\": {\n        \"_id\": \"69a6a5d0a1f085bc071ec452\",\n        \"currency\": \"USD\",\n        \"environment\": \"sandbox\",\n        \"customer\": \"69a5dd28bdd028db37805dcc\",\n        \"total\": 200,\n        \"description\": \"API Payment\",\n        \"line_items\": [\n            {\n                \"name\": \"Product 1\",\n                \"amount\": 100,\n                \"quantity\": 2,\n                \"_id\": \"69a6a5d0a1f085bc071ec453\"\n            }\n        ],\n        \"status\": \"pending\",\n        \"type\": \"api\",\n        \"expires_at\": \"2025-12-31T00:00:00.000Z\",\n        \"business\": \"6999d617806cebde2b0b6b8d\",\n        \"createdAt\": \"2026-03-03T09:11:44.371Z\",\n        \"updatedAt\": \"2026-03-03T09:11:44.371Z\",\n        \"reference\": \"mfcrrl9zbdc\",\n        \"wallet_index\": 1,\n        \"address\": \"0x242380b5eDD7e650629F3661CaF7d3a2e02832F0\",\n        \"__v\": 0\n    }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Webhook Log",
+      "item": [
+        {
+          "name": "Get webhook",
+          "request": {
+            "method": "GET",
+            "header": []
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "requests": {},
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "token",
+      "value": "YOUR_AUTH_TOKEN_HERE"
+    },
+    {
+      "key": "publicKey",
+      "value": "pk_live_your_public_key_here"
+    },
+    {
+      "key": "secretKey",
+      "value": "sk_live_your_secret_key_here"
+    }
+  ]
+}

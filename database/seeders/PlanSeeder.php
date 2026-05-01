@@ -1,10 +1,11 @@
 <?php
 
 namespace Database\Seeders;
-
+ 
+use App\Enums\User\AccountType;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-
+ 
 class PlanSeeder extends Seeder
 {
     /**
@@ -14,51 +15,54 @@ class PlanSeeder extends Seeder
     {
         $plans = [
             [
-                'name' => 'Fajiri Identified Member',
-                'slug' => 'fajiri-identified-member',
+                'name' => 'Bronze',
+                'level' => 'bronze',
+                'account_type' => AccountType::IDENTIFIED_MEMBERSHIP,
+                'slug' => 'bronze',
                 'description' => 'Perfect for getting started.',
-                'price' => 50000.00,
+                'price' => 5000.00,
                 'currency' => 'NGN',
-                'duration' => 12,
+                'duration' => 30,
                 'features' => [
                     "Support and recognition for birthdays and special occasions",
-                    "Access to basic healthcare, life insurance, and wellness support programs",
-                    "Connect, unite, and collaborate with family members and partners worldwide",
-                    "Guidance, encouragement, and support to achieve personal and life goals",
-                    "Initiate, support, and participate in impactful humanitarian campaigns",
-                    "Recognition for humanitarian service, impact, and participation",
-                    "Participate in Fajiri programs and global empowerment initiatives"
+                    "Access to basic healthcare, life insurance, and wellness support programs"
                 ],
                 'status' => true,
             ],
             [
-                'name' => 'Starter',
-                'slug' => 'starter',
+                'name' => 'Silver',
+                'level' => 'silver',
+                'account_type' => AccountType::IDENTIFIED_MEMBERSHIP,
+                'slug' => 'silver',
                 'description' => 'For small brands and creators.',
-                'price' => 19.99,
-                'currency' => 'USD',
+                'price' => 10000.00,
+                'currency' => 'NGN',
                 'duration' => 30,
-                'features' => json_encode(['Standard Support', '5 Campaigns', 'Standard Analytics']),
+                'features' => ['Standard Support', '5 Campaigns', 'Standard Analytics'],
                 'status' => true,
             ],
             [
-                'name' => 'Pro',
-                'slug' => 'pro',
+                'name' => 'Gold',
+                'level' => 'gold',
+                'account_type' => AccountType::IDENTIFIED_MEMBERSHIP,
+                'slug' => 'gold',
                 'description' => 'Everything you need to grow.',
-                'price' => 49.99,
-                'currency' => 'USD',
+                'price' => 25000.00,
+                'currency' => 'NGN',
                 'duration' => 30,
-                'features' => json_encode(['Priority Support', 'Unlimited Campaigns', 'Advanced Analytics']),
+                'features' => ['Priority Support', 'Unlimited Campaigns', 'Advanced Analytics'],
                 'status' => true,
             ],
             [
-                'name' => 'Enterprise',
-                'slug' => 'enterprise',
+                'name' => 'Platinum',
+                'level' => 'platinum',
+                'account_type' => AccountType::IDENTIFIED_MEMBERSHIP,
+                'slug' => 'platinum',
                 'description' => 'Custom solutions for your business.',
-                'price' => 199.99,
-                'currency' => 'USD',
+                'price' => 50000.00,
+                'currency' => 'NGN',
                 'duration' => 30,
-                'features' => json_encode(['24/7 Support', 'Custom Integrations', 'Dedicated Account Manager']),
+                'features' => ['24/7 Support', 'Custom Integrations', 'Dedicated Account Manager'],
                 'status' => true,
             ],
         ];

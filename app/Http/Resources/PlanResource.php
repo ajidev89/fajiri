@@ -17,6 +17,8 @@ class PlanResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'level' => $this->level,
+            'account_type' => $this->account_type,
             'slug' => $this->slug,
             'description' => $this->description,
             'price' => $this->price,
@@ -24,11 +26,7 @@ class PlanResource extends JsonResource
             'duration' => $this->duration,
             'features' => $this->features,
             'status' => $this->status,
-            'rc_entitlement_id' => $this->rc_entitlement_id,
-            'rc_offering_id' => $this->rc_offering_id,
-            'rc_package_id' => $this->rc_package_id,
             'rc_product_id_ios' => $this->rc_product_id_ios,
-            'rc_product_id_android' => $this->rc_product_id_android,
         ];
     }
 }
