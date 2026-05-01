@@ -48,4 +48,9 @@ class UsersController extends Controller
         $audits = $this->usersRepositoryInterface->audits($user);
         return $this->handleSuccessCollectionResponse("Successfully fetched user audits", \App\Http\Resources\AuditResource::collection($audits));
     }
+
+    public function transactions(User $user){
+        $transactions = $this->usersRepositoryInterface->transactions($user);
+        return $this->handleSuccessCollectionResponse("Successfully fetched user transactions", \App\Http\Resources\TransactionResource::collection($transactions));
+    }
 }

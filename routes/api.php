@@ -111,6 +111,7 @@ Route::controller(UsersController::class)->group(function () {
         Route::get('/', 'index');
         Route::get('/{user}', 'show');
         Route::get('/{user}/audits', 'audits');
+        Route::get('/{user}/transactions', 'transactions');
         Route::put('/{user}', 'update');
         Route::put('/{user}/suspend', 'suspend');
         Route::put('/{user}/unsuspend', 'unsuspend');

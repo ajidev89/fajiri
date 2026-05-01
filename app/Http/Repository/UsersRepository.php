@@ -44,4 +44,8 @@ class UsersRepository implements UsersRepositoryInterface {
     public function audits(User $user) {
         return $user->audits()->with('performer')->latest()->paginate(10);
     }
+    
+    public function transactions(User $user) {
+        return $user->transactions()->latest()->paginate(10);
+    }
 }

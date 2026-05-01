@@ -18,4 +18,5 @@ interface UsersRepositoryInterface
 
     public function delete(User $user);
     public function audits(User $user);
+    public function transactions(User $user);
 }
