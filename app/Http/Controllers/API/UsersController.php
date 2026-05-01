@@ -43,4 +43,9 @@ class UsersController extends Controller
         $user = $this->usersRepositoryInterface->delete($user);
         return $this->handleSuccessResponse("Successfully deleted user", new UserResource($user));
     }
+
+    public function audits(User $user){
+        $audits = $this->usersRepositoryInterface->audits($user);
+        return $this->handleSuccessCollectionResponse("Successfully fetched user audits", \App\Http\Resources\AuditResource::collection($audits));
+    }
 }

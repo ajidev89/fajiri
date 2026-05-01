@@ -88,6 +88,8 @@ class AuthRepository implements AuthRepositoryInterface {
 
             DB::commit();
 
+            $user->audit('registration', 'User account created through registration.');
+
             return $this->handleSuccessResponse("Successfully registered",[
                 "user" => new UserResource($user)
             ]);
@@ -112,7 +114,6 @@ class AuthRepository implements AuthRepositoryInterface {
 
 
         if (Auth::attempt($credentials)) {
-
             // if($this->user()->status != "active"){
             //     return $this->handleErrorResponse('Your account is not active contact support via email',401);
             // }
@@ -138,6 +139,11 @@ class AuthRepository implements AuthRepositoryInterface {
             return $this->handleSuccessResponse('Successfully sent otp',new UserResource($this->user())); 
         }
 
+        $user = $this->model->where($field, $request->$field)->first();
+        if ($user) {
+            $user->audit('failed_login', 'Failed login attempt due to incorrect password.');
+        }
+
         return $this->handleErrorResponse('Invalid login credentials',401);
     }
 
@@ -157,6 +163,8 @@ class AuthRepository implements AuthRepositoryInterface {
      
             event(new PasswordReset($user));
 
+            $user->audit('password_change', 'User password has been successfully changed.');
+
             return $this->handleSuccessResponse('Your password has been sucessfully changed!');
         }
 
@@ -172,6 +180,8 @@ class AuthRepository implements AuthRepositoryInterface {
         $user = $this->model->where($request->channel, $request->identifier)->firstorFail();
 
         $token = $user->createToken($user->email)->plainTextToken;
+
+        $user->audit('login', 'User successfully logged into the platform.');
 
         return $this->handleSuccessResponse('Successfully verified otp', [
             "token" => $token,

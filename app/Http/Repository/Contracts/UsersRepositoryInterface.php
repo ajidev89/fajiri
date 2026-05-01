@@ -17,4 +17,5 @@ interface UsersRepositoryInterface
     public function unsuspend(User $user);
 
     public function delete(User $user);
+    public function audits(User $user);
 }

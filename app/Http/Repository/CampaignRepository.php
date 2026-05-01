@@ -113,4 +113,16 @@ class CampaignRepository implements CampaignRepositoryInterface
     {
         return Type::toArray();
     }
+
+    public function donatedCampaigns($request)
+    {
+        $userId = $request->user_id ?? auth()->id();
+
+        return $this->campaign->query()
+            ->whereHas('donations', function ($query) use ($userId) {
+                $query->where('user_id', $userId)->where('status', 'completed');
+            })
+            ->latest()
+            ->paginate(10);
+    }
 }

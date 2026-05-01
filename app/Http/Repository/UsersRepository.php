@@ -26,16 +26,22 @@ class UsersRepository implements UsersRepositoryInterface {
 
     public function suspend(User $user) {
         $user->update(['status' => 'suspended']);
+        $user->audit('status_change', 'User account has been suspended by an administrator.');
         return $user;
     }
 
     public function unsuspend(User $user) {
         $user->update(['status' => 'active']);
+        $user->audit('status_change', 'User account has been unsuspended by an administrator.');
         return $user;
     }
 
     public function delete(User $user) {
         $user->delete();
         return $user;
+    }
+
+    public function audits(User $user) {
+        return $user->audits()->with('performer')->latest()->paginate(10);
     }
 }

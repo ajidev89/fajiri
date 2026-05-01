@@ -19,7 +19,7 @@ use Illuminate\Support\Str;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasUuids, HasFactory, Notifiable, HasUuids, HasApiTokens, \App\Traits\HasWallet;
+    use HasUuids, HasFactory, Notifiable, HasUuids, HasApiTokens, \App\Traits\HasWallet, \App\Traits\Auditable;
 
     /**
      * The attributes that are mass assignable.
@@ -214,5 +214,10 @@ class User extends Authenticatable
     public function eventAttendees(): HasMany
     {
         return $this->hasMany(EventAttendee::class);
+    }
+
+    public function audits(): HasMany
+    {
+        return $this->hasMany(Audit::class);
     }
 }

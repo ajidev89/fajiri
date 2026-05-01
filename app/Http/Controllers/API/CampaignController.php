@@ -72,4 +72,9 @@ class CampaignController extends Controller
         $this->campaignRepository->delete($campaign->id);
         return $this->handleSuccessResponse('Campaign deleted successfully');
     }
+    public function userDonatedCampaigns(Request $request)
+    {
+        $campaigns = $this->campaignRepository->donatedCampaigns($request);
+        return CampaignResource::collection($campaigns);
+    }
 }

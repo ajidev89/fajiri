@@ -12,4 +12,5 @@ interface CampaignRepositoryInterface
     public function update($id, array $data);
     public function delete($id);
     public function types();
+    public function donatedCampaigns($request);
 }

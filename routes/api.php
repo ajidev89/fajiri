@@ -78,6 +78,7 @@ Route::controller(CampaignController::class)->group(function () {
         Route::post('/', 'store')->middleware(['auth:sanctum', 'admin']);
         Route::get('/types', 'types');
         Route::get('/analytics', 'analytics')->middleware(['auth:sanctum', 'admin']);
+        Route::get('/user-donated', 'userDonatedCampaigns');
         Route::get('/{campaign}', 'show');
         Route::put('/{campaign}', 'update')->middleware(['auth:sanctum', 'admin']);
         Route::delete('/{campaign}', 'destroy')->middleware(['auth:sanctum', 'admin']);
@@ -109,6 +110,7 @@ Route::controller(UsersController::class)->group(function () {
     Route::group(['prefix' => 'users', 'middleware' => ['auth:sanctum', 'super-admin']], function () {
         Route::get('/', 'index');
         Route::get('/{user}', 'show');
+        Route::get('/{user}/audits', 'audits');
         Route::put('/{user}', 'update');
         Route::put('/{user}/suspend', 'suspend');
         Route::put('/{user}/unsuspend', 'unsuspend');
