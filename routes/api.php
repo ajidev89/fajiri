@@ -107,6 +107,7 @@ Route::controller(InitiativeController::class)->group(function () {
 });
 
 Route::controller(UsersController::class)->group(function () { 
+    Route::get('/users/account-types', 'account_types');
     Route::group(['prefix' => 'users', 'middleware' => ['auth:sanctum', 'super-admin']], function () {
         Route::get('/', 'index');
         Route::get('/{user}', 'show');

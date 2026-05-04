@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Enums\User\AccountType;
 use App\Http\Controllers\Controller;
 use App\Http\Repository\Contracts\UsersRepositoryInterface;
 use App\Http\Resources\User\UserResource;
@@ -52,5 +53,12 @@ class UsersController extends Controller
     public function transactions(User $user){
         $transactions = $this->usersRepositoryInterface->transactions($user);
         return $this->handleSuccessCollectionResponse("Successfully fetched user transactions", \App\Http\Resources\Transaction\TransactionResource::collection($transactions));
+    }
+
+
+    public function account_types(){
+
+        $accountTypes = AccountType::cases();
+        return $this->handleSuccessCollectionResponse("Successfully fetched account types", \App\Http\Resources\AccountTypeResource::collection($accountTypes));
     }
 }
