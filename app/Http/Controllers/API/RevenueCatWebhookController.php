@@ -81,10 +81,10 @@ class RevenueCatWebhookController extends Controller
         if ($plan) {
             DB::transaction(function () use ($user, $plan, $event) {
                 // Deactivate current active plans
-                $user->plans()->updateExistingPivotAttributes(
-                    $user->plans()->wherePivot('status', 'active')->pluck('user_plans.id'), 
-                    ['status' => 'inactive']
-                );
+                DB::table('user_plans')
+                    ->where('user_id', $user->id)
+                    ->where('status', 'active')
+                    ->update(['status' => 'inactive']);
 
                 $startedAt = now();
                 // RevenueCat provides expiration dates in the event
@@ -106,9 +106,9 @@ class RevenueCatWebhookController extends Controller
     protected function handleSubscriptionInactive(User $user, $productId, $event)
     {
         // Deactivate all active plans for this user
-        $user->plans()->updateExistingPivotAttributes(
-            $user->plans()->wherePivot('status', 'active')->pluck('user_plans.id'), 
-            ['status' => 'inactive']
-        );
+        DB::table('user_plans')
+            ->where('user_id', $user->id)
+            ->where('status', 'active')
+            ->update(['status' => 'inactive']);
     }
 }

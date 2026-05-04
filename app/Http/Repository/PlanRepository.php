@@ -139,10 +139,10 @@ class PlanRepository implements PlanRepositoryInterface
             }
 
             // Deactivate current active plans
-            $user->plans()->updateExistingPivotAttributes(
-                $user->plans()->wherePivot('status', 'active')->pluck('user_plans.id'), 
-                ['status' => 'inactive']
-            );
+            DB::table('user_plans')
+                ->where('user_id', $user->id)
+                ->where('status', 'active')
+                ->update(['status' => 'inactive']);
 
             $startedAt = now();
             $expiresAt = $duration ? $startedAt->copy()->addDays($duration) : $startedAt->copy()->addDays($plan->duration);
