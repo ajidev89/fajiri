@@ -49,6 +49,7 @@ class RevenueCatWebhookController extends Controller
         switch ($type) {
             case 'INITIAL_PURCHASE':
             case 'RENEWAL':
+            case 'UNCANCELLATION':
                 $this->handleSubscriptionActive($user, $productId, $event);
                 break;
 
