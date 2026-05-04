@@ -265,3 +265,11 @@ Route::controller(FamilyMemberController::class)->middleware(['auth:sanctum'])->
         Route::delete('/{id}', 'destroy');
     });
 });
+
+Route::controller(\App\Http\Controllers\API\CurrencyController::class)->group(function () {
+    Route::group(['prefix' => 'currencies'], function () {
+        Route::get('/', 'index');
+        Route::get('/rates', 'rates');
+        Route::get('/convert', 'convert');
+    });
+});
