@@ -26,8 +26,8 @@ class CurrencyController extends Controller
         // Get unique currencies by country to include some context
         $currencies = Country::whereNotNull('currency')
             ->select('currency', 'name', 'iso2', 'iso3')
-            ->groupBy('currency')
-            ->get();
+            ->get()
+            ->unique('iso2');
 
         return $this->handleSuccessCollectionResponse(
             "Successfully fetched supported currencies", 
