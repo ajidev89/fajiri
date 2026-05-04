@@ -27,7 +27,7 @@ class CurrencyController extends Controller
         $currencies = Country::whereNotNull('currency')
             ->select('currency', 'name', 'iso2', 'iso3')
             ->get()
-            ->unique('iso2');
+            ->unique('currency');
 
         return $this->handleSuccessCollectionResponse(
             "Successfully fetched supported currencies", 
