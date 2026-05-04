@@ -142,7 +142,7 @@ Route::controller(DonationController::class)->group(function () {
 
 Route::controller(PlanController::class)->middleware(['auth:sanctum'])->group(function () { 
     Route::group(['prefix' => 'plans'], function () {
-        Route::get('/', 'index');
+        Route::get('/', 'index')->withoutMiddleware(['auth:sanctum']);
         Route::post('/', 'store')->middleware(['super-admin']);
         Route::post('/subscribe', 'subscribe');
         Route::put('/{id}', 'update')->middleware(['super-admin']);
