@@ -54,7 +54,7 @@ class AuthRepository implements AuthRepositoryInterface {
                 "email" => $request->input('email.value'),
                 "phone" => $request->phone['value'] ?? null,
                 "account_type" => $request->account_type,
-                "sub_account_type" => $request->sub_account_type,
+                "sub_account_type" => null,
                 "password" => Hash::make($request->password),
                 "role_id" => $role->id,
                 "country_id" => $request->country_id,
