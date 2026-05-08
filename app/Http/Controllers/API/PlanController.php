@@ -48,6 +48,24 @@ class PlanController extends Controller
         ]);
     }
 
+    public function initializeSubscription(Request $request)
+    {
+        $request->validate([
+            'plan_id' => 'required|uuid|exists:plans,id',
+            'success_url' => 'nullable|url',
+            'cancel_url' => 'nullable|url',
+        ]);
+
+        try {
+            $user = $request->user();
+            $result = $this->planRepository->initializeSubscription($user, $request->plan_id, $request->only(['success_url', 'cancel_url']));
+
+            return $this->handleSuccessResponse('Subscription initialized', $result);
+        } catch (\Exception $e) {
+            return $this->handleErrorResponse($e->getMessage(), 400);
+        }
+    }
+
     public function update(UpdateRequest $request, $id)
     {
         $plan = $this->planRepository->update($id, $request->validated());

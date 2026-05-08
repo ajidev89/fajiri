@@ -23,7 +23,7 @@ use App\Http\Controllers\API\DisbursementController;
 use App\Http\Controllers\API\FundraiserController;
 use App\Http\Controllers\API\MediaController;
 use App\Http\Controllers\API\FamilyMemberController;
-use App\Http\Controllers\API\RevenueCatWebhookController;
+
 use Illuminate\Support\Facades\Route;
 
 
@@ -145,6 +145,7 @@ Route::controller(PlanController::class)->middleware(['auth:sanctum'])->group(fu
         Route::get('/', 'index')->withoutMiddleware(['auth:sanctum']);
         Route::post('/', 'store')->middleware(['super-admin']);
         Route::post('/subscribe', 'subscribe');
+        Route::post('/initialize-subscription', 'initializeSubscription');
         Route::put('/{id}', 'update')->middleware(['super-admin']);
         Route::delete('/{id}', 'destroy')->middleware(['super-admin']);
     });
@@ -152,7 +153,9 @@ Route::controller(PlanController::class)->middleware(['auth:sanctum'])->group(fu
 
 Route::controller(PaymentController::class)->group(function () {
     Route::post('/payments/webhook', 'webhook');
-    Route::post('/revenuecat/webhook', [RevenueCatWebhookController::class, 'handle']);
+    Route::post('/webhooks/stripe', [\App\Http\Controllers\API\WebhookController::class, 'handleStripe']);
+    Route::post('/webhooks/paystack', [\App\Http\Controllers\API\WebhookController::class, 'handlePaystack']);
+
     Route::group(['middleware' => ['auth:sanctum'], 'prefix' => 'payments'], function () {
         Route::post('/initialize', 'initialize');
         Route::get('/verify', 'verify');

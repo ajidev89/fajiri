@@ -65,14 +65,10 @@ return [
         'base_url' => 'https://v6.exchangerate-api.com/v6/',
     ],
     
-    'revenuecat' => [
-        'api_key' => env('REVENUE_CAT_API_KEY'),
-        'project_id' => env('REVENUE_CAT_PROJECT_ID'),
-        'webhook_key' => env('REVENUE_CAT_WEBHOOK_KEY'),
-        'default_entitlement_id' => env('REVENUE_CAT_ENTITLEMENT_ID', 'premium'),
-        'default_offering_id' => env('REVENUE_CAT_OFFERING_ID', 'default'),
-        'app_id_ios' => env('REVENUE_CAT_APP_ID_IOS'),
-        'app_id_android' => env('REVENUE_CAT_APP_ID_ANDROID'),
+    'stripe' => [
+        'key' => env('STRIPE_KEY'),
+        'secret' => env('STRIPE_SECRET'),
+        'webhook' => env('STRIPE_WEBHOOK_SECRET'),
     ],
 
 

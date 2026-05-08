@@ -68,6 +68,44 @@ class PaystackService
     }   
     
     /**
+     * Create a Paystack Plan
+     */
+    public function createPlan(array $data)
+    {
+        $response = Http::withToken($this->secretKey)
+            ->post("{$this->baseUrl}/plan", $data);
+
+        if ($response->failed()) {
+            throw new Exception("Paystack plan creation failed: " . $response->body());
+        }
+
+        return $response->json('data');
+    }
+
+    /**
+     * Initialize a Subscription (Initialize Transaction with Plan)
+     */
+    public function initializeSubscription(array $data)
+    {
+        // Paystack uses 'plan' parameter in transaction initialization to start a subscription
+        return $this->initializeTransaction($data);
+    }
+
+    /**
+     * Cancel Subscription
+     */
+    public function cancelSubscription($subscriptionCode, $emailToken)
+    {
+        $response = Http::withToken($this->secretKey)
+            ->post("{$this->baseUrl}/subscription/disable", [
+                'code' => $subscriptionCode,
+                'token' => $emailToken
+            ]);
+
+        return $response->json();
+    }
+
+    /**
      * Handle Webhook Signature Verification
      */
     public function isValidWebhook(string $signature, string $payload): bool

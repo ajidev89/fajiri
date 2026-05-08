@@ -11,11 +11,15 @@ class PlanRepository implements PlanRepositoryInterface
 {
     use AuthUserTrait;
 
-    protected $revenueCatService;
+    protected $paymentGateway;
+    protected $paystackService;
 
-    public function __construct(\App\Http\Services\RevenueCatService $revenueCatService)
-    {
-        $this->revenueCatService = $revenueCatService;
+    public function __construct(
+        \App\Services\PaymentGateway $paymentGateway,
+        \App\Services\PaystackService $paystackService
+    ) {
+        $this->paymentGateway = $paymentGateway;
+        $this->paystackService = $paystackService;
     }
     public function all(array $filters = [])
     {
@@ -45,53 +49,73 @@ class PlanRepository implements PlanRepositoryInterface
     {
         $data['slug'] = \Illuminate\Support\Str::slug($data['name']);
         $plan = Plan::create($data);
+        
+        $this->syncWithGateways($plan);
 
         return $plan;
     }
-
-    public function syncWithRevenueCat(Plan $plan)
+    public function syncWithGateways(Plan $plan)
     {
         try {
-            $entitlementId = config('services.revenuecat.default_entitlement_id');
-            $offeringId = config('services.revenuecat.default_offering_id');
-            $appIdIos = config('services.revenuecat.app_id_ios');
-            $appIdAndroid = config('services.revenuecat.app_id_android');
-
-            // 1. Ensure shared Entitlement & Offering exist
-            $this->revenueCatService->ensureEntitlementExists($entitlementId);
-            $this->revenueCatService->ensureOfferingExists($offeringId);
-            
-            $plan->rc_entitlement_id = $entitlementId;
-            $plan->rc_offering_id = $offeringId;
-
-            // 2. Create the Package (The Wrapper)
-            $packageId = $this->revenueCatService->createPackage($offeringId, $plan->slug, $plan->name);
-            if ($packageId) {
-                $plan->rc_package_id = $packageId;
-            }
-
-            // 3. Register and Link iOS Product
-            if ($plan->rc_product_id_ios && $appIdIos) {
-                $rcProdId = $this->revenueCatService->registerProduct($plan->rc_product_id_ios, $plan->name . " (iOS)", $appIdIos, $plan->duration);
-                if ($rcProdId) {
-                    $this->revenueCatService->linkProductToEntitlement($entitlementId, $rcProdId);
-                    $this->revenueCatService->attachProductToPackage($offeringId, $plan->slug, $rcProdId);
+            // 1. Sync with Paystack (for NGN)
+            if (!$plan->paystack_plan_code) {
+                $paystackPlan = $this->paystackService->createPlan([
+                    'name' => $plan->name,
+                    'interval' => $this->mapDurationToInterval($plan->duration),
+                    'amount' => $plan->price * 100, // Paystack amount is in kobo
+                    'currency' => 'NGN'
+                ]);
+                
+                if ($paystackPlan) {
+                    $plan->paystack_plan_code = $paystackPlan['plan_code'];
                 }
             }
 
-            // 4. Register and Link Android Product
-            if ($plan->rc_product_id_android && $appIdAndroid) {
-                $rcProdId = $this->revenueCatService->registerProduct($plan->rc_product_id_android, $plan->name . " (Android)", $appIdAndroid, $plan->duration);
-                if ($rcProdId) {
-                    $this->revenueCatService->linkProductToEntitlement($entitlementId, $rcProdId);
-                    $this->revenueCatService->attachProductToPackage($offeringId, $plan->slug, $rcProdId);
+            // 2. Sync with Stripe (for non-NGN)
+            if (!$plan->stripe_price_id) {
+                $stripeProduct = $this->paymentGateway->getStripeService()->createProduct([
+                    'name' => $plan->name,
+                    'description' => $plan->description,
+                ]);
+
+                $stripePrice = $this->paymentGateway->getStripeService()->createPrice([
+                    'product' => $stripeProduct['id'],
+                    'unit_amount' => $plan->price * 100,
+                    'currency' => strtolower($plan->currency ?? 'USD'),
+                    'recurring' => ['interval' => $this->mapDurationToStripeInterval($plan->duration)],
+                ]);
+
+                if ($stripePrice) {
+                    $plan->stripe_price_id = $stripePrice['id'];
                 }
             }
-            
+
             $plan->save();
         } catch (\Exception $e) {
-            \Log::error('RevenueCat Sync Error: ' . $e->getMessage());
+            \Log::error('Gateway Sync Error: ' . $e->getMessage());
         }
+    }
+
+    protected function mapDurationToInterval($days)
+    {
+        if ($days >= 365) return 'annually';
+        if ($days >= 30) return 'monthly';
+        if ($days >= 7) return 'weekly';
+        return 'daily';
+    }
+
+    protected function mapDurationToStripeInterval($days)
+    {
+        if ($days >= 365) return 'year';
+        if ($days >= 30) return 'month';
+        if ($days >= 7) return 'week';
+        return 'day';
+    }
+
+    public function initializeSubscription($user, $planId, array $options = [])
+    {
+        $plan = $this->findById($planId);
+        return $this->paymentGateway->initializeSubscription($user, $plan, $options);
     }
 
     public function update($id, array $data)

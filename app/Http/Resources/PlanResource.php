@@ -26,7 +26,8 @@ class PlanResource extends JsonResource
             'duration' => $this->duration,
             'features' => $this->features,
             'status' => $this->status,
-            'rc_product_id_ios' => $this->rc_product_id_ios,
+            'stripe_price_id' => $this->stripe_price_id,
+            'paystack_plan_code' => $this->paystack_plan_code,
         ];
     }
 }
