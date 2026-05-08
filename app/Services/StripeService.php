@@ -2,18 +2,22 @@
 
 namespace App\Services;
 
+use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Exception;
+use Stripe\StripeClient;
+
 
 class StripeService
 {
     protected string $baseUrl = 'https://api.stripe.com/v1';
     protected string $secretKey;
+    protected StripeClient $client;
 
     public function __construct()
     {
         $this->secretKey = config('services.stripe.secret');
+        $this->client = new StripeClient($this->secretKey);
     }
 
     /**
@@ -36,8 +40,27 @@ class StripeService
                 'plan_id' => $plan->id,
             ],
         ];
+        return $this->client->checkout->sessions->create($payload);
+    }
 
-        return $this->request('POST', 'checkout/sessions', $payload);
+    /**
+     * Create a Stripe product with a default price using the Stripe SDK.
+     * Expected $data: ['name'=>string, 'unit_amount'=>int (cents), 'currency'=>string, 'description'=>string (optional)]
+     */
+    public function createProductWithDefaultPrice(array $data)
+    {
+        $params = [
+            'name' => $data['name'],
+            'default_price_data' => [
+                'unit_amount' => $data['unit_amount'],
+                'currency' => $data['currency'],
+            ],
+            'expand' => ['default_price'],
+        ];
+        if (!empty($data['description'] ?? null)) {
+            $params['description'] = $data['description'];
+        }
+        return $this->client->products->create($params);
     }
 
     /**
@@ -45,7 +68,8 @@ class StripeService
      */
     public function createProduct(array $data)
     {
-        return $this->request('POST', 'products', $data);
+        // Use the Stripe SDK client to create a product.
+        return $this->client->products->create($data);
     }
 
     /**
@@ -53,7 +77,8 @@ class StripeService
      */
     public function createPrice(array $data)
     {
-        return $this->request('POST', 'prices', $data);
+        // Use the Stripe SDK client to create a price.
+        return $this->client->prices->create($data);
     }
 
     /**
@@ -61,7 +86,7 @@ class StripeService
      */
     public function getSession($sessionId)
     {
-        return $this->request('GET', "checkout/sessions/{$sessionId}");
+        return $this->client->checkout->sessions->retrieve($sessionId);
     }
 
     /**
@@ -69,7 +94,7 @@ class StripeService
      */
     public function getSubscription($subscriptionId)
     {
-        return $this->request('GET', "subscriptions/{$subscriptionId}");
+        return $this->client->subscriptions->retrieve($subscriptionId);
     }
 
     /**
@@ -77,7 +102,7 @@ class StripeService
      */
     public function cancelSubscription($subscriptionId)
     {
-        return $this->request('DELETE', "subscriptions/{$subscriptionId}");
+        return $this->client->subscriptions->cancel($subscriptionId);
     }
 
     /**
@@ -89,12 +114,13 @@ class StripeService
         if (!$endpointSecret) {
             return false;
         }
-
-        // Simplified signature check logic (Stripe usually requires a specific library for this)
-        // For now, we'll assume the user will handle this or we'll implement a basic version
-        // if we don't have the library. 
-        // Note: Real Stripe webhook verification is complex without the SDK.
-        return true; 
+        try {
+            \Stripe\Webhook::constructEvent($payload, $signature, $endpointSecret);
+            return true;
+        } catch (Exception $e) {
+            Log::error('Stripe webhook verification failed', ['error' => $e->getMessage()]);
+            return false;
+        }
     }
 
     protected function request($method, $endpoint, $data = [])
