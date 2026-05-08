@@ -57,6 +57,7 @@ class PlanRepository implements PlanRepositoryInterface
     public function syncWithGateways(Plan $plan)
     {
         try {
+            
             // 1. Sync with Paystack (for NGN)
             if (!$plan->paystack_plan_code) {
                 $paystackPlan = $this->paystackService->createPlan([
@@ -73,13 +74,16 @@ class PlanRepository implements PlanRepositoryInterface
 
             // 2. Sync with Stripe (for non-NGN)
             if (!$plan->stripe_price_id) {
-                $stripeProduct = $this->paymentGateway->getStripeService()->createProduct([
-                    'name' => $plan->name,
-                    'description' => $plan->description,
-                ]);
+                if (!$plan->stripe_product_id) {
+                    $stripeProduct = $this->paymentGateway->getStripeService()->createProduct([
+                        'name' => $plan->name,
+                        'description' => $plan->description,
+                    ]);
+                    $plan->stripe_product_id = $stripeProduct['id'];
+                }
 
                 $stripePrice = $this->paymentGateway->getStripeService()->createPrice([
-                    'product' => $stripeProduct['id'],
+                    'product' => $plan->stripe_product_id,
                     'unit_amount' => $plan->price * 100,
                     'currency' => strtolower($plan->currency ?? 'USD'),
                     'recurring' => ['interval' => $this->mapDurationToStripeInterval($plan->duration)],
@@ -122,6 +126,8 @@ class PlanRepository implements PlanRepositoryInterface
     {
         $plan = $this->findById($id);
         $plan->update($data);
+        
+        $this->syncWithGateways($plan);
 
         return $plan;
     }

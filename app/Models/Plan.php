@@ -23,6 +23,7 @@ class Plan extends Model
         'duration',
         'features',
         'status',
+        'stripe_product_id',
         'stripe_price_id',
         'paystack_plan_code',
     ];

@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('plans', function (Blueprint $table) {
-            $table->string('stripe_price_id')->nullable()->after('currency');
+            $table->string('stripe_product_id')->nullable()->after('currency');
+            $table->string('stripe_price_id')->nullable()->after('stripe_product_id');
             $table->string('paystack_plan_code')->nullable()->after('stripe_price_id');
             
             $table->dropColumn([
@@ -31,7 +32,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('plans', function (Blueprint $table) {
-            $table->dropColumn(['stripe_price_id', 'paystack_plan_code']);
+            $table->dropColumn(['stripe_product_id', 'stripe_price_id', 'paystack_plan_code']);
             
             $table->string('rc_entitlement_id')->nullable();
             $table->string('rc_offering_id')->nullable();
