@@ -75,11 +75,18 @@ class PlanRepository implements PlanRepositoryInterface
             // 2. Sync with Stripe (for non-NGN)
             if (!$plan->stripe_price_id) {
                 if (!$plan->stripe_product_id) {
+                    // Ensure a name is always sent to Stripe. If the local plan name is missing, use a placeholder.
+                    $productName = $plan->name ?: 'Plan ' . $plan->id;
                     $stripeProduct = $this->paymentGateway->getStripeService()->createProduct([
-                        'name' => $plan->name,
-                        'description' => $plan->description,
+                        'name' => $productName,
+                        'description' => $plan->description ?: '',
+                        // Include metadata to aid debugging and linking back to our system
+                        'metadata' => [
+                            'local_plan_id' => $plan->id,
+                            'provider' => 'stripe',
+                        ],
                     ]);
-                    $plan->stripe_product_id = $stripeProduct['id'];
+                    $plan->stripe_product_id = $stripeProduct['id'] ?? null;
                 }
 
                 $stripePrice = $this->paymentGateway->getStripeService()->createPrice([
@@ -87,6 +94,10 @@ class PlanRepository implements PlanRepositoryInterface
                     'unit_amount' => $plan->price * 100,
                     'currency' => strtolower($plan->currency ?? 'USD'),
                     'recurring' => ['interval' => $this->mapDurationToStripeInterval($plan->duration)],
+                    'metadata' => [
+                        'local_plan_id' => $plan->id,
+                        'provider' => 'stripe',
+                    ],
                 ]);
 
                 if ($stripePrice) {
