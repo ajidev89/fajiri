@@ -17,6 +17,7 @@ use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
 class AuthRepository implements AuthRepositoryInterface {
@@ -223,6 +224,40 @@ class AuthRepository implements AuthRepositoryInterface {
         $this->user()->tokens()->delete();
 
         return $this->handleSuccessResponse("Successfully logged out");
+    }
+
+    public function generateMagicLink($request)
+    {
+        $user = $this->user();
+
+        $backendUrl = URL::temporarySignedRoute(
+            'magic-link.verify',
+            now()->addMinutes(30),
+            ['user' => $user->id]
+        );
+
+        $frontendBaseUrl = "https://app.fajiri.org/profile/complete-profile";
+        $queryString = parse_url($backendUrl, PHP_URL_QUERY);
+        $url = $frontendBaseUrl . '?' . $queryString;
+
+        return $this->handleSuccessResponse("Login link generated", [
+            'url' => $url
+        ]);
+    }
+
+    public function loginViaMagicLink($request)
+    {
+        $user = $this->model->findOrFail($request->input('user'));
+
+        $token = $user->createToken($user->email)->plainTextToken;
+
+        $user->audit('login', 'User successfully logged into the platform via magic link.');
+
+        return $this->handleSuccessResponse('Successfully logged in via magic link', [
+            "token" => $token,
+            "type" => "bearer",
+            "user" => new UserResource($user)
+        ]);
     }
 
 }

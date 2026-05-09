@@ -10,6 +10,7 @@ use App\Http\Requests\Auth\LoginGoogleRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Otp\VerifyRequest;
+use Illuminate\Http\Request;
 
 class AuthController extends Controller
 {
@@ -48,6 +49,14 @@ class AuthController extends Controller
 
     public function logout(){
         return $this->authRepositoryInterface->logout();
+    }
+
+    public function generateMagicLink(Request $request){
+        return $this->authRepositoryInterface->generateMagicLink($request);
+    }
+
+    public function loginViaMagicLink(Request $request){
+        return $this->authRepositoryInterface->loginViaMagicLink($request);
     }
 
 }

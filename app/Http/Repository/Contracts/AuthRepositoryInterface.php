@@ -10,4 +10,6 @@ interface AuthRepositoryInterface {
     public function loginWithGoogle($request);
     public function logout();
     public function generateToken($request);
+    public function generateMagicLink($request);
+    public function loginViaMagicLink($request);
 }

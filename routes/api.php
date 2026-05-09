@@ -34,6 +34,8 @@ Route::controller(AuthController::class)->group(function () {
         Route::post('/change-password', 'changePassword');
         Route::post('/generate-token', 'generateToken');
         Route::post('/logout', 'logout')->middleware(['auth:sanctum']);
+        Route::post('/magic-link', 'generateMagicLink')->middleware(['auth:sanctum']);
+        Route::get('/magic-link/verify', 'loginViaMagicLink')->name('magic-link.verify')->middleware('signed');
     });
     Route::group(['prefix' => 'google'], function () {
         Route::post('/login', 'loginWithGoogle');
