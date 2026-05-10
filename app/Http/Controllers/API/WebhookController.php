@@ -10,9 +10,13 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use App\Services\StripeService;
 use App\Services\PaystackService;
+use App\Http\Traits\PlanActivationTrait;
+use App\Jobs\Paystack\PaystackJob;
 
 class WebhookController extends Controller
 {
+    use PlanActivationTrait;
+
     public function __construct(
         protected StripeService $stripeService,
         protected PaystackService $paystackService
@@ -54,104 +58,61 @@ class WebhookController extends Controller
         }
 
         $event = json_decode($payload, true);
-        $type = $event['event'] ?? '';
 
-        Log::info('Paystack Webhook Received', ['type' => $type]);
+        PaystackJob::dispatchAfterResponse($event);
 
-        switch ($type) {
-            case 'subscription.create':
-            case 'charge.success':
-                if (isset($event['data']['plan'])) {
-                    $this->handlePaystackSubscriptionActive($event['data']);
-                }
-                break;
-            case 'subscription.disable':
-                $this->handlePaystackSubscriptionCancelled($event['data']);
-                break;
-        }
-
-        return response()->json(['message' => 'Webhook handled']);
+        return response()->json(['message' => 'Webhook received and processing']);
     }
 
     protected function handleStripeCheckoutCompleted($session)
     {
         $userId = $session['metadata']['user_id'] ?? null;
-        $planId = $session['metadata']['plan_id'] ?? null;
-        $subscriptionId = $session['subscription'] ?? null;
+        $type = $session['metadata']['type'] ?? null;
 
-        if ($userId && $planId) {
-            $user = User::find($userId);
-            $plan = Plan::find($planId);
-            
-            if ($user && $plan) {
-                $this->activateUserPlan($user, $plan, 'stripe', $subscriptionId);
-            }
-        }
-    }
+        if (!$userId) return;
 
-    protected function handlePaystackSubscriptionActive($data)
-    {
-        $userId = $data['metadata']['user_id'] ?? null;
-        $planId = $data['metadata']['plan_id'] ?? null;
-        $subscriptionCode = $data['subscription_code'] ?? null;
+        $user = User::find($userId);
+        if (!$user) return;
 
-        if ($userId && $planId) {
-            $user = User::find($userId);
-            $plan = Plan::find($planId);
+        if ($type === 'wallet_funding') {
+            $amount = $session['metadata']['amount'] ?? ($session['amount_total'] / 100);
+            $reference = $session['id'];
+            $currency = strtoupper($session['metadata']['currency'] ?? $session['currency']);
 
-            if ($user && $plan) {
-                $this->activateUserPlan($user, $plan, 'paystack', $subscriptionCode);
-            }
-        }
-    }
-
-    protected function activateUserPlan(User $user, Plan $plan, $provider, $providerSubscriptionId)
-    {
-        DB::transaction(function () use ($user, $plan, $provider, $providerSubscriptionId) {
-            // Deactivate current active plans
-            DB::table('user_plans')
-                ->where('user_id', $user->id)
-                ->where('status', 'active')
-                ->update(['status' => 'inactive']);
-
-            $startedAt = now();
-            $expiresAt = $startedAt->copy()->addDays($plan->duration);
-
-            $user->plans()->attach($plan->id, [
-                'id' => \Illuminate\Support\Str::uuid(),
-                'started_at' => $startedAt,
-                'expires_at' => $expiresAt,
-                'status' => 'active',
-                'auto_renew' => true,
-                'provider' => $provider,
-                'provider_subscription_id' => $providerSubscriptionId,
-            ]);
+            // Credit wallet using the HasWallet trait
+            $user->deposit($amount, "Wallet funding via Stripe", $reference);
 
             // Create notification
             \App\Models\Notification::create([
                 'user_id' => $user->id,
-                'title' => 'Plan Activated',
-                'message' => "Your '{$plan->name}' plan is now active.",
-                'type' => 'plan_activation',
+                'title' => 'Wallet Funded',
+                'message' => "Your wallet has been credited with {$currency} " . number_format($amount, 2) . " via Stripe.",
+                'type' => 'wallet_funding',
+                'data' => [
+                    'amount' => $amount,
+                    'reference' => $reference,
+                    'currency' => $currency
+                ]
             ]);
-        });
+        } else {
+            // Assume subscription if type is not wallet_funding
+            $planId = $session['metadata']['plan_id'] ?? null;
+            $subscriptionId = $session['subscription'] ?? null;
+
+            if ($planId) {
+                $plan = Plan::find($planId);
+                if ($plan) {
+                    $this->activateUserPlan($user, $plan, 'stripe', $subscriptionId);
+                }
+            }
+        }
     }
+
+
 
     protected function handleStripeSubscriptionCancelled($subscription)
     {
         $subscriptionId = $subscription['id'];
-        DB::table('user_plans')
-            ->where('provider', 'stripe')
-            ->where('provider_subscription_id', $subscriptionId)
-            ->update(['status' => 'inactive']);
-    }
-
-    protected function handlePaystackSubscriptionCancelled($subscription)
-    {
-        $subscriptionCode = $subscription['subscription_code'];
-        DB::table('user_plans')
-            ->where('provider', 'paystack')
-            ->where('provider_subscription_id', $subscriptionCode)
-            ->update(['status' => 'inactive']);
+        $this->deactivateUserPlanBySubscriptionId('stripe', $subscriptionId);
     }
 }

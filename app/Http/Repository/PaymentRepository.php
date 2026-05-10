@@ -7,6 +7,7 @@ use App\Http\Traits\AuthUserTrait;
 use App\Http\Traits\ResponseTrait;
 use App\Services\PaystackService;
 use App\Models\User;
+use App\Services\StripeService;
 use App\Models\Transaction;
 use App\Models\Donation;
 use Exception;
@@ -15,25 +16,49 @@ class PaymentRepository implements PaymentRepositoryInterface
 {
     use ResponseTrait, AuthUserTrait;
 
-    public function __construct(protected PaystackService $paystackService)
-    {}
+    public function __construct(
+        protected PaystackService $paystackService,
+        protected StripeService $stripeService
+    ) {}
 
     public function initialize($user, array $data)
     {
         try {
-            $payload = [
-                'amount' => $data['amount'] * 100, // Convert to kobo
-                'email' => $data['email'],
-                'callback_url' => $data['callback_url'] ?? config('app.url') . '/payments/verify',
-                'metadata' => [
-                    'user_id' => $user->id,
-                    'type' => 'wallet_funding'
-                ]
-            ];
+            $currency = $user->country->currency ?? 'NGN';
+            $amount = $data['amount'];
 
-            $result = $this->paystackService->initializeTransaction($payload);
+            if ($currency === 'NGN') {
+                $payload = [
+                    'amount' => $amount * 100, // Convert to kobo
+                    'email' => $data['email'],
+                    'callback_url' => $data['callback_url'] ?? config('app.url') . '/payments/verify',
+                    'metadata' => [
+                        'user_id' => $user->id,
+                        'type' => 'wallet_funding'
+                    ]
+                ];
 
-            return $this->handleSuccessResponse('Transaction initialized', $result);
+                $result = $this->paystackService->initializeTransaction($payload);
+                return $this->handleSuccessResponse('Transaction initialized', $result);
+            } else {
+                // Use Stripe for non-NGN currencies (like CAD)
+                $successUrl = $data['callback_url'] ?? config('app.url') . '/payments/verify';
+                $cancelUrl = $data['cancel_url'] ?? config('app.url') . '/wallet';
+
+                $session = $this->stripeService->createOneTimePaymentSession(
+                    $user,
+                    $amount,
+                    $currency,
+                    $successUrl,
+                    $cancelUrl
+                );
+
+                return $this->handleSuccessResponse('Checkout session created', [
+                    'authorization_url' => $session->url,
+                    'access_code' => $session->id,
+                    'reference' => $session->id
+                ]);
+            }
         } catch (Exception $e) {
             return $this->handleErrorResponse($e->getMessage());
         }
@@ -73,14 +98,4 @@ class PaymentRepository implements PaymentRepositoryInterface
         }
     }
 
-    public function handleWebhook(array $event, string $signature, string $payload)
-    {
-        if (!$this->paystackService->isValidWebhook($signature, $payload)) {
-            return response()->json(['status' => 'error'], 400);
-        }
-
-        \App\Jobs\Paystack\PaystackJob::dispatchAfterResponse($event);
-
-        return response()->json(['status' => 'success'], 200);
-    }
 }

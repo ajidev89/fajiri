@@ -41,15 +41,4 @@ class PaymentController extends Controller
         return $this->paymentRepository->verify($reference);
     }
 
-    /**
-     * Handle Paystack Webhook
-     */
-    public function webhook(Request $request)
-    {
-        $signature = $request->header('x-paystack-signature');
-        $payload = $request->getContent();
-        $event = json_decode($payload, true);
-
-        return $this->paymentRepository->handleWebhook($event, $signature, $payload);
-    }
 }

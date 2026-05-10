@@ -38,8 +38,6 @@ class GoogleRepository implements GoogleRepositoryInterface
 
         $googleUser = $driver->user();
 
-        info((array) $googleUser);
-
         $user = $this->user->updateOrCreate(
             ['email' => $googleUser->getEmail()],
             [

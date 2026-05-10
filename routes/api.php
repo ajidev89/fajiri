@@ -154,7 +154,6 @@ Route::controller(PlanController::class)->middleware(['auth:sanctum'])->group(fu
 });
 
 Route::controller(PaymentController::class)->group(function () {
-    Route::post('/payments/webhook', 'webhook');
     Route::post('/webhooks/stripe', [\App\Http\Controllers\API\WebhookController::class, 'handleStripe']);
     Route::post('/webhooks/paystack', [\App\Http\Controllers\API\WebhookController::class, 'handlePaystack']);
 

@@ -44,6 +44,38 @@ class StripeService
     }
 
     /**
+     * Create a Stripe Checkout Session for One-time Payment (Wallet Funding)
+     */
+    public function createOneTimePaymentSession($user, $amount, $currency, $successUrl, $cancelUrl, $metadata = [])
+    {
+        $payload = [
+            'customer_email' => $user->email,
+            'payment_method_types' => ['card'],
+            'line_items' => [[
+                'price_data' => [
+                    'currency' => strtolower($currency),
+                    'product_data' => [
+                        'name' => 'Wallet Funding',
+                        'description' => 'Funding your Fajiri wallet',
+                    ],
+                    'unit_amount' => $amount * 100, // Amount in cents
+                ],
+                'quantity' => 1,
+            ]],
+            'mode' => 'payment',
+            'success_url' => $successUrl . '?session_id={CHECKOUT_SESSION_ID}',
+            'cancel_url' => $cancelUrl,
+            'metadata' => array_merge([
+                'user_id' => $user->id,
+                'type' => 'wallet_funding',
+                'amount' => $amount,
+                'currency' => strtoupper($currency)
+            ], $metadata),
+        ];
+        return $this->client->checkout->sessions->create($payload);
+    }
+
+    /**
      * Create a Stripe product with a default price using the Stripe SDK.
      * Expected $data: ['name'=>string, 'unit_amount'=>int (cents), 'currency'=>string, 'description'=>string (optional)]
      */
