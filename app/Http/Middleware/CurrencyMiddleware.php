@@ -16,30 +16,36 @@ class CurrencyMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
-        $currency = 'USD';
+        $currency = null;
 
-        if (Auth::check()) {
-            $user = Auth::user();
+        // 1. Check for explicit override (Query param or Header)
+        if ($request->has('currency')) {
+            $currency = strtoupper($request->query('currency'));
+        } elseif ($request->hasHeader('X-Currency')) {
+            $currency = strtoupper($request->header('X-Currency'));
+        }
+
+        // 2. If no override, try Authenticated User
+        if (!$currency && Auth::guard('sanctum')->check()) {
+            $user = Auth::guard('sanctum')->user();
             if ($user->country && $user->country->currency) {
                 $currency = $user->country->currency;
             } else {
-                // Fallback to logic: Nigeria = NGN, Canada = CAD, Else = USD
                 $countryCode = $user->country->iso2 ?? null;
                 $currency = $this->locationService->getCurrencyByCountryCode($countryCode);
             }
-        } else {
-            // Guest: Detect by IP
+        }
+
+        // 3. Finally, Fallback to IP detection
+        if (!$currency) {
             $ip = $request->ip();
             $countryCode = $this->locationService->getCountryCode($ip);
             $currency = $this->locationService->getCurrencyByCountryCode($countryCode);
         }
 
-        // Store detected currency in the request for easy access
+        // Store detected currency in the request
         $request->merge(['detected_currency' => $currency]);
         
-        // Also share with views if needed (though this is mostly API)
-        // view()->share('detected_currency', $currency);
-
         return $next($request);
     }
 }
