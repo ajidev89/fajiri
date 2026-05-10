@@ -7,6 +7,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class PlanResource extends JsonResource
 {
+    use \App\Http\Traits\ConvertedAmountTrait;
+
     /**
      * Transform the resource into an array.
      *
@@ -14,6 +16,8 @@ class PlanResource extends JsonResource
      */
     public function toArray(\Illuminate\Http\Request $request): array
     {
+        $converted = $this->getConvertedAmount($this->price, $this->currency, $request);
+
         return [
             'id' => $this->id,
             'name' => $this->name,
@@ -21,8 +25,10 @@ class PlanResource extends JsonResource
             'account_type' => $this->account_type,
             'slug' => $this->slug,
             'description' => $this->description,
-            'price' => $this->price,
-            'currency' => $this->currency,
+            'price' => $converted['amount'],
+            'currency' => $converted['currency'],
+            'base_price' => $converted['base_amount'],
+            'base_currency' => $converted['base_currency'],
             'duration' => $this->duration,
             'features' => $this->features,
             'status' => $this->status,
