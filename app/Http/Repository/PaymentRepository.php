@@ -90,6 +90,13 @@ class PaymentRepository implements PaymentRepositoryInterface
                     ]
                 ]);
 
+                // Send Email
+                try {
+                    \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\DepositSuccessMail($user, $amount, $user->wallet->currency, $reference));
+                } catch (\Exception $e) {
+                    \Log::error('Failed to send deposit email: ' . $e->getMessage());
+                }
+
                 return $this->handleSuccessResponse('Wallet funded successfully', $user->wallet);
             }
 

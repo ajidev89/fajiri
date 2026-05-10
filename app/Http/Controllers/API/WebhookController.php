@@ -94,6 +94,13 @@ class WebhookController extends Controller
                     'currency' => $currency
                 ]
             ]);
+
+            // Send Email
+            try {
+                \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\DepositSuccessMail($user, $amount, $currency, $reference));
+            } catch (\Exception $e) {
+                \Log::error('Failed to send stripe deposit email: ' . $e->getMessage());
+            }
         } else {
             // Assume subscription if type is not wallet_funding
             $planId = $session['metadata']['plan_id'] ?? null;
@@ -103,6 +110,13 @@ class WebhookController extends Controller
                 $plan = Plan::find($planId);
                 if ($plan) {
                     $this->activateUserPlan($user, $plan, 'stripe', $subscriptionId);
+
+                    // Send Email
+                    try {
+                        \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\SubscriptionSuccessMail($user, $plan, $plan->price, $plan->currency));
+                    } catch (\Exception $e) {
+                        \Log::error('Failed to send stripe subscription email: ' . $e->getMessage());
+                    }
                 }
             }
         }

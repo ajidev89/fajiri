@@ -14,6 +14,17 @@ trait ConvertedAmountTrait
         $currencyService = app(CurrencyService::class);
         $targetCurrency = $request->detected_currency ?? 'USD';
         $sourceCurrency = $sourceCurrency ?? 'NGN';
+
+        // Exempt Admin from conversion
+        $user = $request->user();
+        if ($user && $user->role && $user->role->slug === 'admin') {
+            return [
+                'amount' => (float) $amount,
+                'currency' => $sourceCurrency,
+                'base_amount' => (float) $amount,
+                'base_currency' => $sourceCurrency,
+            ];
+        }
         
         $convertedAmount = $currencyService->convert(
             (float) $amount,

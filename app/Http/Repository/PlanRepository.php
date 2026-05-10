@@ -224,6 +224,13 @@ class PlanRepository implements PlanRepositoryInterface
                 ]
             ]);
 
+            // Send Email
+            try {
+                \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\SubscriptionSuccessMail($user, $plan, $plan->price, $plan->currency));
+            } catch (\Exception $e) {
+                \Log::error('Failed to send subscription email: ' . $e->getMessage());
+            }
+
             return $user->currentPlan();
         });
     }
@@ -288,6 +295,13 @@ class PlanRepository implements PlanRepositoryInterface
                     'currency' => $plan->currency
                 ]
             ]);
+
+            // Send Email
+            try {
+                \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\SubscriptionSuccessMail($user, $plan, $plan->price, $plan->currency));
+            } catch (\Exception $e) {
+                \Log::error('Failed to send subscription renewal email: ' . $e->getMessage());
+            }
 
             return $user->currentPlan();
         });

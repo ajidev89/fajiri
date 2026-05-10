@@ -81,6 +81,13 @@ class PaystackJob implements ShouldQueue
 
             if ($user && $plan) {
                 $this->activateUserPlan($user, $plan, 'paystack', $subscriptionCode);
+
+                // Send Email
+                try {
+                    \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\SubscriptionSuccessMail($user, $plan, $plan->price, $plan->currency));
+                } catch (\Exception $e) {
+                    \Log::error('Failed to send paystack subscription email: ' . $e->getMessage());
+                }
             }
         }
     }
@@ -118,6 +125,13 @@ class PaystackJob implements ShouldQueue
                         'currency' => $user->wallet->currency
                     ]
                 ]);
+
+                // Send Email
+                try {
+                    \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\DepositSuccessMail($user, $amount, $user->wallet->currency, $reference));
+                } catch (\Exception $e) {
+                    \Log::error('Failed to send paystack deposit email: ' . $e->getMessage());
+                }
             }
         }
     }
