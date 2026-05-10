@@ -17,7 +17,7 @@ trait ConvertedAmountTrait
 
         // Exempt Admin from conversion
         $user = $request->user();
-        if ($user && $user->role && $user->role->slug === 'admin') {
+        if ($user && $user->role && ($user->role->slug === 'admin' || $user->role->slug === 'super-admin')) {
             return [
                 'amount' => (float) $amount,
                 'currency' => $sourceCurrency,
