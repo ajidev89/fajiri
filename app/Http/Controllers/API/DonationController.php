@@ -162,10 +162,14 @@ class DonationController extends Controller
 
                 $result = $this->paystackService->initializeTransaction($payload);
             } else {
-                // Use Stripe for non-NGN
+                // Use Stripe for non-NGN. 
+                // IMPORTANT: We must convert the amount from the item's base currency (targetCurrency) 
+                // to the donor's currency (donorCurrency) to ensure correct charging on Stripe.
+                $stripeAmount = $this->currencyService->convert($amount, $targetCurrency, $donorCurrency);
+
                 $session = $this->stripeService->createOneTimePaymentSession(
                     $user ?? (object)['email' => $email],
-                    $amount,
+                    $stripeAmount,
                     $donorCurrency,
                     config('app.url') . '/donations/verify',
                     config('app.url') . "/{$type}/{$id}",
@@ -174,7 +178,9 @@ class DonationController extends Controller
                     [
                         'donatable_id' => $donatable->id,
                         'type' => 'donation',
-                        'reference' => $reference
+                        'reference' => $reference,
+                        'original_amount' => $amount,
+                        'original_currency' => $targetCurrency
                     ]
                 );
 

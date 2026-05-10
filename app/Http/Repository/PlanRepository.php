@@ -89,14 +89,28 @@ class PlanRepository implements PlanRepositoryInterface
                     $plan->stripe_product_id = $stripeProduct['id'] ?? null;
                 }
 
+                // Convert price to USD for Stripe if it's in NGN or other local currency
+                $stripeCurrency = 'USD';
+                $stripeAmount = $plan->price;
+                
+                if (strtoupper($plan->currency ?? 'NGN') !== 'USD') {
+                    $stripeAmount = $this->paymentGateway->getCurrencyService()->convert(
+                        (float) $plan->price,
+                        $plan->currency ?? 'NGN',
+                        'USD'
+                    );
+                }
+
                 $stripePrice = $this->paymentGateway->getStripeService()->createPrice([
                     'product' => $plan->stripe_product_id,
-                    'unit_amount' => $plan->price * 100,
-                    'currency' => strtolower($plan->currency ?? 'USD'),
+                    'unit_amount' => $stripeAmount * 100,
+                    'currency' => strtolower($stripeCurrency),
                     'recurring' => ['interval' => $this->mapDurationToStripeInterval($plan->duration)],
                     'metadata' => [
                         'local_plan_id' => $plan->id,
                         'provider' => 'stripe',
+                        'original_price' => $plan->price,
+                        'original_currency' => $plan->currency ?? 'NGN',
                     ],
                 ]);
 

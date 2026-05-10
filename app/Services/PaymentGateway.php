@@ -10,8 +10,14 @@ class PaymentGateway
 {
     public function __construct(
         protected StripeService $stripeService,
-        protected PaystackService $paystackService
+        protected PaystackService $paystackService,
+        protected CurrencyService $currencyService
     ) {}
+
+    public function getCurrencyService()
+    {
+        return $this->currencyService;
+    }
 
     /**
      * Get the appropriate service based on currency
