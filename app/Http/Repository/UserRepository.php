@@ -5,6 +5,7 @@ namespace App\Http\Repository;
 use App\Http\Repository\Contracts\UserRepositoryInterface;
 use App\Http\Resources\Transaction\TransactionResource;
 use App\Http\Resources\User\UserResource;
+use App\Http\Resources\UserPlanResource;
 use App\Http\Services\CloudinaryService;
 use App\Http\Traits\ResponseTrait;
 use App\Http\Traits\AuthUserTrait;
@@ -174,5 +175,10 @@ class UserRepository implements UserRepositoryInterface {
             'referral_code' => $user->referral_code,
             'referrals_count' => $user->referrals()->count()
         ]);
+    }
+
+    public function subscriptions($request) {
+        $subscriptions = $this->user()->plans()->latest('user_plans.started_at')->paginate(10);
+        return $this->handleSuccessCollectionResponse("Subscriptions successfully fetched", UserPlanResource::collection($subscriptions));
     }
 }

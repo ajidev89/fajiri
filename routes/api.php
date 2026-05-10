@@ -70,6 +70,7 @@ Route::controller(UserController::class)->middleware(['auth:sanctum'])->group(fu
         Route::post('transfer', 'transfer');
         Route::get('withdraw-account', 'withdrawAccount');
         Route::get('referrals', 'referrals');
+        Route::get('subscriptions', 'subscriptions');
     });
 });
 

@@ -12,4 +12,5 @@ interface UserRepositoryInterface {
     public function updateProfile($request);
     public function withdrawAccount();
     public function referrals();
+    public function subscriptions($request);
 }

@@ -47,4 +47,8 @@ class UserController extends Controller
     public function referrals(){
         return $this->userRepositoryInterface->referrals();
     }
+
+    public function subscriptions(\Illuminate\Http\Request $request){
+        return $this->userRepositoryInterface->subscriptions($request);
+    }
 }
