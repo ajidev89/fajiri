@@ -4,6 +4,7 @@ namespace App\Http\Repository;
 
 use App\Http\Repository\Contracts\GoogleRepositoryInterface;
 use App\Models\User;
+use Illuminate\Http\Request;
 use Laravel\Socialite\Facades\Socialite;
 
 class GoogleRepository implements GoogleRepositoryInterface
@@ -12,21 +13,30 @@ class GoogleRepository implements GoogleRepositoryInterface
     public function __construct(private User $user)
     {}
 
-    public function generateGoogleUrl()
+    public function generateGoogleUrl(Request $request)
     {
-        $url = Socialite::driver('google')
-            ->stateless()
-            ->redirect()
-            ->getTargetUrl();
+        $driver = Socialite::driver('google')->stateless();
+
+        if ($request->has('callback_url')) {
+            $driver->redirectUrl($request->callback_url);
+        }
+
+        $url = $driver->redirect()->getTargetUrl();
 
         return response()->json([
             'url' => $url
         ]); 
     }
 
-    public function handleGoogleCallback()
+    public function handleGoogleCallback(Request $request)
     {
-        $googleUser = Socialite::driver('google')->stateless()->user();
+        $driver = Socialite::driver('google')->stateless();
+
+        if ($request->has('callback_url')) {
+            $driver->redirectUrl($request->callback_url);
+        }
+
+        $googleUser = $driver->user();
 
         info((array) $googleUser);
 

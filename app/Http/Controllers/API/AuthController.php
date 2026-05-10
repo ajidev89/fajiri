@@ -31,12 +31,12 @@ class AuthController extends Controller
         return $this->authRepositoryInterface->loginWithGoogle($request);
     }
 
-    public function generateGoogleUrl(){
-        return $this->googleRepositoryInterface->generateGoogleUrl();
+    public function generateGoogleUrl(Request $request){
+        return $this->googleRepositoryInterface->generateGoogleUrl($request);
     }
     
-    public function handleGoogleCallback(){
-        return $this->googleRepositoryInterface->handleGoogleCallback();
+    public function handleGoogleCallback(Request $request){
+        return $this->googleRepositoryInterface->handleGoogleCallback($request);
     }
 
     public function changePassword(ChangePasswordRequest $request){
