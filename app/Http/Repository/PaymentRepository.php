@@ -50,7 +50,9 @@ class PaymentRepository implements PaymentRepositoryInterface
                     $amount,
                     $currency,
                     $successUrl,
-                    $cancelUrl
+                    $cancelUrl,
+                    'Wallet Funding',
+                    'Funding your Fajiri wallet'
                 );
 
                 return $this->handleSuccessResponse('Checkout session created', [

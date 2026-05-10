@@ -44,9 +44,9 @@ class StripeService
     }
 
     /**
-     * Create a Stripe Checkout Session for One-time Payment (Wallet Funding)
+     * Create a Stripe Checkout Session for One-time Payment (Wallet Funding / Donation)
      */
-    public function createOneTimePaymentSession($user, $amount, $currency, $successUrl, $cancelUrl, $metadata = [])
+    public function createOneTimePaymentSession($user, $amount, $currency, $successUrl, $cancelUrl, $productName = 'Wallet Funding', $productDescription = 'Funding your Fajiri wallet', $metadata = [])
     {
         $payload = [
             'customer_email' => $user->email,
@@ -55,8 +55,8 @@ class StripeService
                 'price_data' => [
                     'currency' => strtolower($currency),
                     'product_data' => [
-                        'name' => 'Wallet Funding',
-                        'description' => 'Funding your Fajiri wallet',
+                        'name' => $productName,
+                        'description' => $productDescription,
                     ],
                     'unit_amount' => $amount * 100, // Amount in cents
                 ],

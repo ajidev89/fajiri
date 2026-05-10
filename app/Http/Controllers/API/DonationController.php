@@ -23,7 +23,8 @@ class DonationController extends Controller
         protected CampaignRepositoryInterface $campaignRepository,
         protected DonationRepositoryInterface $donationRepository,
         protected CurrencyService $currencyService,
-        protected PaystackService $paystackService
+        protected PaystackService $paystackService,
+        protected StripeService $stripeService
     ) {}
 
     public function index()
@@ -111,15 +112,15 @@ class DonationController extends Controller
     }
 
     /**
-     * Initialize Paystack donation
+     * Initialize donation payment
      */
-    public function initializePaystack(DonationRequest $request, $type, $id)
+    public function initializePayment(DonationRequest $request, $type, $id)
     {
         $donatable = $this->getDonatable($type, $id);
         $user = auth()->user();
         
         $targetCurrency = $this->getDonatableCurrency($donatable, $type);
-        $donorCurrency = $user ? ($user->wallet->currency ?? 'NGN') : $targetCurrency;
+        $donorCurrency = $user ? ($user->wallet->currency ?? 'NGN') : ($request->currency ?? $targetCurrency);
         $email = $user ? $user->email : $request->email;
         $name = $user ? $user->profile->first_name . ' ' . $user->profile->last_name : $request->name;
 
@@ -128,7 +129,7 @@ class DonationController extends Controller
         $convertedAmount = round($amount * $rate, 2);
 
         try {
-            $reference = 'PAY_' . uniqid();
+            $reference = (strtoupper($donorCurrency) === 'NGN' ? 'PAY_' : 'STR_') . uniqid();
             
             // Create pending donation
             $this->donationRepository->create([
@@ -137,7 +138,7 @@ class DonationController extends Controller
                 'user_id' => $user->id ?? null,
                 'amount' => $amount,
                 'currency' => $donorCurrency,
-                'medium' => Medium::PAYSTACK,
+                'medium' => strtoupper($donorCurrency) === 'NGN' ? Medium::PAYSTACK : Medium::STRIPE,
                 'name' => $name,
                 'email' => $email,
                 'converted_amount' => $convertedAmount,
@@ -146,19 +147,42 @@ class DonationController extends Controller
                 'reference' => $reference,
             ]);
 
-            $payload = [
-                'amount' => $amount * 100, // Paystack uses kobo/cents
-                'email' => $email,
-                'reference' => $reference,
-                'callback_url' => config('app.url') . '/donations/verify',
-                'metadata' => [
-                    'donatable_id' => $donatable->id,
-                    'user_id' => $user->id ?? null,
-                    'type' => "donation"
-                ]
-            ];
+            if (strtoupper($donorCurrency) === 'NGN') {
+                $payload = [
+                    'amount' => $amount * 100,
+                    'email' => $email,
+                    'reference' => $reference,
+                    'callback_url' => config('app.url') . '/donations/verify',
+                    'metadata' => [
+                        'donatable_id' => $donatable->id,
+                        'user_id' => $user->id ?? null,
+                        'type' => "donation"
+                    ]
+                ];
 
-            $result = $this->paystackService->initializeTransaction($payload);
+                $result = $this->paystackService->initializeTransaction($payload);
+            } else {
+                // Use Stripe for non-NGN
+                $session = $this->stripeService->createOneTimePaymentSession(
+                    $user ?? (object)['email' => $email],
+                    $amount,
+                    $donorCurrency,
+                    config('app.url') . '/donations/verify',
+                    config('app.url') . "/{$type}/{$id}",
+                    'Donation',
+                    "Donation to " . $this->getDonatableTitle($donatable, $type),
+                    [
+                        'donatable_id' => $donatable->id,
+                        'type' => 'donation',
+                        'reference' => $reference
+                    ]
+                );
+
+                $result = [
+                    'authorization_url' => $session->url,
+                    'reference' => $reference
+                ];
+            }
 
             return $this->handleSuccessResponse('Transaction initialized', $result);
         } catch (Exception $e) {

@@ -35,7 +35,8 @@ class PaymentGateway
      */
     public function initializeSubscription(User $user, Plan $plan, array $options = [])
     {
-        $currency = $plan->currency ?? 'USD';
+        // Use user's country currency or request's detected currency to choose gateway
+        $currency = $user->country->currency ?? request()->detected_currency ?? 'USD';
         
         if (strtoupper($currency) === 'NGN') {
             if (!$plan->paystack_plan_code) {
@@ -54,6 +55,7 @@ class PaymentGateway
                 ]
             ]);
         } else {
+            // Any currency other than NGN uses Stripe
             if (!$plan->stripe_price_id) {
                 throw new Exception("Stripe price ID not set for this plan.");
             }
