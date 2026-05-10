@@ -46,7 +46,7 @@ class PaymentGateway
                 'email' => $user->email,
                 'amount' => $plan->price * 100,
                 'plan' => $plan->paystack_plan_code,
-                'callback_url' => $options['callback_url'] ?? config('app.url') . '/payments/verify/paystack',
+                'callback_url' => $options['success_url'] ?? config('app.url') . '/payments/verify/paystack',
                 'metadata' => [
                     'user_id' => $user->id,
                     'plan_id' => $plan->id,
