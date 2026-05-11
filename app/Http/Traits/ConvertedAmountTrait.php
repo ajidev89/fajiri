@@ -15,11 +15,14 @@ trait ConvertedAmountTrait
         $currencyService = app(CurrencyService::class);
         $targetCurrency = $request->detected_currency ?? 'USD';
         $sourceCurrency = $sourceCurrency ?? 'NGN';
+        
+        info("targert_currency": $targetCurrency);
+        info("source_currency": $sourceCurrency);
 
 
         // Exempt Admin from conversion
 
-        info($this->user());
+        info("user": $this->user());
         info($this->user()->role);
         info($this->user()->role->slug === 'admin' || $this->user()->role->slug === 'super-admin');
         
