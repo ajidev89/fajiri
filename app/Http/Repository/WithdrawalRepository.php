@@ -153,6 +153,19 @@ class WithdrawalRepository implements WithdrawalRepositoryInterface {
                 // Log the transaction and deduct balance
                 $transaction = $user->withdraw($request->amount, "Withdrawal to {$account->account_name}");
 
+                // Add notification
+                \App\Models\Notification::create([
+                    'user_id' => $user->id,
+                    'title' => 'Withdrawal Initiated',
+                    'message' => "Your withdrawal of " . ($user->wallet->currency ?? 'NGN') . " " . number_format($request->amount, 2) . " has been initiated.",
+                    'type' => 'withdrawal_initiated',
+                    'data' => [
+                        'amount' => $request->amount,
+                        'account_name' => $account->account_name,
+                        'account_number' => $account->account_number
+                    ]
+                ]);
+
                 return $this->handleSuccessResponse("Withdrawal initiated successfully", $transaction);
             } catch (\Exception $e) {
                 return $this->handleErrorResponse($e->getMessage());

@@ -156,6 +156,17 @@ class EventRepository implements EventRepositoryInterface
                 'status' => Status::ACTIVE->value,
             ]);
 
+            // Add notification
+            \App\Models\Notification::create([
+                'user_id' => $user->id,
+                'title' => 'Event Registration Successful',
+                'message' => "You have successfully registered for '{$event->title}'.",
+                'type' => 'event_registration',
+                'data' => [
+                    'event_id' => $event->id,
+                ]
+            ]);
+
             return $this->handleSuccessResponse("Attendance registered successfully");
         } catch (\Exception $e) {
             return $this->handleErrorResponse($e->getMessage());
@@ -265,6 +276,21 @@ class EventRepository implements EventRepositoryInterface
                 
                 if ($attendee && $attendee->status === Status::INACTIVE->value) {
                     $attendee->update(['status' => Status::ACTIVE->value]);
+
+                    // Add notification
+                    if ($attendee->user_id) {
+                        \App\Models\Notification::create([
+                            'user_id' => $attendee->user_id,
+                            'title' => 'Event Registration Successful',
+                            'message' => "Your payment for '{$attendee->event->title}' was successful. You are now registered.",
+                            'type' => 'event_registration',
+                            'data' => [
+                                'event_id' => $attendee->event_id,
+                                'attendee_code' => $attendee->code
+                            ]
+                        ]);
+                    }
+
                     return $this->handleSuccessResponse("Payment verified and registration successful", $attendee);
                 }
             }

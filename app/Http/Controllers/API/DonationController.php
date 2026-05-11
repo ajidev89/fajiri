@@ -216,6 +216,25 @@ class DonationController extends Controller
                 if ($donation && $donation->status === 'pending') {
                     $donation->update(['status' => 'completed']);
                     
+                    // Add notification
+                    if ($donation->user_id) {
+                        $title = $donation->donatable_type === Campaign::class 
+                            ? $donation->donatable->title 
+                            : $donation->donatable->name;
+
+                        \App\Models\Notification::create([
+                            'user_id' => $donation->user_id,
+                            'title' => 'Donation Successful',
+                            'message' => "Your donation of {$donation->currency} " . number_format($donation->amount, 2) . " to '{$title}' was successful.",
+                            'type' => 'donation_success',
+                            'data' => [
+                                'donation_id' => $donation->id,
+                                'donatable_id' => $donation->donatable_id,
+                                'donatable_type' => $donation->donatable_type
+                            ]
+                        ]);
+                    }
+
                     $response = [
                         'donation' => $donation,
                     ];
