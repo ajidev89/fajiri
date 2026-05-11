@@ -17,7 +17,7 @@ trait ConvertedAmountTrait
         $sourceCurrency = $sourceCurrency ?? 'NGN';
 
         // Exempt Admin from conversion
-        if ($this->user() && $this->user()->role && ($this->user()->role->slug === 'admin' || $this->user()->role->slug === 'super-admin')) {
+        if ($this->user() && $this->user()->role && in_array($this->user()->role->slug, ['admin', 'super-admin'])) {
             return [
                 'amount' => (float) $amount,
                 'currency' => $sourceCurrency,

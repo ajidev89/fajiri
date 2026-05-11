@@ -8,6 +8,6 @@ trait AuthUserTrait
 {
     public function user(): User | null
     {
-        return request()->user();
+        return request()->user() ?? auth('sanctum')->user();
     }
 }
