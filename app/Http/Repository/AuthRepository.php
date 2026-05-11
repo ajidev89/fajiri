@@ -116,8 +116,11 @@ class AuthRepository implements AuthRepositoryInterface {
 
 
         if (Auth::attempt($credentials)) {
-            if ($this->user()->status !== Status::ACTIVE->value) {
-                return $this->handleErrorResponse("Your account is {$this->user()->status}. Please contact support.", 401);
+            $user = Auth::user();
+
+            if ($user->status !== Status::ACTIVE->value) {
+                Auth::logout();
+                return $this->handleErrorResponse("Your account is {$user->status}. Please contact support.", 401);
             }
 
             $this->user()->tokens()->delete();
@@ -206,10 +209,14 @@ class AuthRepository implements AuthRepositoryInterface {
         $user = User::updateOrCreate(
             ['email' => $payload['email']],
             [
-                'name' => $payload['name'],
+                'username' => $payload['name'] ?? $payload['email'],
                 'google_id' => $payload['sub'],
             ]
         );
+
+        if ($user->status !== Status::ACTIVE->value) {
+            return response()->json(['error' => "Your account is {$user->status}. Please contact support."], 401);
+        }
 
         $token = $user->createToken('auth')->plainTextToken;
 
@@ -249,6 +256,10 @@ class AuthRepository implements AuthRepositoryInterface {
     public function loginViaMagicLink($request)
     {
         $user = $this->model->findOrFail($request->input('user'));
+
+        if ($user->status !== Status::ACTIVE->value) {
+            return $this->handleErrorResponse("Your account is {$user->status}. Please contact support.", 401);
+        }
 
         $token = $user->createToken($user->email)->plainTextToken;
 

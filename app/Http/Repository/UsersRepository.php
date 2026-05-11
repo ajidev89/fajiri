@@ -27,6 +27,7 @@ class UsersRepository implements UsersRepositoryInterface {
 
     public function suspend(User $user) {
         $user->update(['status' => 'suspended']);
+        $user->tokens()->delete();
         $user->audit('status_change', 'User account has been suspended by an administrator.');
         return $user;
     }
@@ -39,6 +40,7 @@ class UsersRepository implements UsersRepositoryInterface {
 
     public function deactivate(User $user) {
         $user->update(['status' => Status::DEACTIVATED->value]);
+        $user->tokens()->delete();
         $user->audit('status_change', 'User account has been deactivated by an administrator.');
         return $user;
     }

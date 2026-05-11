@@ -189,6 +189,7 @@ class UserRepository implements UserRepositoryInterface {
             $user->update([
                 'status' => Status::DEACTIVATED->value
             ]);
+            $user->tokens()->delete();
             $user->audit('status_change', 'User account has been deactivated by the user.');
             return $this->handleSuccessResponse("Account successfully deactivated");
         } catch (\Exception $e) {
