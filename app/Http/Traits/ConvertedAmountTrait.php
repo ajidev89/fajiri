@@ -16,8 +16,8 @@ trait ConvertedAmountTrait
         $targetCurrency = $request->detected_currency ?? 'USD';
         $sourceCurrency = $sourceCurrency ?? 'NGN';
         
-        info("targert_currency": $targetCurrency);
-        info("source_currency": $sourceCurrency);
+        info("targert_currency",$targetCurrency);
+        info("source_currency",$sourceCurrency);
 
 
         // Exempt Admin from conversion
