@@ -29,7 +29,7 @@ class AnalyticsController extends Controller
 
     public function leaderboard(){
         $data = $this->analyticsRepository->leaderboard();
-        return $this->handleSuccessResponse("Successful fetched leaderboard", $data);
+        return $this->handleSuccessResponse("Successfully fetched leaderboard", $data);
     }
 
     public function disbursementStats(){

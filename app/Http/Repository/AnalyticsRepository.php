@@ -227,7 +227,7 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
         $limit = 50;
         
         return $this->user->whereHas('role', function ($query) {
-                $query->where('name', 'user');
+                $query->where('slug', 'user');
             })
             ->withCount([
                 'referrals',

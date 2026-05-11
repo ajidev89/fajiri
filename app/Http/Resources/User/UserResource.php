@@ -25,6 +25,7 @@ class UserResource extends JsonResource
             "phone"             => $this->phone,
             "role"              => $this->role,
             "username"          => $this->username,
+            "country"           => $this->country,
             "has_pin"           => (bool) $this->pin,
             "profile"           => new ProfileResource($this->profile), 
             "wallet"            => new WalletResource($this->wallet),
