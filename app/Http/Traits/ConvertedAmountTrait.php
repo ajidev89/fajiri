@@ -19,6 +19,7 @@ trait ConvertedAmountTrait
         // Exempt Admin from conversion
         $user = $request->user();
 
+        info($user);
         info($user->role->slug);
         info($user->role->slug === 'admin' || $user->role->slug === 'super-admin');
         
