@@ -229,20 +229,22 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
         return $this->user->whereHas('role', function ($query) {
                 $query->where('slug', 'user');
             })
+            ->with(['profile'])
             ->withCount([
                 'referrals',
                 'donations as campaign_donations_count' => function ($query) {
-                    $query->where('donatable_type', Campaign::class)
+                    $query->where('donatable_type', \App\Models\Campaign::class)
                         ->where('status', 'completed');
                 },
                 'donations as need_donations_count' => function ($query) {
-                    $query->where('donatable_type', Need::class)
+                    $query->where('donatable_type', \App\Models\Need::class)
                         ->where('status', 'completed');
                 },
                 'eventAttendees as event_attendance_count'
             ])
             ->get(['id', 'username', 'referrals_count', 'campaign_donations_count', 'need_donations_count', 'event_attendance_count'])
             ->map(function ($user) {
+                $user->name = ($user->profile->first_name ?? '') . ' ' . ($user->profile->last_name ?? '');
                 $user->total_engagement = $user->referrals_count + 
                                         $user->campaign_donations_count + 
                                         $user->need_donations_count + 

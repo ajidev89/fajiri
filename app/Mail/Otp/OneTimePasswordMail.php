@@ -36,7 +36,7 @@ class OneTimePasswordMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'mails.otp',
+            view: 'emails.otp',
             with: ["code" => $this->code]
         );
     }
