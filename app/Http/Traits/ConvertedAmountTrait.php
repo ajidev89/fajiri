@@ -17,12 +17,12 @@ trait ConvertedAmountTrait
         $sourceCurrency = $sourceCurrency ?? 'NGN';
         
         info("targert_currency",$targetCurrency);
-        info("source_currency",$sourceCurrency);
+        info("source_currency",[$sourceCurrency]);
 
 
         // Exempt Admin from conversion
 
-        info("user": $this->user());
+        info("user",[$this->user()]);
         info($this->user()->role);
         info($this->user()->role->slug === 'admin' || $this->user()->role->slug === 'super-admin');
         
