@@ -16,6 +16,14 @@ class CurrencyMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
+        // Ignore currency detection for admins
+        if (Auth::guard('sanctum')->check()) {
+            $user = Auth::guard('sanctum')->user();
+            if ($user->role && in_array($user->role->slug, ['admin', 'super-admin'])) {
+                return $next($request);
+            }
+        }
+
         $currency = null;
 
         // 1. Check for explicit override (Query param or Header)
