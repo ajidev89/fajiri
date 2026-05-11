@@ -6,6 +6,7 @@ use App\Services\CurrencyService;
 
 trait ConvertedAmountTrait
 {
+    use AuthUserTrait;
     /**
      * Convert an amount to the detected currency from the request.
      */
@@ -17,13 +18,12 @@ trait ConvertedAmountTrait
 
 
         // Exempt Admin from conversion
-        $user = $request->user();
 
-        info($user);
-        info($user->role->slug);
-        info($user->role->slug === 'admin' || $user->role->slug === 'super-admin');
+        info($this->user());
+        info($this->user()->role);
+        info($this->user()->role->slug === 'admin' || $this->user()->role->slug === 'super-admin');
         
-        if ($user && $user->role && ($user->role->slug === 'admin' || $user->role->slug === 'super-admin')) {
+        if ($this->user() && $this->user()->role && ($this->user()->role->slug === 'admin' || $this->user()->role->slug === 'super-admin')) {
             return [
                 'amount' => (float) $amount,
                 'currency' => $sourceCurrency,
