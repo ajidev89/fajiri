@@ -31,7 +31,7 @@ class PaymentRepository implements PaymentRepositoryInterface
                 $payload = [
                     'amount' => $amount * 100, // Convert to kobo
                     'email' => $data['email'],
-                    'callback_url' => $data['callback_url'] ?? "https://fajiri.org/",
+                    'callback_url' => $data['callback_url'] ?? "https://app.fajiri.org/payment/callback",
                     'metadata' => [
                         'user_id' => $user->id,
                         'type' => 'wallet_funding'
@@ -42,8 +42,8 @@ class PaymentRepository implements PaymentRepositoryInterface
                 return $this->handleSuccessResponse('Transaction initialized', $result);
             } else {
                 // Use Stripe for non-NGN currencies (like CAD)
-                $successUrl = $data['callback_url'] ?? "https://fajiri.org";
-                $cancelUrl = $data['cancel_url'] ?? "https://fajiri.org";
+                $successUrl = $data['callback_url'] ?? "https://app.fajiri.org/payment/callback?status=success";
+                $cancelUrl = $data['cancel_url'] ?? "https://app.fajiri.org/payment/callback?status=cancel";
 
                 $session = $this->stripeService->createOneTimePaymentSession(
                     $user,
