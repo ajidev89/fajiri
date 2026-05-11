@@ -71,6 +71,7 @@ Route::controller(UserController::class)->middleware(['auth:sanctum'])->group(fu
         Route::get('withdraw-account', 'withdrawAccount');
         Route::get('referrals', 'referrals');
         Route::get('subscriptions', 'subscriptions');
+        Route::delete('/', 'deactivate');
     });
 });
 
@@ -119,6 +120,8 @@ Route::controller(UsersController::class)->group(function () {
         Route::put('/{user}', 'update');
         Route::put('/{user}/suspend', 'suspend');
         Route::put('/{user}/unsuspend', 'unsuspend');
+        Route::put('/{user}/deactivate', 'deactivate');
+        Route::put('/{user}/reactivate', 'reactivate');
         Route::delete('/{user}', 'destroy');
     });
 });

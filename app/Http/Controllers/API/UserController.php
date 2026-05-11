@@ -51,4 +51,8 @@ class UserController extends Controller
     public function subscriptions(\Illuminate\Http\Request $request){
         return $this->userRepositoryInterface->subscriptions($request);
     }
+
+    public function deactivate(){
+        return $this->userRepositoryInterface->deactivate();
+    }
 }

@@ -10,6 +10,7 @@ use App\Http\Services\CloudinaryService;
 use App\Http\Traits\ResponseTrait;
 use App\Http\Traits\AuthUserTrait;
 use App\Models\User;
+use App\Enums\User\Status;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 
@@ -180,5 +181,18 @@ class UserRepository implements UserRepositoryInterface {
     public function subscriptions($request) {
         $subscriptions = $this->user()->plans()->latest('user_plans.started_at')->paginate(10);
         return $this->handleSuccessCollectionResponse("Subscriptions successfully fetched", UserPlanResource::collection($subscriptions));
+    }
+
+    public function deactivate() {
+        try {
+            $user = $this->user();
+            $user->update([
+                'status' => Status::DEACTIVATED->value
+            ]);
+            $user->audit('status_change', 'User account has been deactivated by the user.');
+            return $this->handleSuccessResponse("Account successfully deactivated");
+        } catch (\Exception $e) {
+            return $this->handleErrorResponse($e->getMessage(), 400);
+        }
     }
 }

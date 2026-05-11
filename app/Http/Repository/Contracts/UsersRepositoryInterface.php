@@ -16,6 +16,10 @@ interface UsersRepositoryInterface
 
     public function unsuspend(User $user);
 
+    public function deactivate(User $user);
+
+    public function reactivate(User $user);
+
     public function delete(User $user);
     public function audits(User $user);
     public function transactions(User $user);

@@ -11,6 +11,7 @@ use App\Models\Otp;
 use App\Models\Profile;
 use App\Models\Role;
 use App\Models\User;
+use App\Enums\User\Status;
 use Exception;
 use Google_Client;
 use Illuminate\Auth\Events\PasswordReset;
@@ -115,9 +116,9 @@ class AuthRepository implements AuthRepositoryInterface {
 
 
         if (Auth::attempt($credentials)) {
-            // if($this->user()->status != "active"){
-            //     return $this->handleErrorResponse('Your account is not active contact support via email',401);
-            // }
+            if ($this->user()->status !== Status::ACTIVE->value) {
+                return $this->handleErrorResponse("Your account is {$this->user()->status}. Please contact support.", 401);
+            }
 
             $this->user()->tokens()->delete();
          

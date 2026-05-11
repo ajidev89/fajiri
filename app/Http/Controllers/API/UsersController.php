@@ -40,6 +40,16 @@ class UsersController extends Controller
         return $this->handleSuccessResponse("Successfully unsuspended user", new UserResource($user));
     }
 
+    public function deactivate(User $user){
+        $user = $this->usersRepositoryInterface->deactivate($user);
+        return $this->handleSuccessResponse("Successfully deactivated user", new UserResource($user));
+    }
+
+    public function reactivate(User $user){
+        $user = $this->usersRepositoryInterface->reactivate($user);
+        return $this->handleSuccessResponse("Successfully reactivated user", new UserResource($user));
+    }
+
     public function delete(User $user){
         $user = $this->usersRepositoryInterface->delete($user);
         return $this->handleSuccessResponse("Successfully deleted user", new UserResource($user));

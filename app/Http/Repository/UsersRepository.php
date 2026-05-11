@@ -4,6 +4,7 @@ namespace App\Http\Repository;
 
 use App\Http\Repository\Contracts\UsersRepositoryInterface;
 use App\Models\User;
+use App\Enums\User\Status;
 
 class UsersRepository implements UsersRepositoryInterface { 
 
@@ -33,6 +34,18 @@ class UsersRepository implements UsersRepositoryInterface {
     public function unsuspend(User $user) {
         $user->update(['status' => 'active']);
         $user->audit('status_change', 'User account has been unsuspended by an administrator.');
+        return $user;
+    }
+
+    public function deactivate(User $user) {
+        $user->update(['status' => Status::DEACTIVATED->value]);
+        $user->audit('status_change', 'User account has been deactivated by an administrator.');
+        return $user;
+    }
+
+    public function reactivate(User $user) {
+        $user->update(['status' => Status::ACTIVE->value]);
+        $user->audit('status_change', 'User account has been reactivated by an administrator.');
         return $user;
     }
 
