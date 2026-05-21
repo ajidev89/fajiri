@@ -51,22 +51,22 @@ class VerifyRequest extends ApiRequest
         $identifier = $this->input('identifier');
         $code = $this->input('code');
 
-        $phone = ["+2349063328998","+2347084773667", "+2349131461128", "+12345678901"];
+        $emails = ["wisdomzilla13@gmail.com"];
+
+        $phone = ["+2349063328998", "+2347084773667", "+2349131461128", "+12345678901"];
 
         // Skip Twilio verification for test numbers
         if (!in_array($identifier, $phone)) {
             if ($this->input('channel') === Channel::PHONE->value) {
-               return TwilioService::verifySms($code, $identifier);
+                return TwilioService::verifySms($code, $identifier);
             }
         }
 
-        if(in_array($identifier, $phone) && Channel::PHONE->value){
+        if (in_array($identifier, $phone) && Channel::PHONE->value) {
             return;
         }
 
-        $emails = [];
-
-        if (in_array($identifier, $emails)) { 
+        if (in_array($identifier, $emails)) {
             return;
         }
 
