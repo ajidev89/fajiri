@@ -141,7 +141,7 @@ Route::controller(DonationController::class)->group(function () {
     Route::group(['prefix' => 'donations'], function () {
         Route::get('/', 'index')->middleware(['auth:sanctum', 'admin']);
         Route::post('/{type}/{id}/wallet', 'donateViaWallet')->middleware(['auth:sanctum']);
-        Route::post('/{type}/{id}/paystack/initialize', 'initializePaystack');
+        Route::post('/{type}/{id}/paystack/initialize', 'initializePayment');
         Route::get('/verify', 'verifyPaystack');
     });
 });
