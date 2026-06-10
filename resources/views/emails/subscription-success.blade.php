@@ -21,10 +21,11 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
         .header {
-            background: linear-gradient(135deg, #0052cc 0%, #003d99 100%);
-            padding: 40px;
+            background: #ffffff;
+            padding: 40px 20px 20px;
             text-align: center;
-            color: #ffffff;
+            color: #1e293b;
+            border-bottom: 1px solid #f1f5f9;
         }
         .header h1 {
             margin: 0;
@@ -83,6 +84,7 @@
 <body>
     <div class="container">
         <div class="header">
+            <img src="{{ asset('logo.png') }}" alt="Fajiri Logo" style="max-height: 50px; margin-bottom: 10px;">
             <h1>Welcome to {{ $plan->name }}</h1>
         </div>
         <div class="content">

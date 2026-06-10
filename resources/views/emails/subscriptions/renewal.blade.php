@@ -1,4 +1,8 @@
 <x-mail::message>
+<div style="text-align: center; margin-bottom: 20px;">
+    <img src="{{ asset('logo.png') }}" alt="Fajiri Logo" style="max-height: 50px;">
+</div>
+
 # Subscription Renewal Update
 
 Hi {{ $user->name ?? 'there' }},
