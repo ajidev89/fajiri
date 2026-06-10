@@ -90,7 +90,6 @@
     <div class="container">
         <div class="header">
             <img src="{{ asset('logo.png') }}" alt="Fajiri Logo" style="max-height: 50px; margin-bottom: 10px;">
-            <h1>Fajiri</h1>
         </div>
         <div class="content">
             <p class="greeting">Verify Your Identity</p>
