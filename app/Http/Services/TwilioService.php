@@ -13,7 +13,7 @@ class TwilioService
             return app('twilio')->messages->create(
                 $number,
                 [
-                    'from' => config('services.twilio.from'),
+                    'from' => config('services.twilio.phone_number'),
                     'body' => $message,
                 ]
             );
