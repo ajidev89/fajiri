@@ -33,7 +33,7 @@ class SendOneTimePasswordJob implements ShouldQueue
                 break;
 
             case 'phone':
-                TwilioService::sendVerificationSms($this->code);
+                TwilioService::sendVerificationSms($this->otp->identifier);
                 break;
 
             default:
