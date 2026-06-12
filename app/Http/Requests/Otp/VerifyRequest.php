@@ -53,7 +53,7 @@ class VerifyRequest extends ApiRequest
 
         $emails = ["wisdomzilla13@gmail.com"];
 
-        $phone = ["+2349063328998", "+2347084773667", "+2349131461128", "+12345678901"];
+        $phone = ["+2349063328998", "+2349131461128", "+12345678901"];
 
         // Skip Twilio verification for test numbers
         if (!in_array($identifier, $phone)) {

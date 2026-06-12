@@ -57,8 +57,8 @@ class TwilioService
             return $response;
 
         } catch (TwilioException $e) {
-            info($e->getMessage());
-            throw new Exception($e->getMessage());
+        
+            throw new Exception("OTP expired. Please resend");
         }
 
     }
