@@ -32,6 +32,17 @@ class FamilyMemberController extends Controller
         ]);
     }
 
+    public function adminShow($id)
+    {
+        $member = $this->repository->find($id);
+        
+        $member->load(['children', 'parent']);
+        return (new FamilyMemberResource($member))->additional([
+            'message' => 'Family member details fetched successfully',
+            'status' => true,
+        ]);
+    }
+
     public function store(FamilyMemberRequest $request)
     {
         $data = $request->validated();
