@@ -6,6 +6,8 @@ interface FamilyMemberRepositoryInterface
 {
     public function all($userId);
 
+    public function adminAll($request);
+
     public function find($id);
 
     public function create(array $data);

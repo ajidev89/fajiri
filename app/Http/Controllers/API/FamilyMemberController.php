@@ -23,6 +23,15 @@ class FamilyMemberController extends Controller
         ]);
     }
 
+    public function adminIndex(Request $request)
+    {
+        $members = $this->repository->adminAll($request);
+        return FamilyMemberResource::collection($members)->additional([
+            'message' => 'Family tree fetched successfully',
+            'status' => true,
+        ]);
+    }
+
     public function store(FamilyMemberRequest $request)
     {
         $data = $request->validated();

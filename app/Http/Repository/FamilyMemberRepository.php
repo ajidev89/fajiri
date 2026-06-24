@@ -19,6 +19,13 @@ class FamilyMemberRepository implements FamilyMemberRepositoryInterface
             ->get();
     }
 
+    public function adminAll($request)
+    {
+        return $this->familyMember->with(['children', 'parent', 'user'])
+            ->latest()
+            ->paginate($request->per_page ?? 15);
+    }
+
     public function find($id)
     {
         return $this->familyMember->findOrFail($id);

@@ -266,6 +266,7 @@ Route::controller(DisbursementController::class)->middleware(['auth:sanctum'])->
 
 Route::controller(FamilyMemberController::class)->middleware(['auth:sanctum'])->group(function () {
     Route::group(['prefix' => 'family-tree'], function () {
+        Route::get('/admin', 'adminIndex')->middleware(['admin']);
         Route::get('/', 'index');
         Route::post('/', 'store');
         Route::get('/{id}', 'show');
