@@ -33,6 +33,9 @@ class PostRepository implements PostRepositoryInterface
             ->when($request->added_by, function ($query) use ($request) {
                 return $query->where('user_id', $request->added_by);
             })
+            ->when($request->country_id, function ($query) use ($request) {
+                return $query->where('country_id', $request->country_id);
+            })
             ->latest()
             ->paginate($request->per_page ?? 15);
 

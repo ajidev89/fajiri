@@ -21,6 +21,9 @@ class PartnerRepository implements PartnerRepositoryInterface
     public function index($request)
     {
         $partners = $this->partner->latest()
+            ->when($request->country_id, function ($query) use ($request) {
+                return $query->where('country_id', $request->country_id);
+            })
             ->paginate($request->per_page ?? 15);
 
         return $this->handleSuccessCollectionResponse("Partners fetched successfully", PartnerResource::collection($partners));

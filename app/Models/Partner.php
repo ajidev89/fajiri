@@ -18,6 +18,7 @@ class Partner extends Model
         'website',
         'focus_areas',
         'impact',
+        'country_id',
     ];
 
     protected $casts = [
@@ -28,4 +29,9 @@ class Partner extends Model
     public $sluggable = [
         'source' => 'name',
     ];
+
+    public function country()
+    {
+        return $this->belongsTo(Country::class);
+    }
 }

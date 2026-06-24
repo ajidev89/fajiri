@@ -49,7 +49,7 @@ class AuthRepository implements AuthRepositoryInterface {
 
             $referrer = null;
             if ($request->referral_code) {
-                $referrer = $this->model->where('referral_code', $request->referral_code)->first();
+                $referrer = $this->model->where('member_id', $request->referral_code)->first();
             }
 
             $user = $this->model->create([
@@ -68,6 +68,27 @@ class AuthRepository implements AuthRepositoryInterface {
                 'currency' => $country->currency ?? 'NGN',
                 'balance' => 0
             ]);
+
+            if ($referrer) {
+                $referrerWallet = $referrer->wallet;
+                if ($referrerWallet) {
+                    $currencyService = app(\App\Services\CurrencyService::class);
+                    $bonusAmount = $currencyService->convert(5000, 'NGN', $referrerWallet->currency);
+                    
+                    $referrerWallet->increment('balance', $bonusAmount);
+                    
+                    $referrerWallet->transactions()->create([
+                        'amount' => $bonusAmount,
+                        'type' => 'credit',
+                        'description' => 'Referral bonus',
+                        'reference' => 'REF-' . \Illuminate\Support\Str::random(10),
+                        'status' => 'completed',
+                        'metadata' => [
+                            'referred_user_id' => $user->id
+                        ]
+                    ]);
+                }
+            }
 
 
             if($phone && $phone['value'] === $request->phone['value']) {
