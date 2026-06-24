@@ -61,7 +61,7 @@ class UserRepository implements UserRepositoryInterface {
             }
 
             // 2. Find Recipient
-            $recipient = $this->user->where('username', $request->username)->first();
+            $recipient = $this->user->where('member_id', $request->username)->first();
             if (!$recipient) {
                 return $this->handleErrorResponse("Recipient not found", 404);
             }
@@ -74,10 +74,10 @@ class UserRepository implements UserRepositoryInterface {
             try {
                 // Perform Transfer
                 // Deposit to recipient first
-                $recipient->deposit((float)$request->amount, "Transfer from {$user->username}");
+                $recipient->deposit((float)$request->amount, "Transfer from {$user->member_id}");
 
                 // Withdraw from sender (HasWallet trait handles balance check)
-                $withdrawal = $user->withdraw((float)$request->amount, "Transfer to {$recipient->username}");
+                $withdrawal = $user->withdraw((float)$request->amount, "Transfer to {$recipient->member_id}");
 
                 return $this->handleSuccessResponse("Transfer successful", new TransactionResource($withdrawal));
             } catch (\Exception $e) {

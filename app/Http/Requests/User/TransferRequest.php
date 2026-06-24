@@ -22,7 +22,7 @@ class TransferRequest extends ApiRequest
     public function rules(): array
     {
         return [
-            "username" => "required|string|exists:users,username|not_in:" . auth()->user()->username,
+            "username" => "required|string|exists:users,member_id|not_in:" . (auth()->user()->member_id ?? ''),
             "amount" => "required|numeric",
             "pin" => "required|numeric",
         ];
