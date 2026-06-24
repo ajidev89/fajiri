@@ -97,7 +97,7 @@ class User extends Authenticatable
 
         do {
             $number = str_pad(mt_rand(1, 999999), 6, '0', STR_PAD_LEFT);
-            $memberId = $prefix . '_' . $number;
+            $memberId = $prefix . $number;
         } while (static::where('member_id', $memberId)->exists());
 
         return $memberId;
