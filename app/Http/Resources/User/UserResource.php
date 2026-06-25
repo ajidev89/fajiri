@@ -33,7 +33,7 @@ class UserResource extends JsonResource
             "account_type"      => $this->account_type,
             "last_login_at"     => $this->last_login_at,
             "status"            => $this->status,
-            "referral_code"     => $this->referral_code,
+            "referral_code"     => $this->member_id,
             "referrals_count"   => $this->referrals()->count(),
             "is_subscribed"     => (bool) true,
             "plan"              => new PlanResource($this->currentPlan()),
