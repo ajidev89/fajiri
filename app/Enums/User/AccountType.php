@@ -18,7 +18,7 @@ enum AccountType: string
     {
         return match ($this) {
             self::IDENTIFIED_MEMBERSHIP => 'Fajiri Identified Membership',
-            self::PROJECT_MEMBERSHIP => 'Fajiri Project Membership',
+            self::PROJECT_MEMBERSHIP => 'Fajiri Program Membership',
             self::CORPORATE_MEMBERSHIP => 'Fajiri Corporate Partners',
         };
     }
@@ -28,7 +28,7 @@ enum AccountType: string
         return match ($this) {
             self::IDENTIFIED_MEMBERSHIP => 'Support, Give, Receive or Share Gifts With Families',
             self::PROJECT_MEMBERSHIP => 'Raise Funds or Partner to Support Vulnerable Families',
-            self::CORPORATE_MEMBERSHIP => 'Sponsor a Project or Collaborate for CSR Impact',
+            self::CORPORATE_MEMBERSHIP => 'Sponsor a Program or Collaborate for CSR Impact',
         };
     }
 
