@@ -18,7 +18,7 @@ enum AccountType: string
     {
         return match ($this) {
             self::IDENTIFIED_MEMBERSHIP => 'Fajiri Identified Membership',
-            self::PROJECT_MEMBERSHIP => 'Fajiri Program Membership',
+            self::PROJECT_MEMBERSHIP => 'Fajiri Program',
             self::CORPORATE_MEMBERSHIP => 'Fajiri Corporate Partners',
         };
     }
