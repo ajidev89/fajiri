@@ -313,4 +313,13 @@ class PlanRepository implements PlanRepositoryInterface
             return $user->currentPlan();
         });
     }
+
+    public function syncAllWithGateways()
+    {
+        $plans = Plan::all();
+        foreach ($plans as $plan) {
+            $this->syncWithGateways($plan);
+        }
+        return $plans;
+    }
 }

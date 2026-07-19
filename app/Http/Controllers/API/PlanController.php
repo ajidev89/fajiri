@@ -90,4 +90,33 @@ class PlanController extends Controller
             return $this->handleErrorResponse($e->getMessage(), 400);
         }
     }
+
+    public function sync($id)
+    {
+        try {
+            $plan = $this->planRepository->findById($id);
+            $this->planRepository->syncWithGateways($plan);
+            $plan->refresh();
+            
+            return $this->handleSuccessResponse('Plan synchronized with gateways successfully', [
+                'data' => new PlanResource($plan),
+            ]);
+        } catch (\Exception $e) {
+            return $this->handleErrorResponse($e->getMessage(), 400);
+        }
+    }
+
+    public function syncAll()
+    {
+        try {
+            $this->planRepository->syncAllWithGateways();
+            $plans = $this->planRepository->all();
+            
+            return $this->handleSuccessResponse('All plans synchronized with gateways successfully', [
+                'data' => PlanResource::collection($plans),
+            ]);
+        } catch (\Exception $e) {
+            return $this->handleErrorResponse($e->getMessage(), 400);
+        }
+    }
 }
