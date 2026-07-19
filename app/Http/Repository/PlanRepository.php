@@ -66,11 +66,12 @@ class PlanRepository implements PlanRepositoryInterface
         try {
             
             // 1. Sync with Paystack (for NGN)
-            if (!$plan->paystack_plan_code) {
+            // Paystack requires the plan amount to be at least 100 NGN (10000 kobo)
+            if (!$plan->paystack_plan_code && $plan->price >= 100) {
                 $paystackPlan = $this->paystackService->createPlan([
                     'name' => $plan->name,
                     'interval' => $this->mapDurationToInterval($plan->duration),
-                    'amount' => $plan->price * 100, // Paystack amount is in kobo
+                    'amount' => (int) round($plan->price * 100), // Paystack amount is in kobo
                     'currency' => 'NGN'
                 ]);
                 
@@ -80,7 +81,7 @@ class PlanRepository implements PlanRepositoryInterface
             }
 
             // 2. Sync with Stripe (for non-NGN)
-            if (!$plan->stripe_price_id) {
+            if (!$plan->stripe_price_id && $plan->price > 0) {
                 if (!$plan->stripe_product_id) {
                     // Ensure a name is always sent to Stripe. If the local plan name is missing, use a placeholder.
                     $productName = $plan->name ?: 'Plan ' . $plan->id;
@@ -110,7 +111,7 @@ class PlanRepository implements PlanRepositoryInterface
 
                 $stripePrice = $this->paymentGateway->getStripeService()->createPrice([
                     'product' => $plan->stripe_product_id,
-                    'unit_amount' => $stripeAmount * 100,
+                    'unit_amount' => (int) round($stripeAmount * 100),
                     'currency' => strtolower($stripeCurrency),
                     'recurring' => ['interval' => $this->mapDurationToStripeInterval($plan->duration)],
                     'metadata' => [
@@ -129,6 +130,7 @@ class PlanRepository implements PlanRepositoryInterface
             $plan->save();
         } catch (\Exception $e) {
             \Log::error('Gateway Sync Error: ' . $e->getMessage());
+            throw $e;
         }
     }
 

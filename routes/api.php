@@ -154,7 +154,7 @@ Route::controller(PlanController::class)->middleware(['auth:sanctum'])->group(fu
         Route::post('/subscribe', 'subscribe');
         Route::post('/initialize-subscription', 'initializeSubscription');
         Route::put('/{id}', 'update')->middleware(['super-admin']);
-        Route::post('/sync-all', 'syncAll')->withoutMiddleware(['auth:sanctum', 'super-admin']);
+        Route::post('/sync-all', 'syncAll')->withoutMiddleware(['auth:sanctum', 'admin', 'super-admin']);
         Route::post('/{id}/sync', 'sync')->middleware(['super-admin']);
         Route::delete('/{id}', 'destroy')->middleware(['super-admin']);
     });
