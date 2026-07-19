@@ -42,7 +42,14 @@ class PlanRepository implements PlanRepositoryInterface
 
     public function findById($id)
     {
-        return Plan::findOrFail($id);
+        $plan = Plan::findOrFail($id);
+        
+        if (!$plan->stripe_price_id || !$plan->paystack_plan_code) {
+            $this->syncWithGateways($plan);
+            $plan->refresh();
+        }
+        
+        return $plan;
     }
 
     public function store(array $data)
