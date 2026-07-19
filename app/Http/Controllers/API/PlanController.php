@@ -33,6 +33,12 @@ class PlanController extends Controller
         ], 201);
     }
 
+    public function show($id)
+    {
+        $plan = $this->planRepository->findById($id);
+        return new PlanResource($plan);
+    }
+
     public function subscribe(Request $request)
     {
         $request->validate([
