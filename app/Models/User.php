@@ -90,7 +90,7 @@ class User extends Authenticatable
 
         $prefix = match ($type) {
             AccountType::IDENTIFIED_MEMBERSHIP->value => 'FIM',
-            AccountType::PROJECT_MEMBERSHIP->value => 'FPM',
+            AccountType::PROGRAM_MEMBERSHIP->value => 'FPM',
             AccountType::CORPORATE_MEMBERSHIP->value => 'FCP',
             default => 'USR',
         };
