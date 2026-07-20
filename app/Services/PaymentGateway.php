@@ -49,9 +49,18 @@ class PaymentGateway
                 throw new Exception("Paystack plan code not set for this plan.");
             }
 
+            $paystackAmount = $plan->price;
+            if (strtoupper($plan->currency ?? 'NGN') !== 'NGN') {
+                $paystackAmount = $this->currencyService->convert(
+                    (float) $plan->price,
+                    $plan->currency ?? 'USD',
+                    'NGN'
+                );
+            }
+
             return $this->paystackService->initializeSubscription([
                 'email' => $user->email,
-                'amount' => $plan->price * 100,
+                'amount' => (int) round($paystackAmount * 100),
                 'plan' => $plan->paystack_plan_code,
                 'callback_url' => $options['success_url'] ?? config('app.url') . '/payments/verify/paystack',
                 'metadata' => [

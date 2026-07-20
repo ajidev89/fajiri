@@ -67,16 +67,27 @@ class PlanRepository implements PlanRepositoryInterface
             
             // 1. Sync with Paystack (for NGN)
             // Paystack requires the plan amount to be at least 100 NGN (10000 kobo)
-            if (!$plan->paystack_plan_code && $plan->price >= 100) {
-                $paystackPlan = $this->paystackService->createPlan([
-                    'name' => $plan->name,
-                    'interval' => $this->mapDurationToInterval($plan->duration),
-                    'amount' => (int) round($plan->price * 100), // Paystack amount is in kobo
-                    'currency' => 'NGN'
-                ]);
-                
-                if ($paystackPlan) {
-                    $plan->paystack_plan_code = $paystackPlan['plan_code'];
+            if (!$plan->paystack_plan_code) {
+                $paystackAmount = $plan->price;
+                if (strtoupper($plan->currency ?? 'NGN') !== 'NGN') {
+                    $paystackAmount = $this->paymentGateway->getCurrencyService()->convert(
+                        (float) $plan->price,
+                        $plan->currency ?? 'USD',
+                        'NGN'
+                    );
+                }
+
+                if ($paystackAmount >= 100) {
+                    $paystackPlan = $this->paystackService->createPlan([
+                        'name' => $plan->name,
+                        'interval' => $this->mapDurationToInterval($plan->duration),
+                        'amount' => (int) round($paystackAmount * 100), // Paystack amount is in kobo
+                        'currency' => 'NGN'
+                    ]);
+                    
+                    if ($paystackPlan) {
+                        $plan->paystack_plan_code = $paystackPlan['plan_code'];
+                    }
                 }
             }
 
