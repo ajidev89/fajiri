@@ -220,4 +220,28 @@ class User extends Authenticatable
     {
         return $this->hasMany(Audit::class);
     }
+
+    /**
+     * Check if the user has a specific permission.
+     */
+    public function hasPermission(string $permission): bool
+    {
+        if ($this->role && $this->role->slug === 'super-admin') {
+            return true;
+        }
+
+        if (!$this->role) {
+            return false;
+        }
+
+        return $this->role->permissions->contains('name', $permission);
+    }
+
+    /**
+     * Check if the user has a specific role.
+     */
+    public function hasRole(string $roleSlug): bool
+    {
+        return $this->role && $this->role->slug === $roleSlug;
+    }
 }

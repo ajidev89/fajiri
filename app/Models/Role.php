@@ -20,4 +20,9 @@ class Role extends Model
     public array $sluggable = [
         'source' => 'name'
     ];
+
+    public function permissions(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Permission::class, 'role_permissions');
+    }
 }

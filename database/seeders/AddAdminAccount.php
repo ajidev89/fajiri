@@ -29,7 +29,8 @@ class AddAdminAccount extends Seeder
             'password' =>  Hash::make("R@ndom4Nnow"),
             'email_verified_at' => now(),
             'phone_verified_at' => now(),
-            'role_id' => $role->id
+            'role_id' => $role->id,
+            'account_type' => \App\Enums\User\AccountType::IDENTIFIED_MEMBERSHIP,
         ]);
 
         $user->profile()->create([
