@@ -303,4 +303,21 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth:sanctum']], function (
         Route::put('/users/{user}', [\App\Http\Controllers\API\Admin\AdminUserController::class, 'updateAdminUser']);
         Route::delete('/users/{user}', [\App\Http\Controllers\API\Admin\AdminUserController::class, 'deleteAdminUser']);
     });
+
+    Route::group(['middleware' => ['permission:poll_management']], function () {
+        Route::get('/polls', [\App\Http\Controllers\API\PollController::class, 'index']);
+        Route::post('/polls', [\App\Http\Controllers\API\PollController::class, 'store']);
+        Route::get('/polls/{poll}', [\App\Http\Controllers\API\PollController::class, 'show']);
+        Route::put('/polls/{poll}', [\App\Http\Controllers\API\PollController::class, 'update']);
+        Route::delete('/polls/{poll}', [\App\Http\Controllers\API\PollController::class, 'destroy']);
+        Route::get('/polls/{poll}/summary', [\App\Http\Controllers\API\PollController::class, 'summary']);
+        Route::get('/polls/{poll}/responses', [\App\Http\Controllers\API\PollController::class, 'responses']);
+    });
+});
+
+// Authenticated user poll routes
+Route::group(['middleware' => ['auth:sanctum']], function () {
+    Route::get('/polls', [\App\Http\Controllers\API\PollController::class, 'index']);
+    Route::get('/polls/{poll}', [\App\Http\Controllers\API\PollController::class, 'show']);
+    Route::post('/polls/{poll}/vote', [\App\Http\Controllers\API\PollController::class, 'vote']);
 });

@@ -41,6 +41,8 @@ use App\Http\Repository\Contracts\PostRepositoryInterface;
 use App\Http\Repository\PostRepository;
 use App\Http\Repository\Contracts\FamilyMemberRepositoryInterface;
 use App\Http\Repository\FamilyMemberRepository;
+use App\Http\Repository\Contracts\PollRepositoryInterface;
+use App\Http\Repository\PollRepository;
 
 class RepositoryServiceProvider extends ServiceProvider
 {
@@ -71,6 +73,7 @@ class RepositoryServiceProvider extends ServiceProvider
         \App\Http\Repository\Contracts\FundraiserRepositoryInterface::class => \App\Http\Repository\FundraiserRepository::class,
         \App\Http\Repository\Contracts\MediaRepositoryInterface::class => \App\Http\Repository\MediaRepository::class,
         FamilyMemberRepositoryInterface::class => FamilyMemberRepository::class,
+        PollRepositoryInterface::class => PollRepository::class,
     ];
     /**
      * Register services.
