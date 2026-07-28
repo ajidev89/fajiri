@@ -11,7 +11,11 @@ class UsersRepository implements UsersRepositoryInterface {
     public function __construct(public User $user) {}
 
     public function index() {
-        $users = $this->user->with('profile')->latest()->paginate(10);
+        $users = $this->user->whereHas('role', fn($q) => $q->where('slug', 'user'))
+            ->where('status', Status::ACTIVE)
+            ->with('profile')
+            ->latest()
+            ->paginate(10);
         return $users;
     }
 
