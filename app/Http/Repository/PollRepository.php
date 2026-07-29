@@ -66,7 +66,7 @@ class PollRepository implements PollRepositoryInterface
                 'status'         => $request->status ?? PollStatus::DRAFT->value,
                 'start_date'     => $request->start_date,
                 'duration_hours' => $request->duration_hours,
-                'added_by'       => $this->authUser()->id,
+                'added_by'       => $this->user()->id,
             ]);
 
             $this->syncOptions($poll, $request->options ?? []);
@@ -178,7 +178,7 @@ class PollRepository implements PollRepositoryInterface
      */
     public function vote($request, $poll)
     {
-        $user = $this->authUser();
+        $user = $this->user();
         $type = $poll->type;
 
         // Validate poll is active
