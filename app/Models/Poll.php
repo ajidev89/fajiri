@@ -69,6 +69,24 @@ class Poll extends Model
     }
 
     /**
+     * Returns a brief list of up to 4 participants.
+     */
+    public function getParticipantsAttribute()
+    {
+        return $this->responses()
+            ->select('user_id')
+            ->distinct()
+            ->take(4)
+            ->with('user.profile')
+            ->get()
+            ->map(fn($response) => [
+                'id'     => $response->user?->id,
+                'name'   => trim($response->user?->profile?->first_name . ' ' . $response->user?->profile?->last_name),
+                'avatar' => $response->user?->profile?->avatar,
+            ]);
+    }
+
+    /**
      * Returns the datetime when the poll ends.
      */
     public function getEndsAtAttribute(): Carbon

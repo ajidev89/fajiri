@@ -19,6 +19,7 @@ class PollResource extends JsonResource
             'ends_at'            => $this->ends_at?->toDateTimeString(),
             'time_left'          => $this->time_left,
             'participants_count' => $this->participants_count,
+            'participants'       => $this->participants,
             'views'              => $this->views,
             'options'            => PollOptionResource::collection($this->whenLoaded('options')),
             'added_by'           => $this->when($this->relationLoaded('addedBy'), fn() => [
