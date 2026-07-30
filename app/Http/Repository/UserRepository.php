@@ -137,21 +137,15 @@ class UserRepository implements UserRepositoryInterface {
             $user = $this->user();
             $profile = $user->profile;
 
-            $user->update([
-                'phone' => $request->phone ?? $user->phone,
-                'account_type' => $request->account_type ?? $user->account_type,
-                'sub_account_type' => $request->has('sub_account_type') ? $request->sub_account_type : $user->sub_account_type,
-            ]);
+            $validated = $request->validated();
 
-            $profile->update([
-                'first_name' => $request->first_name ?? $profile->first_name,
-                'last_name' => $request->last_name ?? $profile->last_name,
-                'middle_name' => $request->middle_name ?? $profile->middle_name,
-                'dob' => $request->dob ?? $profile->dob,
-                'gender' => $request->gender ?? $profile->gender,
-                'address' => $request->address ?? $profile->address,
-                'occupation' => $request->occupation ?? $profile->occupation,
-            ]);
+            if ($userData = \Illuminate\Support\Arr::only($validated, ['phone', 'account_type', 'sub_account_type'])) {
+                $user->update($userData);
+            }
+
+            if ($profileData = \Illuminate\Support\Arr::only($validated, ['first_name', 'last_name', 'middle_name', 'dob', 'gender', 'address', 'occupation'])) {
+                $profile->update($profileData);
+            }
 
             return $this->handleSuccessResponse("Profile successfully updated", new UserResource($user->refresh()));
         } catch (\Exception $e) {
