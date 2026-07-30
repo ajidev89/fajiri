@@ -23,7 +23,7 @@ class UserResource extends JsonResource
             "email"             => $this->email,
             "email_verified_at" => $this->email_verified_at,
             "phone"             => $this->phone,
-            "role"              => $this->role,
+            "role"              => $this->role ? new \App\Http\Resources\Admin\RoleResource($this->role) : null,
             "username"          => $this->username,
             "country"           => $this->country,
             "has_pin"           => (bool) $this->pin,

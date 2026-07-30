@@ -113,6 +113,8 @@ class AuthRepository implements AuthRepositoryInterface {
 
             $user->audit('registration', 'User account created through registration.');
 
+            $user->loadMissing('role.permissions');
+
             return $this->handleSuccessResponse("Successfully registered",[
                 "user" => new UserResource($user)
             ]);
@@ -162,7 +164,10 @@ class AuthRepository implements AuthRepositoryInterface {
 
             SendOneTimePasswordJob::dispatchAfterResponse($otp, $code);
 
-            return $this->handleSuccessResponse('Successfully sent otp',new UserResource($this->user())); 
+            $user = $this->user();
+            $user->loadMissing('role.permissions');
+
+            return $this->handleSuccessResponse('Successfully sent otp',new UserResource($user)); 
         }
 
         $user = $this->model->where($field, $request->$field)->first();
@@ -285,6 +290,8 @@ class AuthRepository implements AuthRepositoryInterface {
         $token = $user->createToken($user->email)->plainTextToken;
 
         $user->audit('login', 'User successfully logged into the platform via magic link.');
+
+        $user->loadMissing('role.permissions');
 
         return $this->handleSuccessResponse('Successfully logged in via magic link', [
             "token" => $token,

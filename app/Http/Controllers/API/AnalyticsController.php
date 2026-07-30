@@ -27,8 +27,8 @@ class AnalyticsController extends Controller
         return $this->handleSuccessResponse("Top Performing Campaigns", $data);
     }
 
-    public function leaderboard(){
-        $data = $this->analyticsRepository->leaderboard();
+    public function leaderboard(Request $request){
+        $data = $this->analyticsRepository->leaderboard($request);
         return $this->handleSuccessResponse("Successfully fetched leaderboard", $data);
     }
 

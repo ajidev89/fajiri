@@ -222,14 +222,19 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
             });
     }
 
-    public function leaderboard()
+    public function leaderboard($request = null)
     {
         $limit = 50;
         
-        return $this->user->whereHas('role', function ($query) {
+        $query = $this->user->whereHas('role', function ($query) {
                 $query->where('slug', 'user');
-            })
-            ->with(['profile', 'country'])
+            });
+
+        if ($request && $request->country_id) {
+            $query->where('country_id', $request->country_id);
+        }
+
+        return $query->with(['profile', 'country'])
             ->withCount([
                 'referrals',
                 'donations as campaign_donations_count' => function ($query) {
