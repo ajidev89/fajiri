@@ -26,7 +26,8 @@ use App\Http\Controllers\API\FamilyMemberController;
 
 use Illuminate\Support\Facades\Route;
 
-
+Route::post('/contact', [\App\Http\Controllers\API\ContactController::class, 'submit']);
+Route::get('/member/{member_id}', [\App\Http\Controllers\API\PublicMemberController::class, 'show']);
 Route::controller(AuthController::class)->group(function () { 
     Route::group(['prefix' => 'auth'], function () {
         Route::post('/login', 'login');
