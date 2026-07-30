@@ -71,4 +71,9 @@ class UsersRepository implements UsersRepositoryInterface {
     public function referrals(User $user) {
         return $user->referrals()->with(['profile', 'role'])->latest()->paginate(10);
     }
+
+    public function updateNotificationToken(User $user, string $token) {
+        $user->update(['notification_token' => $token]);
+        return $user;
+    }
 }

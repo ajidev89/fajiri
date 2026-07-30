@@ -24,4 +24,5 @@ interface UsersRepositoryInterface
     public function audits(User $user);
     public function transactions(User $user);
     public function referrals(User $user);
+    public function updateNotificationToken(User $user, string $token);
 }

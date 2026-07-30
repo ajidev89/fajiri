@@ -115,6 +115,7 @@ Route::controller(UsersController::class)->group(function () {
     Route::get('/users/account-types', 'account_types');
     Route::group(['prefix' => 'users', 'middleware' => ['auth:sanctum', 'permission:user_management']], function () {
         Route::get('/', 'index');
+        Route::post('/notification-token', 'updateNotificationToken');
         Route::get('/{user}', 'show');
         Route::get('/{user}/audits', 'audits');
         Route::get('/{user}/transactions', 'transactions');
@@ -290,6 +291,9 @@ Route::controller(\App\Http\Controllers\API\CurrencyController::class)->group(fu
 });
 
 Route::group(['prefix' => 'admin', 'middleware' => ['auth:sanctum']], function () {
+    Route::get('/announcements', [\App\Http\Controllers\API\Admin\AdminAnnouncementController::class, 'index']);
+    Route::post('/announcements', [\App\Http\Controllers\API\Admin\AdminAnnouncementController::class, 'store']);
+
     Route::group(['middleware' => ['permission:system_settings']], function () {
         Route::get('/roles', [\App\Http\Controllers\API\Admin\RolePermissionController::class, 'indexRoles']);
         Route::post('/roles', [\App\Http\Controllers\API\Admin\RolePermissionController::class, 'storeRole']);
