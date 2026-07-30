@@ -69,28 +69,6 @@ class AuthRepository implements AuthRepositoryInterface {
                 'balance' => 0
             ]);
 
-            if ($referrer) {
-                $referrerWallet = $referrer->wallet;
-                if ($referrerWallet) {
-                    $currencyService = app(\App\Services\CurrencyService::class);
-                    $bonusAmount = $currencyService->convert(5000, 'NGN', $referrerWallet->currency);
-                    
-                    $referrerWallet->increment('balance', $bonusAmount);
-                    
-                    $referrerWallet->transactions()->create([
-                        'amount' => $bonusAmount,
-                        'type' => 'deposit',
-                        'description' => 'Referral bonus',
-                        'reference' => 'REF-' . \Illuminate\Support\Str::random(10),
-                        'status' => 'completed',
-                        'metadata' => [
-                            'referred_user_id' => $user->id
-                        ]
-                    ]);
-                }
-            }
-
-
             if($phone && $phone['value'] === $request->phone['value']) {
                 $user->markPhoneAsVerified();
             }
