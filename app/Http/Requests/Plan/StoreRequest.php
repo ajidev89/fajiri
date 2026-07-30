@@ -31,8 +31,7 @@ class StoreRequest extends ApiRequest
             'currency' => 'required|string|max:3',
             'duration' => 'required|integer|min:1',
             'features' => 'nullable|array',
-            'status' => 'nullable|boolean',
-            'rc_product_id_ios' => 'nullable|string',
+            'status' => 'required|boolean',
         ];
     }
 }

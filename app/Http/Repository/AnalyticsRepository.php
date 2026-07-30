@@ -41,9 +41,17 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
             $needQuery->where('added_by', $added_by);
         }
 
+        $donatedCurrencies = $this->donatedCurrency($request);
+        $totalDonatedUsd = 0;
+        foreach ($donatedCurrencies as $item) {
+            $totalDonatedUsd += $this->currencyService->convert((float) $item->total_amount, $item->currency, 'USD');
+        }
+
         return [
             "total_donations" => $donationQuery->count(),
-            "total_donations_amount" => $this->donatedCurrency($request),
+            "total_donations_amount" => [
+                (object) ['currency' => '$', 'total_amount' => $totalDonatedUsd]
+            ],
             "active_campaigns" => $campaignQuery->where('status', 'active')->count(),
             "active_campaigns_percentage_change" => $this->calculatePercentageChange($this->campaign, ['status' => 'active'], $request),
             "active_needs" => $needQuery->count(),
@@ -92,19 +100,21 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
             ->get();
 
         $formatedStats = [
-            'pending' => ['count' => 0, 'amounts' => []],
-            'completed' => ['count' => 0, 'amounts' => []],
-            'rejected' => ['count' => 0, 'amounts' => []],
+            'pending' => ['count' => 0, 'amounts' => ['USD' => 0]],
+            'completed' => ['count' => 0, 'amounts' => ['USD' => 0]],
+            'rejected' => ['count' => 0, 'amounts' => ['USD' => 0]],
         ];
 
         foreach ($stats as $stat) {
             $status = $stat->status->value;
             $formatedStats[$status]['count'] += $stat->count;
-            $formatedStats[$status]['amounts'][$stat->currency] = (float) $stat->total_amount;
+            $formatedStats[$status]['amounts']['USD'] += $this->currencyService->convert((float) $stat->total_amount, $stat->currency, 'USD');
         }
 
+        $availableFundsUsd = $this->currencyService->convert($availableFunds, 'NGN', 'USD');
+
         return [
-            'available_funds_ngn' => round($availableFunds, 2),
+            'available_funds_usd' => round($availableFundsUsd, 2),
             'pending_disbursements' => $formatedStats['pending'],
             'approved_disbursements' => $formatedStats['completed'],
             'rejected_disbursements' => $formatedStats['rejected'],
@@ -176,18 +186,18 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
             $monthName = \Carbon\Carbon::create()->month($i)->format('F');
             $monthDonations = $donations->where('month_num', $i);
             
-            $amounts = [];
+            $totalUsdAmount = 0;
             $totalDonations = 0;
             
             foreach ($monthDonations as $donation) {
-                $amounts[$donation->currency] = (float) $donation->total_amount;
+                $totalUsdAmount += $this->currencyService->convert((float) $donation->total_amount, $donation->currency, 'USD');
                 $totalDonations += $donation->no_of_donations;
             }
 
             $formatted[] = [
                 'month' => $monthName,
                 'no_of_donations' => $totalDonations,
-                'amounts' => (object) $amounts,
+                'amounts' => (object) ['USD' => $totalUsdAmount],
             ];
         }
 

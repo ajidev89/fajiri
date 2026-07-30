@@ -14,6 +14,9 @@ class DisbursementResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $currencyService = app(\App\Services\CurrencyService::class);
+        $amountUsd = $currencyService->convert((float) $this->amount, $this->currency ?? 'NGN', 'USD');
+
         return [
             'id' => $this->id,
             'disbursable_type' => $this->disbursable_type,
@@ -26,8 +29,8 @@ class DisbursementResource extends JsonResource
                 'id' => $this->disbursedBy->id,
                 'name' => $this->disbursedBy->profile ? $this->disbursedBy->profile->first_name . ' ' . $this->disbursedBy->profile->last_name : $this->disbursedBy->username,
             ] : null,
-            'amount' => $this->amount,
-            'currency' => $this->currency,
+            'amount' => $amountUsd,
+            'currency' => 'USD',
             'beneficiary_name' => $this->beneficiary_name,
             'payment_method' => $this->payment_method,
             'account_name' => $this->account_name,
