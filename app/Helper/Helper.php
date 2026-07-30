@@ -7,7 +7,7 @@ if (!function_exists('generateToken')) {
 
         $data = [
             ...$value,
-            'expiry' => now()->addMinutes(5)->timestamp
+            'expiry' => now()->addMinutes(30)->timestamp
         ];
         return Crypt::encrypt($data);
     }

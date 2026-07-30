@@ -6,7 +6,7 @@ use App\Models\Otp;
 
 class OtpObserver
 {
-    private const minutes = 5;
+    private const minutes = 30;
 
     /**
      * Handle the Otp "creating" event.
