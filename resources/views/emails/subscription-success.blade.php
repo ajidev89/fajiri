@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Subscription Successful</title>
+    <title>Contribution Successful</title>
     <style>
         body {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;

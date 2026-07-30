@@ -3,16 +3,16 @@
     <img src="{{ asset('logo.png') }}" alt="Fajiri Logo" style="max-height: 50px;">
 </div>
 
-# Subscription Renewal Update
+# Contribution Renewal Update
 
 Hi {{ $user->name ?? 'there' }},
 
 @if($status === 'attempting')
-We are currently attempting to automatically renew your **{{ $plan->name }}** subscription.
+We are currently attempting to automatically renew your **{{ $plan->name }}** contribution.
 @elseif($status === 'success')
-Good news! Your **{{ $plan->name }}** subscription has been successfully renewed. Your new expiration date is {{ \Carbon\Carbon::parse($user->plans()->where('plan_id', $plan->id)->wherePivot('status', 'active')->first()->pivot->expires_at)->format('F j, Y') }}.
+Good news! Your **{{ $plan->name }}** contribution has been successfully renewed. Your new expiration date is {{ \Carbon\Carbon::parse($user->plans()->where('plan_id', $plan->id)->wherePivot('status', 'active')->first()->pivot->expires_at)->format('F j, Y') }}.
 @elseif($status === 'failed')
-Unfortunately, we were unable to renew your **{{ $plan->name }}** subscription.
+Unfortunately, we were unable to renew your **{{ $plan->name }}** contribution.
 @if($errorMessage)
 **Reason:** {{ $errorMessage }}
 @endif

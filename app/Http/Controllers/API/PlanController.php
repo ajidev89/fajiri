@@ -66,7 +66,7 @@ class PlanController extends Controller
             $user = $request->user();
             $result = $this->planRepository->initializeSubscription($user, $request->plan_id, $request->only(['success_url', 'cancel_url']));
 
-            return $this->handleSuccessResponse('Subscription initialized', $result);
+            return $this->handleSuccessResponse('Contribution initialized', $result);
         } catch (\Exception $e) {
             return $this->handleErrorResponse($e->getMessage(), 400);
         }
