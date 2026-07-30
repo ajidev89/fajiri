@@ -67,4 +67,8 @@ class UsersRepository implements UsersRepositoryInterface {
     public function transactions(User $user) {
         return $user->transactions()->latest()->paginate(10);
     }
+
+    public function referrals(User $user) {
+        return $user->referrals()->with(['profile', 'role'])->latest()->paginate(10);
+    }
 }

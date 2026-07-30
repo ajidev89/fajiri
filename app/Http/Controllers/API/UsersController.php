@@ -65,6 +65,11 @@ class UsersController extends Controller
         return $this->handleSuccessCollectionResponse("Successfully fetched user transactions", \App\Http\Resources\Transaction\TransactionResource::collection($transactions));
     }
 
+    public function referrals(User $user){
+        $referrals = $this->usersRepositoryInterface->referrals($user);
+        return $this->handleSuccessCollectionResponse("Successfully fetched user referrals", UserResource::collection($referrals));
+    }
+
 
     public function account_types(){
 
