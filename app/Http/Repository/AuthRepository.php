@@ -79,7 +79,7 @@ class AuthRepository implements AuthRepositoryInterface {
                     
                     $referrerWallet->transactions()->create([
                         'amount' => $bonusAmount,
-                        'type' => 'credit',
+                        'type' => 'deposit',
                         'description' => 'Referral bonus',
                         'reference' => 'REF-' . \Illuminate\Support\Str::random(10),
                         'status' => 'completed',
