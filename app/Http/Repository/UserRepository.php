@@ -139,6 +139,8 @@ class UserRepository implements UserRepositoryInterface {
 
             $user->update([
                 'phone' => $request->phone ?? $user->phone,
+                'account_type' => $request->account_type ?? $user->account_type,
+                'sub_account_type' => $request->has('sub_account_type') ? $request->sub_account_type : $user->sub_account_type,
             ]);
 
             $profile->update([

@@ -30,6 +30,8 @@ class UpdateProfileRequest extends FormRequest
             'address' => 'nullable|string|max:500',
             'occupation' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:20',
+            'account_type' => ['nullable', new \Illuminate\Validation\Rules\Enum(\App\Enums\User\AccountType::class)],
+            'sub_account_type' => 'nullable|string|max:255',
         ];
     }
 }
