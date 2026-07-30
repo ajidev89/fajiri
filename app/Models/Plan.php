@@ -16,6 +16,7 @@ class Plan extends Model
         'name',
         'level',
         'account_type',
+        'sub_account_type',
         'slug',
         'description',
         'price',
@@ -33,6 +34,7 @@ class Plan extends Model
         'status' => 'boolean',
         'price' => 'decimal:2',
         'account_type' => \App\Enums\User\AccountType::class,
+        'sub_account_type' => \App\Enums\User\SubAccountType::class,
     ];
 
     public function users(): BelongsToMany

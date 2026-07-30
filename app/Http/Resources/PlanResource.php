@@ -23,6 +23,7 @@ class PlanResource extends JsonResource
             'name' => $this->name,
             'level' => $this->level,
             'account_type' => $this->account_type,
+            'sub_account_type' => $this->sub_account_type,
             'slug' => $this->slug,
             'description' => $this->description,
             'price' => $converted['amount'],

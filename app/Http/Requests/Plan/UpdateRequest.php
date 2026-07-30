@@ -25,6 +25,7 @@ class UpdateRequest extends ApiRequest
             'name' => 'sometimes|string|max:255',
             'level' => 'sometimes|string|max:255',
             'account_type' => ['sometimes', new \Illuminate\Validation\Rules\Enum(\App\Enums\User\AccountType::class)],
+            'sub_account_type' => ['nullable', new \Illuminate\Validation\Rules\Enum(\App\Enums\User\SubAccountType::class)],
             'description' => 'sometimes|string',
             'price' => 'sometimes|numeric|min:0',
             'currency' => 'sometimes|string|max:3',
