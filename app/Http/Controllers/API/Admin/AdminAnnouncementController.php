@@ -21,6 +21,8 @@ class AdminAnnouncementController extends Controller
             'title' => 'required|string|max:255',
             'content' => 'required|string',
             'image_url' => 'nullable|url',
+            'target_audience' => 'nullable|array',
+            'target_audience.*' => 'string'
         ]);
 
         $announcement = Announcement::create($validated);
