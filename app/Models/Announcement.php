@@ -14,5 +14,13 @@ class Announcement extends Model
         'title',
         'content',
         'image_url',
+        'target_audience',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'target_audience' => 'array',
+        ];
+    }
 }
