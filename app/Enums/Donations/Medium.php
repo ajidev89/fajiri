@@ -8,10 +8,10 @@ enum Medium: string
 {
     use EnumTrait;
     
-    case PAYSTACK = 'paystack';
-
-    case WALLET = 'wallet';
-
-    case STRIPE = 'stripe';
-
+    case PAYSTACK    = 'paystack';
+    case WALLET      = 'wallet';
+    case STRIPE      = 'stripe';
+    case PAYPAL      = 'paypal';
+    case FLUTTERWAVE = 'flutterwave';
+    case NOMBA       = 'nomba';
 }

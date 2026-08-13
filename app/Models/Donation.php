@@ -17,13 +17,20 @@ class Donation extends Model
         'amount',
         'currency',
         'converted_amount',
+        'base_amount_usd',
         'rate',
+        'medium',
+        'name',
+        'email',
         'status',
         'reference',
     ];
 
     protected $casts = [
-        'amount' => 'float',
+        'amount'          => 'float',
+        'converted_amount' => 'float',
+        'base_amount_usd' => 'float',
+        'rate'            => 'float',
     ];
 
     public function donatable()

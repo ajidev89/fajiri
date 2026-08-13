@@ -11,29 +11,56 @@ class PaymentGateway
     public function __construct(
         protected StripeService $stripeService,
         protected PaystackService $paystackService,
+        protected PayPalService $payPalService,
+        protected FlutterwaveService $flutterwaveService,
+        protected NombaService $nombaService,
         protected CurrencyService $currencyService
     ) {}
 
-    public function getCurrencyService()
+    public function getCurrencyService(): CurrencyService
     {
         return $this->currencyService;
     }
 
-    /**
-     * Get the appropriate service based on currency
-     */
-    public function getService(string $currency)
+    public function getStripeService(): StripeService
     {
-        if (strtoupper($currency) === 'NGN') {
-            return $this->paystackService;
-        }
-
         return $this->stripeService;
     }
 
-    public function getStripeService()
+    public function getPaystackService(): PaystackService
     {
-        return $this->stripeService;
+        return $this->paystackService;
+    }
+
+    public function getPayPalService(): PayPalService
+    {
+        return $this->payPalService;
+    }
+
+    public function getFlutterwaveService(): FlutterwaveService
+    {
+        return $this->flutterwaveService;
+    }
+
+    public function getNombaService(): NombaService
+    {
+        return $this->nombaService;
+    }
+
+    /**
+     * Get gateway service by provider name or fallback by currency
+     */
+    public function getService(string $identifier)
+    {
+        return match (strtolower($identifier)) {
+            'stripe' => $this->stripeService,
+            'paystack' => $this->paystackService,
+            'paypal' => $this->payPalService,
+            'flutterwave', 'rave' => $this->flutterwaveService,
+            'nomba' => $this->nombaService,
+            'ngn' => $this->paystackService,
+            default => $this->stripeService,
+        };
     }
 
     /**
@@ -43,7 +70,7 @@ class PaymentGateway
     {
         // Use user's country currency or request's detected currency to choose gateway
         $currency = $user->country->currency ?? request()->detected_currency ?? 'USD';
-        
+
         if (strtoupper($currency) === 'NGN') {
             if (!$plan->paystack_plan_code) {
                 throw new Exception("Paystack plan code not set for this plan.");

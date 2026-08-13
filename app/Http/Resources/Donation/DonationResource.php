@@ -19,22 +19,23 @@ class DonationResource extends JsonResource
         $converted = $this->getConvertedAmount($this->amount, $this->currency, $request);
 
         return [
-            "id" => $this->id,
-            "name" => $this->name ?? $this->user?->profile?->first_name . ' ' . $this->user?->profile?->last_name ?? "Anonymous",
-            "email" => $this->email ?? $this->user?->email ?? "Anonymous",
-            "user_id" => $this->user_id,
-            "medium" => $this->medium,
-            "donatable" => $this->donatable,
-            "donatable_type" => $this->donatable_type,
-            "amount" => $converted['amount'],
-            "currency" => $converted['currency'],
-            "base_amount" => $converted['base_amount'],
-            "base_currency" => $converted['base_currency'],
-            "status" => $this->status,
-            "reference" => $this->reference,
-            "created_at" => $this->created_at,
-            "updated_at" => $this->updated_at,
-            "deleted_at" => $this->deleted_at
+            "id"              => $this->id,
+            "name"            => $this->name ?? ($this->user?->profile?->first_name ? $this->user->profile->first_name . ' ' . $this->user->profile->last_name : "Anonymous"),
+            "email"           => $this->email ?? $this->user?->email ?? "Anonymous",
+            "user_id"         => $this->user_id,
+            "medium"          => $this->medium,
+            "donatable"       => $this->donatable,
+            "donatable_type"  => $this->donatable_type,
+            "amount"          => $converted['amount'],
+            "currency"        => $converted['currency'],
+            "base_amount"     => $converted['base_amount'],
+            "base_currency"   => $converted['base_currency'],
+            "base_amount_usd" => (float) ($this->base_amount_usd ?? 0.00),
+            "status"          => $this->status,
+            "reference"       => $this->reference,
+            "created_at"      => $this->created_at,
+            "updated_at"      => $this->updated_at,
+            "deleted_at"      => $this->deleted_at
         ];
     }
 }

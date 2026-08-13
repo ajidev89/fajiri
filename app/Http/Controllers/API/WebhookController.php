@@ -10,6 +10,9 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use App\Services\StripeService;
 use App\Services\PaystackService;
+use App\Services\PayPalService;
+use App\Services\FlutterwaveService;
+use App\Services\NombaService;
 use App\Http\Traits\PlanActivationTrait;
 use App\Jobs\Paystack\PaystackJob;
 
@@ -19,17 +22,15 @@ class WebhookController extends Controller
 
     public function __construct(
         protected StripeService $stripeService,
-        protected PaystackService $paystackService
+        protected PaystackService $paystackService,
+        protected PayPalService $payPalService,
+        protected FlutterwaveService $flutterwaveService,
+        protected NombaService $nombaService
     ) {}
 
     public function handleStripe(Request $request)
     {
         $payload = $request->getContent();
-        $sigHeader = $request->header('Stripe-Signature');
-        
-        // In a real app, you'd use $this->stripeService->isValidWebhook($sigHeader, $payload)
-        // For now we'll trust the payload if secret is configured
-        
         $event = json_decode($payload, true);
         $type = $event['type'] ?? '';
 
@@ -42,7 +43,6 @@ class WebhookController extends Controller
             case 'customer.subscription.deleted':
                 $this->handleStripeSubscriptionCancelled($event['data']['object']);
                 break;
-            // Add more cases as needed
         }
 
         return response()->json(['message' => 'Webhook handled']);
@@ -64,6 +64,145 @@ class WebhookController extends Controller
         return response()->json(['message' => 'Webhook received and processing']);
     }
 
+    public function handlePayPal(Request $request)
+    {
+        $payload = $request->getContent();
+        $headers = $request->headers->all();
+
+        if (!$this->payPalService->isValidWebhook($headers, $payload)) {
+            Log::warning('PayPal Webhook invalid signature');
+        }
+
+        $event = json_decode($payload, true);
+        $eventType = $event['event_type'] ?? '';
+
+        Log::info('PayPal Webhook Received', ['event_type' => $eventType]);
+
+        if (in_array($eventType, ['CHECKOUT.ORDER.APPROVED', 'PAYMENT.CAPTURE.COMPLETED'])) {
+            $resource = $event['resource'] ?? [];
+            $customId = $resource['purchase_units'][0]['custom_id'] ?? $resource['custom_id'] ?? null;
+            $amount = $resource['purchase_units'][0]['amount']['value'] ?? $resource['amount']['value'] ?? 0;
+            $currency = $resource['purchase_units'][0]['amount']['currency_code'] ?? $resource['amount']['currency_code'] ?? 'USD';
+
+            if ($customId) {
+                $user = User::find($customId);
+                if ($user) {
+                    $reference = $resource['id'] ?? 'paypal_' . time();
+                    $user->deposit($amount, "Wallet funding via PayPal", $reference);
+
+                    \App\Models\Notification::create([
+                        'user_id' => $user->id,
+                        'title'   => 'Wallet Funded',
+                        'message' => "Your wallet has been credited with {$currency} " . number_format($amount, 2) . " via PayPal.",
+                        'type'    => 'wallet_funding',
+                        'data'    => [
+                            'amount'    => $amount,
+                            'reference' => $reference,
+                            'currency'  => $currency,
+                        ],
+                    ]);
+                }
+            }
+        }
+
+        return response()->json(['message' => 'PayPal webhook processed']);
+    }
+
+    public function handleFlutterwave(Request $request)
+    {
+        $signature = $request->header('verif-hash');
+
+        if (!$this->flutterwaveService->isValidWebhook($signature)) {
+            return response()->json(['message' => 'Invalid signature'], 400);
+        }
+
+        $event = $request->all();
+        $eventStatus = $event['status'] ?? '';
+        $txRef = $event['tx_ref'] ?? $event['data']['tx_ref'] ?? null;
+
+        Log::info('Flutterwave Webhook Received', ['status' => $eventStatus, 'tx_ref' => $txRef]);
+
+        if (in_array($eventStatus, ['successful', 'completed'])) {
+            $transactionId = $event['data']['id'] ?? null;
+            if ($transactionId) {
+                try {
+                    $txData = $this->flutterwaveService->verifyTransaction((string) $transactionId);
+                    $email = $txData['customer']['email'] ?? null;
+                    $amount = $txData['amount'] ?? 0;
+                    $currency = strtoupper($txData['currency'] ?? 'NGN');
+                    $reference = $txData['tx_ref'] ?? (string) $transactionId;
+
+                    if ($email) {
+                        $user = User::where('email', $email)->first();
+                        if ($user) {
+                            $user->deposit($amount, "Wallet funding via Flutterwave", $reference);
+
+                            \App\Models\Notification::create([
+                                'user_id' => $user->id,
+                                'title'   => 'Wallet Funded',
+                                'message' => "Your wallet has been credited with {$currency} " . number_format($amount, 2) . " via Flutterwave.",
+                                'type'    => 'wallet_funding',
+                                'data'    => [
+                                    'amount'    => $amount,
+                                    'reference' => $reference,
+                                    'currency'  => $currency,
+                                ],
+                            ]);
+                        }
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Flutterwave webhook verification error: ' . $e->getMessage());
+                }
+            }
+        }
+
+        return response()->json(['message' => 'Flutterwave webhook processed']);
+    }
+
+    public function handleNomba(Request $request)
+    {
+        $payload = $request->getContent();
+        $signature = $request->header('x-nomba-signature');
+
+        if (!$this->nombaService->isValidWebhook($signature, $payload)) {
+            return response()->json(['message' => 'Invalid signature'], 400);
+        }
+
+        $event = json_decode($payload, true);
+        $status = $event['data']['status'] ?? $event['status'] ?? '';
+
+        Log::info('Nomba Webhook Received', ['status' => $status]);
+
+        if (in_array(strtoupper($status), ['SUCCESSFUL', 'COMPLETED', 'SUCCESS'])) {
+            $data = $event['data'] ?? [];
+            $email = $data['customerEmail'] ?? null;
+            $amount = $data['amount'] ?? 0;
+            $currency = strtoupper($data['currency'] ?? 'NGN');
+            $reference = $data['orderReference'] ?? 'nomba_' . time();
+
+            if ($email) {
+                $user = User::where('email', $email)->first();
+                if ($user) {
+                    $user->deposit($amount, "Wallet funding via Nomba", $reference);
+
+                    \App\Models\Notification::create([
+                        'user_id' => $user->id,
+                        'title'   => 'Wallet Funded',
+                        'message' => "Your wallet has been credited with {$currency} " . number_format($amount, 2) . " via Nomba.",
+                        'type'    => 'wallet_funding',
+                        'data'    => [
+                            'amount'    => $amount,
+                            'reference' => $reference,
+                            'currency'  => $currency,
+                        ],
+                    ]);
+                }
+            }
+        }
+
+        return response()->json(['message' => 'Nomba webhook processed']);
+    }
+
     protected function handleStripeCheckoutCompleted($session)
     {
         $userId = $session['metadata']['user_id'] ?? null;
@@ -79,10 +218,8 @@ class WebhookController extends Controller
             $reference = $session['id'];
             $currency = strtoupper($session['metadata']['currency'] ?? $session['currency']);
 
-            // Credit wallet using the HasWallet trait
             $user->deposit($amount, "Wallet funding via Stripe", $reference);
 
-            // Create notification
             \App\Models\Notification::create([
                 'user_id' => $user->id,
                 'title' => 'Wallet Funded',
@@ -95,14 +232,12 @@ class WebhookController extends Controller
                 ]
             ]);
 
-            // Send Email
             try {
                 \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\DepositSuccessMail($user, $amount, $currency, $reference));
             } catch (\Exception $e) {
                 \Log::error('Failed to send stripe deposit email: ' . $e->getMessage());
             }
         } else {
-            // Assume subscription if type is not wallet_funding
             $planId = $session['metadata']['plan_id'] ?? null;
             $subscriptionId = $session['subscription'] ?? null;
 
@@ -111,7 +246,6 @@ class WebhookController extends Controller
                 if ($plan) {
                     $this->activateUserPlan($user, $plan, 'stripe', $subscriptionId);
 
-                    // Send Email
                     try {
                         \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\SubscriptionSuccessMail($user, $plan, $plan->price, $plan->currency));
                     } catch (\Exception $e) {
@@ -121,8 +255,6 @@ class WebhookController extends Controller
             }
         }
     }
-
-
 
     protected function handleStripeSubscriptionCancelled($subscription)
     {

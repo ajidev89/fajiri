@@ -1009,6 +1009,82 @@
           "response": []
         },
         {
+          "name": "Update Notification Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"fcm_token_sample_1234567890_example_string_here\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/users/notification-token",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "users",
+                "notification-token"
+              ]
+            },
+            "description": "Update the push notification token (FCM/device token) for the authenticated user."
+          },
+          "response": [
+            {
+              "name": "Update Notification Token Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"token\": \"fcm_token_sample_1234567890_example_string_here\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{url}}/users/notification-token",
+                  "host": [
+                    "{{url}}"
+                  ],
+                  "path": [
+                    "users",
+                    "notification-token"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"message\": \"Notification token updated successfully\",\n    \"data\": {\n        \"id\": \"019c71b3-5798-739f-b3ae-0e028c7a5095\",\n        \"email\": \"user@example.com\",\n        \"phone\": \"+2347084773667\",\n        \"account_type\": \"identified-membership\",\n        \"notification_token\": \"fcm_token_sample_1234567890_example_string_here\",\n        \"created_at\": \"2026-02-18T17:01:44.000000Z\",\n        \"updated_at\": \"2026-08-13T13:10:00.000000Z\"\n    },\n    \"status\": true\n}"
+            }
+          ]
+        },
+        {
           "name": "Get Public Member Profile",
           "request": {
             "method": "GET",
@@ -1874,6 +1950,44 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Get Donor Leaderboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/donations/leaderboard?limit=10",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "donations",
+                "leaderboard"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of top donors to return"
+                },
+                {
+                  "key": "type",
+                  "value": "campaign",
+                  "description": "Filter by donatable type: campaign or needs",
+                  "disabled": true
+                },
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Filter by donatable ID",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get top donor leaderboard ranked by total base_amount_usd donated in descending order."
+          },
+          "response": []
         }
       ]
     },
@@ -1993,6 +2107,120 @@
                 }
               ]
             }
+          },
+          "response": []
+        },
+        {
+          "name": "Initialize PayPal Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 50.00,\n  \"email\": \"user@example.com\",\n  \"provider\": \"paypal\",\n  \"currency\": \"USD\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/payments/initialize",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "payments",
+                "initialize"
+              ]
+            },
+            "description": "Initialize wallet funding using PayPal payment gateway."
+          },
+          "response": []
+        },
+        {
+          "name": "Initialize Flutterwave Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 5000.00,\n  \"email\": \"user@example.com\",\n  \"provider\": \"flutterwave\",\n  \"currency\": \"NGN\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/payments/initialize",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "payments",
+                "initialize"
+              ]
+            },
+            "description": "Initialize wallet funding using Flutterwave payment gateway."
+          },
+          "response": []
+        },
+        {
+          "name": "Initialize Nomba Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 10000.00,\n  \"email\": \"user@example.com\",\n  \"provider\": \"nomba\",\n  \"currency\": \"NGN\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/payments/initialize",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "payments",
+                "initialize"
+              ]
+            },
+            "description": "Initialize wallet funding using Nomba payment gateway."
           },
           "response": []
         }
@@ -3401,6 +3629,297 @@
                 "{{need}}"
               ]
             }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Polls",
+      "item": [
+        {
+          "name": "List Polls (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/polls?search=community&status=active&type=radio&sort_by=created_at&sort_order=desc&per_page=15",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "polls"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "community",
+                  "description": "Search poll title"
+                },
+                {
+                  "key": "status",
+                  "value": "active",
+                  "description": "Filter by status: draft, active, inactive"
+                },
+                {
+                  "key": "type",
+                  "value": "radio",
+                  "description": "Filter by type: radio, checkbox, short_text, long_text"
+                },
+                {
+                  "key": "sort_by",
+                  "value": "created_at",
+                  "description": "Sort column: created_at, title, etc."
+                },
+                {
+                  "key": "sort_order",
+                  "value": "desc",
+                  "description": "Sort direction: asc or desc"
+                },
+                {
+                  "key": "per_page",
+                  "value": "15",
+                  "description": "Items per page"
+                }
+              ]
+            },
+            "description": "List all polls with optional pagination, search filtering, and sorting (Admin permission required)."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Poll (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"What feature should we prioritize next?\",\n  \"type\": \"radio\",\n  \"status\": \"active\",\n  \"start_date\": \"2026-08-15 00:00:00\",\n  \"duration_hours\": 72,\n  \"options\": [\n    {\n      \"label\": \"Dark Mode Support\",\n      \"order\": 1\n    },\n    {\n      \"label\": \"Push Notifications\",\n      \"order\": 2\n    },\n    {\n      \"label\": \"Multi-language Support\",\n      \"order\": 3\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/polls",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "polls"
+              ]
+            },
+            "description": "Create a new poll with options (Admin permission required). Types: radio, checkbox, short_text, long_text. Statuses: draft, active, inactive."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Poll Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/polls/1",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "polls",
+                "1"
+              ]
+            },
+            "description": "Get detailed information about a specific poll by ID, including options and creator profile. Increments view counter."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Poll (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated Poll Title: What feature should we prioritize next?\",\n  \"type\": \"checkbox\",\n  \"status\": \"active\",\n  \"start_date\": \"2026-08-15 00:00:00\",\n  \"duration_hours\": 96,\n  \"options\": [\n    {\n      \"label\": \"Dark Mode Support\",\n      \"order\": 1\n    },\n    {\n      \"label\": \"Push Notifications\",\n      \"order\": 2\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/polls/1",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "polls",
+                "1"
+              ]
+            },
+            "description": "Update an existing poll's title, type, status, schedule, or options (Admin permission required)."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Poll (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/polls/1",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "polls",
+                "1"
+              ]
+            },
+            "description": "Soft delete a poll by ID (Admin permission required)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Poll Summary (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/polls/1/summary",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "polls",
+                "1",
+                "summary"
+              ]
+            },
+            "description": "Get full poll summary including vote breakdown by option, percentage calculation, total views, total votes, participant count, and recent voter responses (Admin permission required)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Poll Responses (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/polls/1/responses?per_page=15",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "polls",
+                "1",
+                "responses"
+              ],
+              "query": [
+                {
+                  "key": "per_page",
+                  "value": "15",
+                  "description": "Items per page"
+                }
+              ]
+            },
+            "description": "Get paginated list of all voter responses for a specific poll (Admin permission required)."
+          },
+          "response": []
+        },
+        {
+          "name": "List Active Polls (User)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{url}}/polls",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "polls"
+              ]
+            },
+            "description": "List active polls available for authenticated users."
+          },
+          "response": []
+        },
+        {
+          "name": "Submit Vote (Radio/Checkbox)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"option_ids\": [1]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/polls/1/vote",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "polls",
+                "1",
+                "vote"
+              ]
+            },
+            "description": "Submit a vote for a radio or checkbox type poll as an authenticated user. Replaces any previous selection by this user on this poll."
+          },
+          "response": []
+        },
+        {
+          "name": "Submit Vote (Text Response)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text_response\": \"We really need dark mode as soon as possible!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/polls/1/vote",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "polls",
+                "1",
+                "vote"
+              ]
+            },
+            "description": "Submit a text response vote for short_text or long_text type polls as an authenticated user. Replaces any previous text answer by this user on this poll."
           },
           "response": []
         }

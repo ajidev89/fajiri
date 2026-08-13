@@ -143,6 +143,7 @@ Route::controller(InsuranceController::class)->group(function () {
 Route::controller(DonationController::class)->group(function () {
     Route::group(['prefix' => 'donations'], function () {
         Route::get('/', 'index')->middleware(['auth:sanctum', 'permission:donation_management']);
+        Route::get('/leaderboard', 'leaderboard');
         Route::post('/{type}/{id}/wallet', 'donateViaWallet')->middleware(['auth:sanctum']);
         Route::post('/{type}/{id}/paystack/initialize', 'initializePayment');
         Route::get('/verify', 'verifyPaystack');
@@ -166,6 +167,9 @@ Route::controller(PlanController::class)->middleware(['auth:sanctum'])->group(fu
 Route::controller(PaymentController::class)->group(function () {
     Route::post('/webhooks/stripe', [\App\Http\Controllers\API\WebhookController::class, 'handleStripe']);
     Route::post('/webhooks/paystack', [\App\Http\Controllers\API\WebhookController::class, 'handlePaystack']);
+    Route::post('/webhooks/paypal', [\App\Http\Controllers\API\WebhookController::class, 'handlePayPal']);
+    Route::post('/webhooks/flutterwave', [\App\Http\Controllers\API\WebhookController::class, 'handleFlutterwave']);
+    Route::post('/webhooks/nomba', [\App\Http\Controllers\API\WebhookController::class, 'handleNomba']);
 
     Route::group(['middleware' => ['auth:sanctum'], 'prefix' => 'payments'], function () {
         Route::post('/initialize', 'initialize');
