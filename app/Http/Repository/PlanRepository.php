@@ -33,8 +33,20 @@ class PlanRepository implements PlanRepositoryInterface
             $query->where('status', true);
         }
 
-        if (isset($filters['account_type'])) {
+        if (!empty($filters['account_type'])) {
             $query->where('account_type', $filters['account_type']);
+        }
+
+        if (!empty($filters['sub_account_type'])) {
+            $query->where('sub_account_type', $filters['sub_account_type']);
+        }
+
+        if (!empty($filters['currency'])) {
+            $query->where('currency', $filters['currency']);
+        }
+
+        if (!empty($filters['level'])) {
+            $query->where('level', $filters['level']);
         }
 
         return $query->get();

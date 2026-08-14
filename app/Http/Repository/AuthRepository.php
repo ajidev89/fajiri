@@ -21,18 +21,19 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 
-class AuthRepository implements AuthRepositoryInterface {
+class AuthRepository implements AuthRepositoryInterface
+{
 
     use ResponseTrait, AuthUserTrait;
 
-    public function __construct(protected User $model,protected Role $role, protected Profile $profile, protected Otp $otp) {
-    }
+    public function __construct(protected User $model, protected Role $role, protected Profile $profile, protected Otp $otp) {}
 
-    public function register($request){
+    public function register($request)
+    {
 
         DB::beginTransaction();
 
-        try{
+        try {
 
             $phone = null;
 
@@ -55,8 +56,8 @@ class AuthRepository implements AuthRepositoryInterface {
             $user = $this->model->create([
                 "email" => $request->input('email.value'),
                 "phone" => $request->phone['value'] ?? null,
-                "account_type" => $request->account_type,
-                "sub_account_type" => null,
+                "account_type" => $request->account_type ?? null,
+                "sub_account_type" => $request->sub_account_type ?? null,
                 "password" => Hash::make($request->password),
                 "role_id" => $role->id,
                 "country_id" => $request->country_id,
@@ -69,11 +70,11 @@ class AuthRepository implements AuthRepositoryInterface {
                 'balance' => 0
             ]);
 
-            if($phone && $phone['value'] === $request->phone['value']) {
+            if ($phone && $phone['value'] === $request->phone['value']) {
                 $user->markPhoneAsVerified();
             }
 
-            if($email && $email['value'] === $request->email['value']) {
+            if ($email && $email['value'] === $request->email['value']) {
                 $user->markEmailAsVerified();
             }
 
@@ -85,7 +86,7 @@ class AuthRepository implements AuthRepositoryInterface {
                 "address" => $request->address,
                 "occupation" => $request->occupation,
                 "avatar" => $request->avatar,
-            ]);                                 
+            ]);
 
             DB::commit();
 
@@ -93,19 +94,14 @@ class AuthRepository implements AuthRepositoryInterface {
 
             $user->loadMissing('role.permissions');
 
-            return $this->handleSuccessResponse("Successfully registered",[
+            return $this->handleSuccessResponse("Successfully registered", [
                 "user" => new UserResource($user)
             ]);
-            
-        }
-
-        catch(Exception $e) {
+        } catch (Exception $e) {
             info($e);
             DB::rollBack();
             return $this->handleErrorResponse($e->getMessage(), 400);
         }
-
-     
     }
 
     public function login($request)
@@ -125,7 +121,7 @@ class AuthRepository implements AuthRepositoryInterface {
             }
 
             $this->user()->tokens()->delete();
-         
+
             $code = random_int(100000, 999999);
 
             $otp = $this->otp->create([
@@ -134,7 +130,7 @@ class AuthRepository implements AuthRepositoryInterface {
                 'hash' => Hash::make($code),
             ]);
 
-            if($request->notification_token){
+            if ($request->notification_token) {
                 $this->user()->update(['notification_token' => $request->notification_token]);
             }
 
@@ -145,7 +141,7 @@ class AuthRepository implements AuthRepositoryInterface {
             $user = $this->user();
             $user->loadMissing('role.permissions');
 
-            return $this->handleSuccessResponse('Successfully sent otp',new UserResource($user)); 
+            return $this->handleSuccessResponse('Successfully sent otp', new UserResource($user));
         }
 
         $user = $this->model->where($field, $request->$field)->first();
@@ -153,32 +149,31 @@ class AuthRepository implements AuthRepositoryInterface {
             $user->audit('failed_login', 'Failed login attempt due to incorrect password.');
         }
 
-        return $this->handleErrorResponse('Invalid login credentials',401);
+        return $this->handleErrorResponse('Invalid login credentials', 401);
     }
 
-    public function changePassword($request){
+    public function changePassword($request)
+    {
 
-        try{
+        try {
             $data = decryptToken($request->token);
 
             $field = filter_var($data['value'], FILTER_VALIDATE_EMAIL) ? 'email' : 'phone';
-     
+
             $user = $this->model->where($field, $data['value'])->firstorFail();
-     
+
             $user->forceFill([
                 'password' => Hash::make($request->password),
                 'remember_token' => Str::random(60),
             ])->save();
-     
+
             event(new PasswordReset($user));
 
             $user->audit('password_change', 'User password has been successfully changed.');
 
             return $this->handleSuccessResponse('Your password has been sucessfully changed!');
-        }
-
-        catch(Exception $e){
-            return $this->handleErrorResponse('We could not change your password please try again!'); 
+        } catch (Exception $e) {
+            return $this->handleErrorResponse('We could not change your password please try again!');
         }
     }
 
@@ -231,7 +226,8 @@ class AuthRepository implements AuthRepositoryInterface {
     }
 
 
-    public function logout(){
+    public function logout()
+    {
 
         $this->user()->tokens()->delete();
 
@@ -277,5 +273,4 @@ class AuthRepository implements AuthRepositoryInterface {
             "user" => new UserResource($user)
         ]);
     }
-
 }

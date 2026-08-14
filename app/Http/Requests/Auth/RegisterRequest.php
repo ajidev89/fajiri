@@ -52,7 +52,7 @@ class RegisterRequest extends ApiRequest
                 'before_or_equal:' . now()->subYears(18)->format('Y-m-d'),
             ],
             // "gender" => ["required", new Enum(Gender::class)],
-            "account_type" => ["required", new Enum(AccountType::class)],
+            "account_type" => ["nullable", new Enum(AccountType::class)],
             "sub_account_type" => ["nullable"],
             "address" => "required",
             "occupation" => "required",

@@ -53,4 +53,9 @@ class Plan extends Model
     {
         return $query->where('account_type', $accountType);
     }
+
+    public function scopeSubAccountType($query, $subAccountType)
+    {
+        return $query->where('sub_account_type', $subAccountType);
+    }
 }
