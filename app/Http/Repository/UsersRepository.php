@@ -64,8 +64,12 @@ class UsersRepository implements UsersRepositoryInterface {
         return $user->audits()->with('performer')->latest()->paginate(10);
     }
     
+    public function donations(User $user) {
+        return $user->donations()->with(['donatable', 'user.profile'])->latest()->paginate(10);
+    }
+
     public function transactions(User $user) {
-        return $user->transactions()->latest()->paginate(10);
+        return $user->transactions()->with('wallet')->latest()->paginate(10);
     }
 
     public function referrals(User $user) {

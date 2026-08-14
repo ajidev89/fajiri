@@ -22,6 +22,7 @@ interface UsersRepositoryInterface
 
     public function delete(User $user);
     public function audits(User $user);
+    public function donations(User $user);
     public function transactions(User $user);
     public function referrals(User $user);
     public function updateNotificationToken(User $user, string $token);

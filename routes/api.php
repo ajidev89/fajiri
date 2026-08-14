@@ -119,6 +119,7 @@ Route::controller(UsersController::class)->group(function () {
         Route::get('/{user}', 'show');
         Route::get('/{user}/audits', 'audits');
         Route::get('/{user}/transactions', 'transactions');
+        Route::get('/{user}/donations', 'donations');
         Route::get('/{user}/referrals', 'referrals');
         Route::put('/{user}', 'update');
         Route::put('/{user}/suspend', 'suspend');

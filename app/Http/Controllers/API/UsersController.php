@@ -60,6 +60,11 @@ class UsersController extends Controller
         return $this->handleSuccessCollectionResponse("Successfully fetched user audits", \App\Http\Resources\AuditResource::collection($audits));
     }
 
+    public function donations(User $user){
+        $donations = $this->usersRepositoryInterface->donations($user);
+        return $this->handleSuccessCollectionResponse("Successfully fetched user donations", \App\Http\Resources\Donation\DonationResource::collection($donations));
+    }
+
     public function transactions(User $user){
         $transactions = $this->usersRepositoryInterface->transactions($user);
         return $this->handleSuccessCollectionResponse("Successfully fetched user transactions", \App\Http\Resources\Transaction\TransactionResource::collection($transactions));
