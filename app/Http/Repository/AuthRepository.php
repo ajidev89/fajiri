@@ -106,13 +106,27 @@ class AuthRepository implements AuthRepositoryInterface
 
     public function login($request)
     {
+        $identifier = $request->phone ?? $request->email ?? $request->login ?? $request->identifier;
 
-        $field = filter_var($request->email, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone';
+        $isEmail = filter_var($identifier, FILTER_VALIDATE_EMAIL);
+        $field = $isEmail ? 'email' : 'phone';
 
-        $credentials = $request->only($field, 'password');
+        $credentials = [
+            $field => $identifier,
+            'password' => $request->password,
+        ];
 
+        $authenticated = Auth::attempt($credentials);
 
-        if (Auth::attempt($credentials)) {
+        if (!$authenticated && $field === 'phone') {
+            $altIdentifier = str_starts_with($identifier, '+') ? substr($identifier, 1) : '+' . $identifier;
+            if (Auth::attempt(['phone' => $altIdentifier, 'password' => $request->password])) {
+                $authenticated = true;
+                $identifier = $altIdentifier;
+            }
+        }
+
+        if ($authenticated) {
             $user = Auth::user();
 
             if ($user->status !== Status::ACTIVE->value) {
@@ -124,8 +138,10 @@ class AuthRepository implements AuthRepositoryInterface
 
             $code = random_int(100000, 999999);
 
+            $otpIdentifier = $user->$field ?? $identifier;
+
             $otp = $this->otp->create([
-                'identifier' => $request->$field,
+                'identifier' => $otpIdentifier,
                 'channel' => $field,
                 'hash' => Hash::make($code),
             ]);
@@ -144,7 +160,7 @@ class AuthRepository implements AuthRepositoryInterface
             return $this->handleSuccessResponse('Successfully sent otp', new UserResource($user));
         }
 
-        $user = $this->model->where($field, $request->$field)->first();
+        $user = $this->model->where($field, $identifier)->first();
         if ($user) {
             $user->audit('failed_login', 'Failed login attempt due to incorrect password.');
         }
@@ -183,7 +199,7 @@ class AuthRepository implements AuthRepositoryInterface
 
         $user = $this->model->where($request->channel, $request->identifier)->firstorFail();
 
-        $token = $user->createToken($user->email)->plainTextToken;
+        $token = $user->createToken($user->email ?? $user->phone ?? 'auth_token')->plainTextToken;
 
         $user->audit('login', 'User successfully logged into the platform.');
 

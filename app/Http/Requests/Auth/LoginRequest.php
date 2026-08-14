@@ -22,10 +22,12 @@ class LoginRequest extends ApiRequest
     public function rules(): array
     {
         return [
-            'email' => 'sometimes|string',
-            'phone' => 'sometimes|string',
-            "notification_token" => "nullable|string",
-            'password' => 'required|string'
+            'email' => 'required_without_all:phone,login,identifier|nullable|string',
+            'phone' => 'required_without_all:email,login,identifier|nullable|string',
+            'login' => 'nullable|string',
+            'identifier' => 'nullable|string',
+            'notification_token' => 'nullable|string',
+            'password' => 'required|string',
         ];
     }
 }
