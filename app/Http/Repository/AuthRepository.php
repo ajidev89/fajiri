@@ -36,6 +36,7 @@ class AuthRepository implements AuthRepositoryInterface
         try {
 
             $phone = null;
+            $email = null;
 
             if ($request->input('phone.token')) {
                 $phone = decryptToken($request->input('phone.token'));
