@@ -76,38 +76,44 @@ class FlutterwaveService
     }
 
     /**
-     * Initialize a Flutterwave Payment Link
+     * Initialize a Flutterwave Order / Payment Link
      */
     public function initializeTransaction(array $data): array
     {
-        $txRef = $data['tx_ref'] ?? 'flw_' . uniqid() . '_' . time();
+        $txRef = $data['tx_ref'] ?? $data['reference'] ?? 'flw_' . uniqid() . '_' . time();
 
         $payload = [
             'tx_ref'          => $txRef,
+            'reference'       => $txRef,
             'amount'          => (float) $data['amount'],
             'currency'        => strtoupper($data['currency'] ?? 'NGN'),
             'redirect_url'    => $data['redirect_url'] ?? config('app.url') . '/payments/verify/flutterwave',
             'meta'            => $data['meta'] ?? [],
-            'customer'        => [
-                'email'       => $data['email'],
-                'name'        => $data['name'] ?? null,
-                'phonenumber' => $data['phone'] ?? null,
-            ],
             'customizations'  => [
                 'title'       => $data['title'] ?? 'Fajiri Payment',
                 'description' => $data['description'] ?? 'Payment for Fajiri service',
             ],
         ];
 
-        // Determine payments endpoint
-        $endpoint = str_contains($this->baseUrl, '/v3') ? "{$this->baseUrl}/payments" : "{$this->baseUrl}/payments";
-        if ($this->version === 'v4' && !str_contains($this->baseUrl, '/v3')) {
-            $endpoint = "{$this->baseUrl}/charges/checkout";
+        // Support either direct customer_id or customer object
+        if (!empty($data['customer_id'])) {
+            $payload['customer_id'] = $data['customer_id'];
+        } else {
+            $payload['customer'] = [
+                'email'       => $data['email'],
+                'name'        => $data['name'] ?? null,
+                'phonenumber' => $data['phone'] ?? null,
+            ];
         }
+
+        // Determine endpoint: v4 /orders primary endpoint
+        $endpoint = $this->version === 'v4' && !str_contains($this->baseUrl, '/v3')
+            ? "{$this->baseUrl}/orders"
+            : "{$this->baseUrl}/payments";
 
         $response = $this->getHttpClient()->post($endpoint, $payload);
 
-        // Fallback to /payments if /charges/checkout is 404
+        // Fallback to /payments if /orders returns 404
         if ($response->status() === 404 && $endpoint !== "{$this->baseUrl}/payments") {
             $response = $this->getHttpClient()->post("{$this->baseUrl}/payments", $payload);
         }
@@ -118,28 +124,42 @@ class FlutterwaveService
         }
 
         $responseData = $response->json('data') ?? $response->json();
-        if (!isset($responseData['link']) && isset($responseData['hosted_link'])) {
-            $responseData['link'] = $responseData['hosted_link'];
-        } elseif (!isset($responseData['link']) && isset($responseData['authorization_url'])) {
-            $responseData['link'] = $responseData['authorization_url'];
-        }
 
-        $responseData['tx_ref'] = $responseData['tx_ref'] ?? $txRef;
+        // Extract authorization / checkout redirect URL across v4 Orders next_action & standard hosted link formats
+        $redirectUrl = $responseData['next_action']['redirect_url']['url']
+            ?? $responseData['next_action']['url']
+            ?? $responseData['link']
+            ?? $responseData['hosted_link']
+            ?? $responseData['authorization_url']
+            ?? $responseData['checkout_url']
+            ?? null;
+
+        $responseData['link'] = $redirectUrl;
+        $responseData['authorization_url'] = $redirectUrl;
+        $responseData['tx_ref'] = $responseData['tx_ref'] ?? $responseData['reference'] ?? $txRef;
 
         return $responseData;
     }
 
     /**
-     * Verify a Flutterwave Transaction by ID
+     * Verify a Flutterwave Transaction / Order by ID
      */
     public function verifyTransaction(string $transactionId): array
     {
-        $endpoint = "{$this->baseUrl}/transactions/{$transactionId}/verify";
+        $endpoint = $this->version === 'v4' && !str_contains($this->baseUrl, '/v3')
+            ? "{$this->baseUrl}/orders/{$transactionId}"
+            : "{$this->baseUrl}/transactions/{$transactionId}/verify";
+
         $response = $this->getHttpClient()->get($endpoint);
 
         if ($response->status() === 404) {
-            // v4 charge lookup fallback
-            $response = $this->getHttpClient()->get("{$this->baseUrl}/charges/{$transactionId}");
+            // Fallback between /transactions and /orders / /charges
+            $fallback = "{$this->baseUrl}/transactions/{$transactionId}/verify";
+            $response = $this->getHttpClient()->get($fallback);
+
+            if ($response->status() === 404) {
+                $response = $this->getHttpClient()->get("{$this->baseUrl}/charges/{$transactionId}");
+            }
         }
 
         if ($response->failed()) {
@@ -151,16 +171,84 @@ class FlutterwaveService
     }
 
     /**
-     * Verify a Flutterwave Transaction by TxRef
+     * Verify a Flutterwave Transaction / Order by TxRef / Reference
      */
     public function verifyTransactionByRef(string $txRef): array
     {
-        $response = $this->getHttpClient()->get("{$this->baseUrl}/transactions/verify-by-txref", [
+        $endpoint = $this->version === 'v4' && !str_contains($this->baseUrl, '/v3')
+            ? "{$this->baseUrl}/orders/reference/{$txRef}"
+            : "{$this->baseUrl}/transactions/verify-by-txref";
+
+        $response = $this->getHttpClient()->get($endpoint, [
             'tx_ref' => $txRef,
         ]);
 
+        if ($response->status() === 404) {
+            $response = $this->getHttpClient()->get("{$this->baseUrl}/transactions/verify-by-txref", [
+                'tx_ref' => $txRef,
+            ]);
+        }
+
         if ($response->failed()) {
             throw new Exception('Flutterwave verification by ref failed: ' . $response->body());
+        }
+
+        return $response->json('data') ?? $response->json();
+    }
+
+    /**
+     * List Customers (GET /customers)
+     */
+    public function listCustomers(array $query = []): array
+    {
+        $response = $this->getHttpClient()->get("{$this->baseUrl}/customers", $query);
+
+        if ($response->failed()) {
+            Log::error('Flutterwave list customers failed', ['body' => $response->body()]);
+            throw new Exception('Flutterwave list customers failed: ' . $response->body());
+        }
+
+        return $response->json('data') ?? $response->json();
+    }
+
+    /**
+     * Create a Customer (POST /customers)
+     */
+    public function createCustomer(array $data): array
+    {
+        $payload = [
+            'email' => $data['email'],
+            'name'  => [
+                'first_name' => $data['first_name'] ?? $data['name'] ?? null,
+                'last_name'  => $data['last_name'] ?? null,
+            ],
+            'phone' => [
+                'country_code' => $data['country_code'] ?? '+234',
+                'number'       => $data['phone'] ?? $data['phone_number'] ?? null,
+            ],
+            'meta'  => $data['meta'] ?? [],
+        ];
+
+        $response = $this->getHttpClient()->post("{$this->baseUrl}/customers", $payload);
+
+        if ($response->failed()) {
+            Log::error('Flutterwave create customer failed', ['body' => $response->body()]);
+            throw new Exception('Flutterwave create customer failed: ' . $response->body());
+        }
+
+        return $response->json('data') ?? $response->json();
+    }
+
+    /**
+     * Get a Customer by ID (GET /customers/{id})
+     */
+    public function getCustomer(string $customerId): array
+    {
+        $response = $this->getHttpClient()->get("{$this->baseUrl}/customers/{$customerId}");
+
+        if ($response->failed()) {
+            Log::error('Flutterwave get customer failed', ['body' => $response->body()]);
+            throw new Exception('Flutterwave get customer failed: ' . $response->body());
         }
 
         return $response->json('data') ?? $response->json();
@@ -189,4 +277,5 @@ class FlutterwaveService
         return false;
     }
 }
+
 
