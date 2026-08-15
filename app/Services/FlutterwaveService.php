@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Log;
 class FlutterwaveService
 {
     protected string $baseUrl;
+    protected string $authUrl;
     protected ?string $clientId;
     protected ?string $clientSecret;
     protected ?string $publicKey;
@@ -27,6 +28,7 @@ class FlutterwaveService
         $this->secretKey    = Config::get('flutterwave.secretKey');
         $this->secretHash   = Config::get('flutterwave.secretHash');
         $this->version      = Config::get('flutterwave.version', 'v4');
+        $this->authUrl      = Config::get('flutterwave.authUrl', 'https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token');
         $this->baseUrl      = rtrim(Config::get('flutterwave.paymentUrl', 'https://developersandbox-api.flutterwave.com'), '/');
     }
 
@@ -41,7 +43,7 @@ class FlutterwaveService
             }
 
             try {
-                $response = Http::asForm()->post("{$this->baseUrl}/oauth/token", [
+                $response = Http::asForm()->post($this->authUrl, [
                     'grant_type'    => 'client_credentials',
                     'client_id'     => $this->clientId,
                     'client_secret' => $this->clientSecret,

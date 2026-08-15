@@ -8,6 +8,7 @@ return [
     'secretHash'   => env('FLUTTERWAVE_SECRET_HASH'),
     'mode'         => env('FLUTTERWAVE_MODE', 'sandbox'),
     'version'      => env('FLUTTERWAVE_VERSION', 'v4'),
+    'authUrl'      => env('FLUTTERWAVE_AUTH_URL', 'https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token'),
     'paymentUrl'   => env(
         'FLUTTERWAVE_PAYMENT_URL',
         env('FLUTTERWAVE_MODE', 'sandbox') === 'live'
