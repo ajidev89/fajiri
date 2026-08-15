@@ -58,13 +58,20 @@ class PlanController extends Controller
     {
         $request->validate([
             'plan_id' => 'required|uuid|exists:plans,id',
+            'gateway' => 'nullable|string',
+            'payment_method' => 'nullable|string',
+            'currency' => 'nullable|string',
             'success_url' => 'nullable|url',
             'cancel_url' => 'nullable|url',
         ]);
 
         try {
             $user = $request->user();
-            $result = $this->planRepository->initializeSubscription($user, $request->plan_id, $request->only(['success_url', 'cancel_url']));
+            $result = $this->planRepository->initializeSubscription(
+                $user,
+                $request->plan_id,
+                $request->only(['gateway', 'payment_method', 'currency', 'success_url', 'cancel_url'])
+            );
 
             return $this->handleSuccessResponse('Contribution initialized', $result);
         } catch (\Exception $e) {

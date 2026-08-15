@@ -68,46 +68,135 @@ class PaymentGateway
      */
     public function initializeSubscription(User $user, Plan $plan, array $options = [])
     {
-        // Use user's country currency or request's detected currency to choose gateway
-        $currency = $user->country->currency ?? request()->detected_currency ?? 'USD';
+        $gateway = strtolower($options['gateway'] ?? $options['payment_method'] ?? request()->gateway ?? request()->payment_method ?? 'paystack');
+        $currency = strtoupper($options['currency'] ?? $user->country->currency ?? request()->detected_currency ?? 'NGN');
 
-        if (strtoupper($currency) === 'NGN') {
-            if (!$plan->paystack_plan_code) {
-                throw new Exception("Paystack plan code not set for this plan.");
-            }
+        switch ($gateway) {
+            case 'stripe':
+                if (!$plan->stripe_price_id) {
+                    throw new Exception("Stripe price ID not set for this plan.");
+                }
 
-            $paystackAmount = $plan->price;
-            if (strtoupper($plan->currency ?? 'NGN') !== 'NGN') {
-                $paystackAmount = $this->currencyService->convert(
-                    (float) $plan->price,
-                    $plan->currency ?? 'USD',
-                    'NGN'
+                return $this->stripeService->createCheckoutSession(
+                    $user,
+                    $plan,
+                    $options['success_url'] ?? config('app.url') . '/payments/verify/stripe',
+                    $options['cancel_url'] ?? config('app.url') . '/plans'
                 );
-            }
 
-            return $this->paystackService->initializeSubscription([
-                'email' => $user->email,
-                'amount' => (int) round($paystackAmount * 100),
-                'plan' => $plan->paystack_plan_code,
-                'callback_url' => $options['success_url'] ?? config('app.url') . '/payments/verify/paystack',
-                'metadata' => [
-                    'user_id' => $user->id,
-                    'plan_id' => $plan->id,
-                    'type' => 'subscription'
-                ]
-            ]);
-        } else {
-            // Any currency other than NGN uses Stripe
-            if (!$plan->stripe_price_id) {
-                throw new Exception("Stripe price ID not set for this plan.");
-            }
+            case 'paypal':
+                $paypalCurrency = $currency === 'NGN' ? 'USD' : $currency;
+                $paypalAmount = $plan->price;
+                if (strtoupper($plan->currency ?? 'USD') !== $paypalCurrency) {
+                    $paypalAmount = $this->currencyService->convert(
+                        (float) $plan->price,
+                        $plan->currency ?? 'NGN',
+                        $paypalCurrency
+                    );
+                }
 
-            return $this->stripeService->createCheckoutSession(
-                $user,
-                $plan,
-                $options['success_url'] ?? config('app.url') . '/payments/verify/stripe',
-                $options['cancel_url'] ?? config('app.url') . '/plans'
-            );
+                $order = $this->payPalService->createOrder([
+                    'amount'      => (float) $paypalAmount,
+                    'currency'    => $paypalCurrency,
+                    'description' => "Subscription to {$plan->name} plan",
+                    'reference'   => 'sub_' . $plan->id . '_' . $user->id . '_' . time(),
+                    'return_url'  => $options['success_url'] ?? config('app.url') . '/payments/verify/paypal',
+                    'cancel_url'  => $options['cancel_url'] ?? config('app.url') . '/plans',
+                ]);
+
+                $approveUrl = collect($order['links'] ?? [])->firstWhere('rel', 'approve')['href'] ?? null;
+
+                return [
+                    'authorization_url' => $approveUrl,
+                    'order_id'          => $order['id'] ?? null,
+                    'raw'               => $order,
+                ];
+
+            case 'flutterwave':
+            case 'rave':
+                $flwAmount = $plan->price;
+                if (strtoupper($plan->currency ?? 'NGN') !== $currency) {
+                    $flwAmount = $this->currencyService->convert(
+                        (float) $plan->price,
+                        $plan->currency ?? 'NGN',
+                        $currency
+                    );
+                }
+
+                $result = $this->flutterwaveService->initializeTransaction([
+                    'amount'       => (float) $flwAmount,
+                    'currency'     => $currency,
+                    'email'        => $user->email,
+                    'name'         => $user->name ?? $user->profile?->first_name,
+                    'phone'        => $user->phone ?? null,
+                    'redirect_url' => $options['success_url'] ?? config('app.url') . '/payments/verify/flutterwave',
+                    'title'        => "Subscription to {$plan->name}",
+                    'description'  => "Contribution for {$plan->name} plan",
+                    'meta'         => [
+                        'user_id' => $user->id,
+                        'plan_id' => $plan->id,
+                        'type'    => 'subscription',
+                    ],
+                ]);
+
+                return [
+                    'authorization_url' => $result['link'] ?? null,
+                    'reference'         => $result['tx_ref'] ?? null,
+                    'data'              => $result,
+                ];
+
+            case 'nomba':
+                $nombaAmount = $plan->price;
+                if (strtoupper($plan->currency ?? 'NGN') !== 'NGN') {
+                    $nombaAmount = $this->currencyService->convert(
+                        (float) $plan->price,
+                        $plan->currency ?? 'USD',
+                        'NGN'
+                    );
+                }
+
+                $result = $this->nombaService->createCheckoutOrder([
+                    'amount'        => (float) $nombaAmount,
+                    'currency'      => 'NGN',
+                    'email'         => $user->email,
+                    'name'          => $user->name ?? $user->profile?->first_name,
+                    'callback_url'  => $options['success_url'] ?? config('app.url') . '/payments/verify/nomba',
+                    'description'   => "Subscription to {$plan->name} plan",
+                    'reference'     => 'nomba_sub_' . $user->id . '_' . $plan->id . '_' . time(),
+                ]);
+
+                return [
+                    'authorization_url' => $result['checkoutUrl'] ?? $result['link'] ?? null,
+                    'order_reference'   => $result['orderReference'] ?? null,
+                    'data'              => $result,
+                ];
+
+            case 'paystack':
+            default:
+                if (!$plan->paystack_plan_code) {
+                    throw new Exception("Paystack plan code not set for this plan.");
+                }
+
+                $paystackAmount = $plan->price;
+                if (strtoupper($plan->currency ?? 'NGN') !== 'NGN') {
+                    $paystackAmount = $this->currencyService->convert(
+                        (float) $plan->price,
+                        $plan->currency ?? 'USD',
+                        'NGN'
+                    );
+                }
+
+                return $this->paystackService->initializeSubscription([
+                    'email' => $user->email,
+                    'amount' => (int) round($paystackAmount * 100),
+                    'plan' => $plan->paystack_plan_code,
+                    'callback_url' => $options['success_url'] ?? config('app.url') . '/payments/verify/paystack',
+                    'metadata' => [
+                        'user_id' => $user->id,
+                        'plan_id' => $plan->id,
+                        'type' => 'subscription'
+                    ]
+                ]);
         }
     }
 }
