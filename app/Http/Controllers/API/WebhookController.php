@@ -110,9 +110,10 @@ class WebhookController extends Controller
 
     public function handleFlutterwave(Request $request)
     {
-        $signature = $request->header('verif-hash');
+        $signature = $request->header('verif-hash') ?? $request->header('x-flutterwave-signature');
+        $payload = $request->getContent();
 
-        if (!$this->flutterwaveService->isValidWebhook($signature)) {
+        if (!$this->flutterwaveService->isValidWebhook($signature, $payload)) {
             return response()->json(['message' => 'Invalid signature'], 400);
         }
 
