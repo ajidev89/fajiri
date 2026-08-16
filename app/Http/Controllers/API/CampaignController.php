@@ -64,8 +64,9 @@ class CampaignController extends Controller
 
     public function destroy(Campaign $campaign)
     {
+        $user = auth()->user();
 
-        if ($campaign->added_by !== auth()->id()) {
+        if ($campaign->added_by !== $user->id && !$user->hasPermission('campaign_management')) {
             return $this->handleErrorResponse('Unauthorized', 403);
         }
 
