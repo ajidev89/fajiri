@@ -11,18 +11,24 @@ use RuntimeException;
  */
 class CloudinaryService
 {
-    protected Cloudinary $cloudinary;
+    protected ?Cloudinary $cloudinary = null;
 
     public function __construct()
     {
-        $this->cloudinary = new Cloudinary([
-            'cloud' => [
-                'cloud_name' => config('services.cloudinary.cloud_name'),
-                'api_key'    => config('services.cloudinary.api_key'),
-                'api_secret' => config('services.cloudinary.api_secret'),
-            ],
-            'url' => ['secure' => true],
-        ]);
+        $cloudName = config('services.cloudinary.cloud_name') ?? env('CLOUDINARY_CLOUD_NAME');
+        $apiKey    = config('services.cloudinary.api_key') ?? env('CLOUDINARY_API_KEY');
+        $apiSecret = config('services.cloudinary.api_secret') ?? env('CLOUDINARY_API_SECRET');
+
+        if ($cloudName && $apiKey && $apiSecret) {
+            $this->cloudinary = new Cloudinary([
+                'cloud' => [
+                    'cloud_name' => $cloudName,
+                    'api_key'    => $apiKey,
+                    'api_secret' => $apiSecret,
+                ],
+                'url' => ['secure' => true],
+            ]);
+        }
     }
 
     /**

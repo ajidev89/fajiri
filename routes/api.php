@@ -20,6 +20,7 @@ use App\Http\Controllers\API\PostController;
 use App\Http\Controllers\API\EventController;
 use App\Http\Controllers\API\PartnerController;
 use App\Http\Controllers\API\DisbursementController;
+use App\Http\Controllers\API\AdminDisbursementController;
 use App\Http\Controllers\API\FundraiserController;
 use App\Http\Controllers\API\MediaController;
 use App\Http\Controllers\API\FamilyMemberController;
@@ -266,12 +267,29 @@ Route::controller(PartnerController::class)->group(function () {
 });
 
 Route::controller(DisbursementController::class)->middleware(['auth:sanctum'])->group(function () {
+    Route::group(['prefix' => 'campaigns/{campaignId}/disbursements'], function () {
+        Route::get('/financials', 'getCampaignFinancials');
+        Route::post('/validate', 'validateDisbursement');
+        Route::post('/send-otp', 'sendOtp');
+        Route::get('/', 'getCampaignDisbursements');
+        Route::post('/', 'store');
+    });
+
     Route::group(['prefix' => 'disbursements'], function () {
         Route::get('/', 'index');
         Route::get('/{id}', 'show');
         Route::post('/', 'store');
         Route::post('/{id}/disburse', 'disburse')->middleware(['permission:financial_records']);
         Route::post('/{id}/reject', 'reject')->middleware(['permission:financial_records']);
+    });
+});
+
+Route::controller(AdminDisbursementController::class)->middleware(['auth:sanctum', 'permission:financial_records'])->group(function () {
+    Route::group(['prefix' => 'admin/disbursements'], function () {
+        Route::get('/', 'index');
+        Route::post('/{id}/approve', 'approve');
+        Route::post('/{id}/hold', 'hold');
+        Route::post('/{id}/reject', 'reject');
     });
 });
 

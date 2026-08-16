@@ -7,13 +7,13 @@ use Illuminate\Support\Facades\Cache;
 
 class CurrencyService
 {
-    protected string $apiKey;
+    protected ?string $apiKey = null;
     protected string $baseUrl;
 
     public function __construct()
     {
-        $this->apiKey = config('services.exchangerate_api.key');
-        $this->baseUrl = config('services.exchangerate_api.base_url');
+        $this->apiKey = config('services.exchangerate_api.key') ?? '';
+        $this->baseUrl = config('services.exchangerate_api.base_url', 'https://v6.exchangerate-api.com/v6');
     }
 
     /**
