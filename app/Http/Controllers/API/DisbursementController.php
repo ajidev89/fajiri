@@ -160,9 +160,7 @@ class DisbursementController extends Controller
             ->latest()
             ->get();
 
-        return $this->handleSuccessResponse('Campaign disbursements retrieved', [
-            'data' => DisbursementResource::collection($disbursements),
-        ]);
+        return $this->handleSuccessCollectionResponse('Campaign disbursements retrieved', DisbursementResource::collection($disbursements));
     }
 
     /**
@@ -201,4 +199,3 @@ class DisbursementController extends Controller
         }
     }
 }
-
