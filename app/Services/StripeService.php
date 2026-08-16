@@ -11,13 +11,15 @@ use Stripe\StripeClient;
 class StripeService
 {
     protected string $baseUrl = 'https://api.stripe.com/v1';
-    protected string $secretKey;
-    protected StripeClient $client;
+    protected ?string $secretKey = null;
+    protected ?StripeClient $client = null;
 
     public function __construct()
     {
         $this->secretKey = config('services.stripe.secret');
-        $this->client = new StripeClient($this->secretKey);
+        if ($this->secretKey) {
+            $this->client = new StripeClient($this->secretKey);
+        }
     }
 
     /**

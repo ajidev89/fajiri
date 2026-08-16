@@ -146,8 +146,8 @@ class PaymentRepository implements PaymentRepositoryInterface
 
             if ($provider === 'flutterwave') {
                 $tx = $this->flutterwaveService->verifyTransaction($reference);
-                if (($tx['status'] ?? '') === 'successful') {
-                    $amount = $tx['amount'];
+                if ($this->flutterwaveService->isSuccessful($tx)) {
+                    $amount = (float) ($tx['amount'] ?? 0);
                     $user = $this->user();
                     $user->deposit($amount, "Wallet funding via Flutterwave", $reference);
                     return $this->handleSuccessResponse('Wallet funded via Flutterwave successfully', $user->wallet);

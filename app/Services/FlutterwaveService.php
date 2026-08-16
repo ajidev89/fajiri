@@ -6,6 +6,7 @@ use Exception;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class FlutterwaveService
 {
@@ -17,6 +18,7 @@ class FlutterwaveService
     protected ?string $secretKey;
     protected ?string $secretHash;
     protected string $version;
+    protected ?string $scenarioKey;
     protected ?string $cachedAccessToken = null;
     protected ?int $tokenExpiresAt = null;
 
@@ -28,8 +30,18 @@ class FlutterwaveService
         $this->secretKey    = Config::get('flutterwave.secretKey');
         $this->secretHash   = Config::get('flutterwave.secretHash');
         $this->version      = Config::get('flutterwave.version', 'v4');
+        $this->scenarioKey  = Config::get('flutterwave.scenarioKey');
         $this->authUrl      = Config::get('flutterwave.authUrl', 'https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token');
         $this->baseUrl      = rtrim(Config::get('flutterwave.paymentUrl', 'https://developersandbox-api.flutterwave.com'), '/');
+    }
+
+    /**
+     * Set a custom scenario key for sandbox testing
+     */
+    public function setScenarioKey(?string $scenarioKey): self
+    {
+        $this->scenarioKey = $scenarioKey;
+        return $this;
     }
 
     /**
@@ -38,6 +50,7 @@ class FlutterwaveService
     public function getAccessToken(): ?string
     {
         if (!empty($this->clientId) && !empty($this->clientSecret)) {
+            // Check in-memory cache with a 60-second buffer
             if ($this->cachedAccessToken && $this->tokenExpiresAt && time() < ($this->tokenExpiresAt - 60)) {
                 return $this->cachedAccessToken;
             }
@@ -52,12 +65,15 @@ class FlutterwaveService
                 if ($response->successful()) {
                     $data = $response->json();
                     $this->cachedAccessToken = $data['access_token'] ?? null;
-                    $expiresIn = $data['expires_in'] ?? 3600;
+                    $expiresIn = $data['expires_in'] ?? 600;
                     $this->tokenExpiresAt = time() + (int) $expiresIn;
                     return $this->cachedAccessToken;
                 }
 
-                Log::warning('Flutterwave OAuth token retrieval failed', ['body' => $response->body()]);
+                Log::warning('Flutterwave OAuth token retrieval failed', [
+                    'status' => $response->status(),
+                    'body'   => $response->body(),
+                ]);
             } catch (Exception $e) {
                 Log::warning('Flutterwave OAuth request error', ['error' => $e->getMessage()]);
             }
@@ -67,66 +83,188 @@ class FlutterwaveService
     }
 
     /**
-     * Get authenticated HTTP client
+     * Get authenticated HTTP client with standard v4 headers (Authorization, X-Trace-Id, X-Idempotency-Key)
      */
-    protected function getHttpClient()
+    protected function getHttpClient(bool $isMutating = false, ?string $idempotencyKey = null, ?string $traceId = null)
     {
         $token = $this->getAccessToken();
-        return Http::withToken($token)->acceptJson();
+        $traceId = $traceId ?: (string) Str::uuid();
+
+        $headers = [
+            'Accept'       => 'application/json',
+            'Content-Type' => 'application/json',
+            'X-Trace-Id'   => $traceId,
+        ];
+
+        if ($isMutating) {
+            $headers['X-Idempotency-Key'] = $idempotencyKey ?: (string) Str::uuid();
+        }
+
+        if (!empty($this->scenarioKey)) {
+            $headers['X-Scenario-Key'] = $this->scenarioKey;
+        }
+
+        return Http::withHeaders($headers)->withToken($token);
     }
 
     /**
-     * Initialize a Flutterwave Order / Payment Link
+     * Format a customer data array into the v4 Customer schema
      */
-    public function initializeTransaction(array $data): array
+    public function formatCustomerPayload(array $data): array
     {
-        $txRef = $data['tx_ref'] ?? $data['reference'] ?? 'flw_' . uniqid() . '_' . time();
+        $customer = [];
 
-        $payload = [
-            'tx_ref'          => $txRef,
-            'reference'       => $txRef,
-            'amount'          => (float) $data['amount'],
-            'currency'        => strtoupper($data['currency'] ?? 'NGN'),
-            'redirect_url'    => $data['redirect_url'] ?? config('app.url') . '/payments/verify/flutterwave',
-            'meta'            => $data['meta'] ?? [],
-            'customizations'  => [
-                'title'       => $data['title'] ?? 'Fajiri Payment',
-                'description' => $data['description'] ?? 'Payment for Fajiri service',
-            ],
-        ];
+        // Email
+        $customer['email'] = $data['email'] ?? null;
 
-        // Support either direct customer_id or customer object
-        if (!empty($data['customer_id'])) {
-            $payload['customer_id'] = $data['customer_id'];
+        // Name formatting: object with first, last, middle
+        if (isset($data['name']) && is_array($data['name'])) {
+            $customer['name'] = [
+                'first' => $data['name']['first'] ?? $data['name']['first_name'] ?? '',
+                'last'  => $data['name']['last'] ?? $data['name']['last_name'] ?? '',
+            ];
+            if (!empty($data['name']['middle'])) {
+                $customer['name']['middle'] = $data['name']['middle'];
+            }
+        } elseif (!empty($data['name']) && is_string($data['name'])) {
+            $parts = explode(' ', trim($data['name']), 2);
+            $customer['name'] = [
+                'first' => $parts[0] ?? '',
+                'last'  => $parts[1] ?? ($parts[0] ?? ''),
+            ];
         } else {
-            $payload['customer'] = [
-                'email'       => $data['email'],
-                'name'        => $data['name'] ?? null,
-                'phonenumber' => $data['phone'] ?? null,
+            $firstName = $data['first_name'] ?? 'Customer';
+            $lastName  = $data['last_name'] ?? 'User';
+            $customer['name'] = [
+                'first' => $firstName,
+                'last'  => $lastName,
             ];
         }
 
-        // Determine endpoint: v4 /orders primary endpoint
-        $endpoint = $this->version === 'v4' && !str_contains($this->baseUrl, '/v3')
-            ? "{$this->baseUrl}/orders"
-            : "{$this->baseUrl}/payments";
+        // Phone formatting: object with country_code, number
+        if (isset($data['phone']) && is_array($data['phone'])) {
+            $customer['phone'] = [
+                'country_code' => preg_replace('/[^0-9]/', '', (string) ($data['phone']['country_code'] ?? '234')),
+                'number'       => preg_replace('/[^0-9]/', '', (string) ($data['phone']['number'] ?? '')),
+            ];
+        } elseif (!empty($data['phone']) && is_string($data['phone'])) {
+            $rawPhone = preg_replace('/[^0-9]/', '', $data['phone']);
+            if (str_starts_with($rawPhone, '234') && strlen($rawPhone) > 10) {
+                $countryCode = '234';
+                $number = substr($rawPhone, 3);
+            } elseif (str_starts_with($rawPhone, '0') && strlen($rawPhone) === 11) {
+                $countryCode = '234';
+                $number = substr($rawPhone, 1);
+            } else {
+                $countryCode = '234';
+                $number = $rawPhone;
+            }
+            $customer['phone'] = [
+                'country_code' => $countryCode,
+                'number'       => $number,
+            ];
+        }
 
-        $response = $this->getHttpClient()->post($endpoint, $payload);
+        // Address formatting if provided
+        if (!empty($data['address']) && is_array($data['address'])) {
+            $customer['address'] = [
+                'line1'       => $data['address']['line1'] ?? $data['address']['address'] ?? '',
+                'line2'       => $data['address']['line2'] ?? '',
+                'city'        => $data['address']['city'] ?? '',
+                'state'       => $data['address']['state'] ?? '',
+                'country'     => strtoupper($data['address']['country'] ?? 'NG'),
+                'postal_code' => $data['address']['postal_code'] ?? $data['address']['zip'] ?? '',
+            ];
+        }
 
-        // Fallback to /payments if /orders returns 404
-        if ($response->status() === 404 && $endpoint !== "{$this->baseUrl}/payments") {
-            $response = $this->getHttpClient()->post("{$this->baseUrl}/payments", $payload);
+        if (!empty($data['meta']) && is_array($data['meta'])) {
+            $customer['meta'] = $data['meta'];
+        }
+
+        return $customer;
+    }
+
+    /**
+     * Initialize a Flutterwave Order / Payment Link via v4 Payment Orchestrator (/orchestration/direct-orders)
+     */
+    public function initializeTransaction(array $data): array
+    {
+        $reference = $data['reference'] ?? $data['tx_ref'] ?? 'flw_' . uniqid() . '_' . time();
+        $idempotencyKey = $data['idempotency_key'] ?? (string) Str::uuid();
+
+        // Build v4 compliant direct-orders / orders payload
+        $payload = [
+            'reference'    => $reference,
+            'amount'       => (float) $data['amount'],
+            'currency'     => strtoupper($data['currency'] ?? 'NGN'),
+            'redirect_url' => $data['redirect_url'] ?? $data['callback_url'] ?? config('app.url') . '/payments/verify/flutterwave',
+            'meta'         => $data['meta'] ?? [],
+        ];
+
+        // Format customer object
+        if (!empty($data['customer_id'])) {
+            $payload['customer_id'] = $data['customer_id'];
+        } elseif (!empty($data['customer']) && is_array($data['customer'])) {
+            $payload['customer'] = $this->formatCustomerPayload($data['customer']);
+        } else {
+            $payload['customer'] = $this->formatCustomerPayload([
+                'email'      => $data['email'] ?? null,
+                'name'       => $data['name'] ?? null,
+                'first_name' => $data['first_name'] ?? null,
+                'last_name'  => $data['last_name'] ?? null,
+                'phone'      => $data['phone'] ?? null,
+                'address'    => $data['address'] ?? null,
+                'meta'       => $data['meta'] ?? [],
+            ]);
+        }
+
+        if (isset($data['merchant_vat_amount'])) {
+            $payload['merchant_vat_amount'] = (float) $data['merchant_vat_amount'];
+        }
+
+        if (!empty($data['payment_method'])) {
+            $payload['payment_method'] = $data['payment_method'];
+        }
+
+        if (!empty($data['customizations'])) {
+            $payload['customizations'] = $data['customizations'];
+        }
+
+        // Endpoint prioritization for v4
+        $primaryEndpoint = "{$this->baseUrl}/orchestration/direct-orders";
+        $response = $this->getHttpClient(true, $idempotencyKey)->post($primaryEndpoint, $payload);
+
+        // Fallback to /orders if /orchestration/direct-orders is unavailable
+        if ($response->status() === 404) {
+            $response = $this->getHttpClient(true, $idempotencyKey)->post("{$this->baseUrl}/orders", $payload);
+        }
+
+        // Fallback to /payments if legacy v3 endpoint
+        if ($response->status() === 404) {
+            $legacyPayload = array_merge($payload, [
+                'tx_ref'   => $reference,
+                'customer' => [
+                    'email'       => $data['email'] ?? $payload['customer']['email'] ?? '',
+                    'name'        => is_string($data['name'] ?? null) ? $data['name'] : ($payload['customer']['name']['first'] ?? ''),
+                    'phonenumber' => $data['phone'] ?? null,
+                ],
+            ]);
+            $response = $this->getHttpClient(true, $idempotencyKey)->post("{$this->baseUrl}/payments", $legacyPayload);
         }
 
         if ($response->failed()) {
-            Log::error('Flutterwave initialize failed', ['body' => $response->body()]);
+            Log::error('Flutterwave initialize failed', [
+                'status' => $response->status(),
+                'body'   => $response->body(),
+            ]);
             throw new Exception('Flutterwave initialization failed: ' . $response->body());
         }
 
         $responseData = $response->json('data') ?? $response->json();
 
-        // Extract authorization / checkout redirect URL across v4 Orders next_action & standard hosted link formats
-        $redirectUrl = $responseData['next_action']['redirect_url']['url']
+        // Extract checkout / authorization redirect URL across v4 & v3 response variations
+        $redirectUrl = $responseData['redirect_url']
+            ?? $responseData['next_action']['redirect_url']['url']
             ?? $responseData['next_action']['url']
             ?? $responseData['link']
             ?? $responseData['hosted_link']
@@ -134,66 +272,161 @@ class FlutterwaveService
             ?? $responseData['checkout_url']
             ?? null;
 
-        $responseData['link'] = $redirectUrl;
+        $responseData['link']              = $redirectUrl;
         $responseData['authorization_url'] = $redirectUrl;
-        $responseData['tx_ref'] = $responseData['tx_ref'] ?? $responseData['reference'] ?? $txRef;
+        $responseData['reference']         = $responseData['reference'] ?? $responseData['tx_ref'] ?? $reference;
+        $responseData['tx_ref']            = $responseData['reference'];
 
         return $responseData;
     }
 
     /**
-     * Verify a Flutterwave Transaction / Order by ID
+     * Direct Charge via Orchestrator (POST /orchestration/direct-charges)
      */
-    public function verifyTransaction(string $transactionId): array
+    public function chargeDirect(array $data): array
     {
-        $endpoint = $this->version === 'v4' && !str_contains($this->baseUrl, '/v3')
-            ? "{$this->baseUrl}/orders/{$transactionId}"
-            : "{$this->baseUrl}/transactions/{$transactionId}/verify";
+        $reference = $data['reference'] ?? $data['tx_ref'] ?? 'flw_chg_' . uniqid() . '_' . time();
+        $idempotencyKey = $data['idempotency_key'] ?? (string) Str::uuid();
 
-        $response = $this->getHttpClient()->get($endpoint);
+        $payload = [
+            'amount'         => (float) $data['amount'],
+            'currency'       => strtoupper($data['currency'] ?? 'NGN'),
+            'reference'      => $reference,
+            'payment_method' => $data['payment_method'],
+            'redirect_url'   => $data['redirect_url'] ?? config('app.url') . '/payments/verify/flutterwave',
+            'meta'           => $data['meta'] ?? [],
+        ];
+
+        if (!empty($data['customer_id'])) {
+            $payload['customer_id'] = $data['customer_id'];
+        } else {
+            $payload['customer'] = $this->formatCustomerPayload($data['customer'] ?? $data);
+        }
+
+        $response = $this->getHttpClient(true, $idempotencyKey)->post("{$this->baseUrl}/orchestration/direct-charges", $payload);
 
         if ($response->status() === 404) {
-            // Fallback between /transactions and /orders / /charges
-            $fallback = "{$this->baseUrl}/transactions/{$transactionId}/verify";
-            $response = $this->getHttpClient()->get($fallback);
-
-            if ($response->status() === 404) {
-                $response = $this->getHttpClient()->get("{$this->baseUrl}/charges/{$transactionId}");
-            }
+            $response = $this->getHttpClient(true, $idempotencyKey)->post("{$this->baseUrl}/charges", $payload);
         }
 
         if ($response->failed()) {
-            Log::error('Flutterwave verify failed', ['body' => $response->body()]);
+            Log::error('Flutterwave direct charge failed', [
+                'status' => $response->status(),
+                'body'   => $response->body(),
+            ]);
+            throw new Exception('Flutterwave direct charge failed: ' . $response->body());
+        }
+
+        return $this->normalizeTransactionData($response->json('data') ?? $response->json());
+    }
+
+    /**
+     * Verify a Flutterwave Transaction / Charge / Order by ID
+     */
+    public function verifyTransaction(string $transactionId): array
+    {
+        // Try charges first in v4
+        $endpoint = "{$this->baseUrl}/charges/{$transactionId}";
+        $response = $this->getHttpClient()->get($endpoint);
+
+        // Fallback to /orders/{id}
+        if ($response->status() === 404) {
+            $response = $this->getHttpClient()->get("{$this->baseUrl}/orders/{$transactionId}");
+        }
+
+        // Fallback to legacy v3 /transactions/{id}/verify
+        if ($response->status() === 404) {
+            $response = $this->getHttpClient()->get("{$this->baseUrl}/transactions/{$transactionId}/verify");
+        }
+
+        if ($response->failed()) {
+            Log::error('Flutterwave verify failed', [
+                'status' => $response->status(),
+                'body'   => $response->body(),
+            ]);
             throw new Exception('Flutterwave verification failed: ' . $response->body());
         }
 
-        return $response->json('data') ?? $response->json();
+        return $this->normalizeTransactionData($response->json('data') ?? $response->json());
+    }
+
+    /**
+     * Verify an Order by Order ID (GET /orders/{id})
+     */
+    public function verifyOrder(string $orderId): array
+    {
+        $response = $this->getHttpClient()->get("{$this->baseUrl}/orders/{$orderId}");
+
+        if ($response->failed()) {
+            Log::error('Flutterwave verify order failed', [
+                'status' => $response->status(),
+                'body'   => $response->body(),
+            ]);
+            throw new Exception('Flutterwave verify order failed: ' . $response->body());
+        }
+
+        return $this->normalizeTransactionData($response->json('data') ?? $response->json());
     }
 
     /**
      * Verify a Flutterwave Transaction / Order by TxRef / Reference
      */
-    public function verifyTransactionByRef(string $txRef): array
+    public function verifyTransactionByRef(string $reference): array
     {
-        $endpoint = $this->version === 'v4' && !str_contains($this->baseUrl, '/v3')
-            ? "{$this->baseUrl}/orders/reference/{$txRef}"
-            : "{$this->baseUrl}/transactions/verify-by-txref";
+        // Try charges by reference
+        $response = $this->getHttpClient()->get("{$this->baseUrl}/charges", ['reference' => $reference]);
 
-        $response = $this->getHttpClient()->get($endpoint, [
-            'tx_ref' => $txRef,
-        ]);
+        if ($response->status() === 404 || empty($response->json('data'))) {
+            // Try orders by reference
+            $response = $this->getHttpClient()->get("{$this->baseUrl}/orders", ['reference' => $reference]);
+        }
 
-        if ($response->status() === 404) {
-            $response = $this->getHttpClient()->get("{$this->baseUrl}/transactions/verify-by-txref", [
-                'tx_ref' => $txRef,
-            ]);
+        if ($response->status() === 404 || empty($response->json('data'))) {
+            // Try orders/reference/{ref} or legacy verify-by-txref
+            $response = $this->getHttpClient()->get("{$this->baseUrl}/transactions/verify-by-txref", ['tx_ref' => $reference]);
         }
 
         if ($response->failed()) {
             throw new Exception('Flutterwave verification by ref failed: ' . $response->body());
         }
 
-        return $response->json('data') ?? $response->json();
+        $data = $response->json('data') ?? $response->json();
+        if (is_array($data) && isset($data[0])) {
+            $data = $data[0];
+        }
+
+        return $this->normalizeTransactionData($data);
+    }
+
+    /**
+     * Normalize transaction data across v4 and v3 structures
+     */
+    public function normalizeTransactionData(array $data): array
+    {
+        // Status normalization: 'succeeded' and 'successful' both mapped
+        $rawStatus = strtolower($data['status'] ?? '');
+        $isSuccess = in_array($rawStatus, ['succeeded', 'successful', 'completed', 'approved']);
+
+        $data['is_successful'] = $isSuccess;
+        if ($isSuccess && !isset($data['status'])) {
+            $data['status'] = 'successful';
+        }
+
+        // Normalize reference / tx_ref
+        $ref = $data['reference'] ?? $data['tx_ref'] ?? $data['id'] ?? null;
+        $data['reference'] = $ref;
+        $data['tx_ref']    = $ref;
+
+        return $data;
+    }
+
+    /**
+     * Determine if a transaction / charge response is successful
+     */
+    public function isSuccessful(array $transaction): bool
+    {
+        $status = strtolower($transaction['status'] ?? '');
+        return in_array($status, ['succeeded', 'successful', 'completed', 'approved']);
     }
 
     /**
@@ -212,24 +445,13 @@ class FlutterwaveService
     }
 
     /**
-     * Create a Customer (POST /customers)
+     * Create a Customer (POST /customers) with v4 Schema
      */
     public function createCustomer(array $data): array
     {
-        $payload = [
-            'email' => $data['email'],
-            'name'  => [
-                'first_name' => $data['first_name'] ?? $data['name'] ?? null,
-                'last_name'  => $data['last_name'] ?? null,
-            ],
-            'phone' => [
-                'country_code' => $data['country_code'] ?? '+234',
-                'number'       => $data['phone'] ?? $data['phone_number'] ?? null,
-            ],
-            'meta'  => $data['meta'] ?? [],
-        ];
+        $payload = $this->formatCustomerPayload($data);
 
-        $response = $this->getHttpClient()->post("{$this->baseUrl}/customers", $payload);
+        $response = $this->getHttpClient(true)->post("{$this->baseUrl}/customers", $payload);
 
         if ($response->failed()) {
             Log::error('Flutterwave create customer failed', ['body' => $response->body()]);
@@ -255,21 +477,52 @@ class FlutterwaveService
     }
 
     /**
+     * Search Customers by Email (GET /customers/search)
+     */
+    public function searchCustomers(string $email): array
+    {
+        $response = $this->getHttpClient()->get("{$this->baseUrl}/customers/search", ['email' => $email]);
+
+        if ($response->failed()) {
+            Log::error('Flutterwave search customers failed', ['body' => $response->body()]);
+            throw new Exception('Flutterwave search customers failed: ' . $response->body());
+        }
+
+        return $response->json('data') ?? $response->json();
+    }
+
+    /**
      * Validate Webhook Signature Header
+     *
+     * In Flutterwave v4, the signature is returned in the 'flutterwave-signature' header
+     * and is computed as HMAC-SHA256 base64 digest of raw payload using secretHash:
+     * base64_encode(hash_hmac('sha256', $rawBody, $secretHash, true))
      */
     public function isValidWebhook(?string $signature, ?string $payload = null): bool
     {
         if (!$this->secretHash) {
-            return true; // If secret hash is not defined, accept payload securely
-        }
-
-        if ($signature && hash_equals($this->secretHash, $signature)) {
             return true;
         }
 
-        if ($payload && $signature) {
-            $computed = hash_hmac('sha256', $payload, $this->secretHash);
-            if (hash_equals($computed, $signature)) {
+        if (!$signature) {
+            return false;
+        }
+
+        // 1. Direct match with secretHash (v3 verif-hash / raw hash header)
+        if (hash_equals($this->secretHash, $signature)) {
+            return true;
+        }
+
+        if ($payload !== null) {
+            // 2. v4 Standard: HMAC-SHA256 Base64 digest
+            $computedBase64 = base64_encode(hash_hmac('sha256', $payload, $this->secretHash, true));
+            if (hash_equals($computedBase64, $signature)) {
+                return true;
+            }
+
+            // 3. HMAC-SHA256 Hex digest fallback
+            $computedHex = hash_hmac('sha256', $payload, $this->secretHash);
+            if (hash_equals($computedHex, $signature)) {
                 return true;
             }
         }

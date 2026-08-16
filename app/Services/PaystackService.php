@@ -9,11 +9,11 @@ use Exception;
 class PaystackService
 {
     protected string $baseUrl;
-    protected string $secretKey;
+    protected ?string $secretKey = null;
 
     public function __construct()
     {
-        $this->baseUrl = Config::get('paystack.paymentUrl');
+        $this->baseUrl = Config::get('paystack.paymentUrl', 'https://api.paystack.co');
         $this->secretKey = Config::get('paystack.secretKey');
     }
 

@@ -110,45 +110,59 @@ class WebhookController extends Controller
 
     public function handleFlutterwave(Request $request)
     {
-        $signature = $request->header('verif-hash') ?? $request->header('x-flutterwave-signature');
+        $signature = $request->header('flutterwave-signature')
+            ?? $request->header('verif-hash')
+            ?? $request->header('x-flutterwave-signature');
         $payload = $request->getContent();
 
         if (!$this->flutterwaveService->isValidWebhook($signature, $payload)) {
+            Log::warning('Flutterwave webhook signature verification failed');
             return response()->json(['message' => 'Invalid signature'], 400);
         }
 
         $event = $request->all();
-        $eventStatus = $event['status'] ?? '';
-        $txRef = $event['tx_ref'] ?? $event['data']['tx_ref'] ?? null;
+        $eventType = strtolower($event['type'] ?? $event['event'] ?? '');
+        $data = $event['data'] ?? $event;
+        $eventStatus = strtolower($data['status'] ?? $event['status'] ?? '');
+        $txRef = $data['reference'] ?? $data['tx_ref'] ?? $event['tx_ref'] ?? null;
 
-        Log::info('Flutterwave Webhook Received', ['status' => $eventStatus, 'tx_ref' => $txRef]);
+        Log::info('Flutterwave Webhook Received', [
+            'type'   => $eventType,
+            'status' => $eventStatus,
+            'tx_ref' => $txRef,
+        ]);
 
-        if (in_array($eventStatus, ['successful', 'completed'])) {
-            $transactionId = $event['data']['id'] ?? null;
+        $isSuccessEvent = $eventType === 'charge.completed'
+            || in_array($eventStatus, ['succeeded', 'successful', 'completed', 'approved']);
+
+        if ($isSuccessEvent) {
+            $transactionId = $data['id'] ?? $event['id'] ?? null;
             if ($transactionId) {
                 try {
                     $txData = $this->flutterwaveService->verifyTransaction((string) $transactionId);
-                    $email = $txData['customer']['email'] ?? null;
-                    $amount = $txData['amount'] ?? 0;
-                    $currency = strtoupper($txData['currency'] ?? 'NGN');
-                    $reference = $txData['tx_ref'] ?? (string) $transactionId;
+                    if ($this->flutterwaveService->isSuccessful($txData)) {
+                        $email = $txData['customer']['email'] ?? ($data['customer']['email'] ?? null);
+                        $amount = (float) ($txData['amount'] ?? $data['amount'] ?? 0);
+                        $currency = strtoupper($txData['currency'] ?? $data['currency'] ?? 'NGN');
+                        $reference = $txData['reference'] ?? $txData['tx_ref'] ?? $txRef ?? (string) $transactionId;
 
-                    if ($email) {
-                        $user = User::where('email', $email)->first();
-                        if ($user) {
-                            $user->deposit($amount, "Wallet funding via Flutterwave", $reference);
+                        if ($email && $amount > 0) {
+                            $user = User::where('email', $email)->first();
+                            if ($user) {
+                                $user->deposit($amount, "Wallet funding via Flutterwave", $reference);
 
-                            \App\Models\Notification::create([
-                                'user_id' => $user->id,
-                                'title'   => 'Wallet Funded',
-                                'message' => "Your wallet has been credited with {$currency} " . number_format($amount, 2) . " via Flutterwave.",
-                                'type'    => 'wallet_funding',
-                                'data'    => [
-                                    'amount'    => $amount,
-                                    'reference' => $reference,
-                                    'currency'  => $currency,
-                                ],
-                            ]);
+                                \App\Models\Notification::create([
+                                    'user_id' => $user->id,
+                                    'title'   => 'Wallet Funded',
+                                    'message' => "Your wallet has been credited with {$currency} " . number_format($amount, 2) . " via Flutterwave.",
+                                    'type'    => 'wallet_funding',
+                                    'data'    => [
+                                        'amount'    => $amount,
+                                        'reference' => $reference,
+                                        'currency'  => $currency,
+                                    ],
+                                ]);
+                            }
                         }
                     }
                 } catch (\Exception $e) {
