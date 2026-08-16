@@ -13,88 +13,22 @@ class FlutterwaveServiceTest extends TestCase
     {
         parent::setUp();
 
-        Config::set('flutterwave.clientId', 'test_client_id_123');
-        Config::set('flutterwave.clientSecret', 'test_client_secret_456');
+        Config::set('flutterwave.publicKey', 'FLWPUBK_TEST-123456789-X');
+        Config::set('flutterwave.secretKey', 'FLWSECK_TEST-987654321-X');
         Config::set('flutterwave.secretHash', 'test_secret_hash_789');
-        Config::set('flutterwave.version', 'v4');
-        Config::set('flutterwave.paymentUrl', 'https://developersandbox-api.flutterwave.com');
-        Config::set('flutterwave.authUrl', 'https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token');
+        Config::set('flutterwave.paymentUrl', 'https://api.flutterwave.com/v3');
     }
 
-    public function test_oauth_access_token_retrieval_and_caching(): void
+    public function test_initialize_transaction_sends_v3_payments_request(): void
     {
         Http::fake([
-            'https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token' => Http::response([
-                'access_token' => 'flw_access_token_mock_123',
-                'expires_in'   => 600,
-                'token_type'   => 'Bearer',
-            ], 200),
-        ]);
-
-        $service = new FlutterwaveService();
-
-        // 1. First call fetches token
-        $token1 = $service->getAccessToken();
-        $this->assertEquals('flw_access_token_mock_123', $token1);
-
-        // 2. Second call uses in-memory cache
-        $token2 = $service->getAccessToken();
-        $this->assertEquals('flw_access_token_mock_123', $token2);
-
-        Http::assertSentCount(1);
-    }
-
-    public function test_customer_payload_formatting(): void
-    {
-        $service = new FlutterwaveService();
-
-        $formatted = $service->formatCustomerPayload([
-            'email' => 'jane.doe@example.com',
-            'name'  => 'Jane Doe',
-            'phone' => '08012345678',
-            'address' => [
-                'line1'       => '123 Test St',
-                'city'        => 'Lagos',
-                'state'       => 'Lagos',
-                'country'     => 'NG',
-                'postal_code' => '100001',
-            ],
-        ]);
-
-        $this->assertEquals('jane.doe@example.com', $formatted['email']);
-        $this->assertEquals('Jane', $formatted['name']['first']);
-        $this->assertEquals('Doe', $formatted['name']['last']);
-        $this->assertEquals('234', $formatted['phone']['country_code']);
-        $this->assertEquals('8012345678', $formatted['phone']['number']);
-        $this->assertEquals('123 Test St', $formatted['address']['line1']);
-        $this->assertEquals('NG', $formatted['address']['country']);
-    }
-
-    public function test_initialize_transaction_sends_v4_orchestrator_direct_orders_request(): void
-    {
-        Http::fake([
-            'https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token' => Http::response([
-                'access_token' => 'flw_mock_token',
-                'expires_in'   => 600,
-            ], 200),
-            'https://developersandbox-api.flutterwave.com/orchestration/direct-orders' => Http::response([
+            'https://api.flutterwave.com/v3/payments' => Http::response([
                 'status'  => 'success',
-                'message' => 'Order created',
+                'message' => 'Hosted Link',
                 'data'    => [
-                    'id'           => 'ord_12345',
-                    'reference'    => 'test_ref_001',
-                    'amount'       => 5000.0,
-                    'currency'     => 'NGN',
-                    'status'       => 'pending',
-                    'redirect_url' => 'https://checkout.flutterwave.com/pay/ord_12345',
-                    'next_action'  => [
-                        'type'         => 'redirect_url',
-                        'redirect_url' => [
-                            'url' => 'https://checkout.flutterwave.com/pay/ord_12345',
-                        ],
-                    ],
+                    'link' => 'https://checkout.flutterwave.com/v3/hosted/pay/flw_hosted_123',
                 ],
-            ], 201),
+            ], 200),
         ]);
 
         $service = new FlutterwaveService();
@@ -105,91 +39,92 @@ class FlutterwaveServiceTest extends TestCase
             'email'        => 'john@example.com',
             'name'         => 'John Doe',
             'phone'        => '08099887766',
-            'reference'    => 'test_ref_001',
+            'tx_ref'       => 'test_ref_001',
             'redirect_url' => 'https://fajiri.app/payments/verify/flutterwave',
         ]);
 
-        $this->assertEquals('https://checkout.flutterwave.com/pay/ord_12345', $result['link']);
-        $this->assertEquals('https://checkout.flutterwave.com/pay/ord_12345', $result['authorization_url']);
-        $this->assertEquals('test_ref_001', $result['reference']);
+        $this->assertEquals('https://checkout.flutterwave.com/v3/hosted/pay/flw_hosted_123', $result['link']);
+        $this->assertEquals('https://checkout.flutterwave.com/v3/hosted/pay/flw_hosted_123', $result['authorization_url']);
+        $this->assertEquals('test_ref_001', $result['tx_ref']);
 
         Http::assertSent(function ($request) {
-            if ($request->url() === 'https://developersandbox-api.flutterwave.com/orchestration/direct-orders') {
-                return $request->hasHeader('Authorization', 'Bearer flw_mock_token')
-                    && $request->hasHeader('X-Trace-Id')
-                    && $request->hasHeader('X-Idempotency-Key')
-                    && $request['amount'] == 5000.0
-                    && $request['currency'] === 'NGN'
-                    && $request['reference'] === 'test_ref_001'
-                    && $request['customer']['name']['first'] === 'John'
-                    && $request['customer']['phone']['country_code'] === '234';
-            }
-            return true;
+            return $request->url() === 'https://api.flutterwave.com/v3/payments'
+                && $request->hasHeader('Authorization', 'Bearer FLWSECK_TEST-987654321-X')
+                && $request['amount'] == 5000.0
+                && $request['currency'] === 'NGN'
+                && $request['tx_ref'] === 'test_ref_001'
+                && $request['customer']['email'] === 'john@example.com'
+                && $request['customer']['name'] === 'John Doe'
+                && $request['customer']['phonenumber'] === '08099887766';
         });
     }
 
-    public function test_verify_transaction_handles_v4_charges_and_normalizes_status(): void
+    public function test_verify_transaction_by_id_in_v3(): void
     {
         Http::fake([
-            'https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token' => Http::response([
-                'access_token' => 'flw_mock_token',
-                'expires_in'   => 600,
-            ], 200),
-            'https://developersandbox-api.flutterwave.com/charges/chg_abc123' => Http::response([
+            'https://api.flutterwave.com/v3/transactions/2882001/verify' => Http::response([
                 'status'  => 'success',
-                'message' => 'Charge retrieved',
+                'message' => 'Transaction fetched successfully',
                 'data'    => [
-                    'id'        => 'chg_abc123',
-                    'amount'    => 2500.0,
+                    'id'        => 2882001,
+                    'tx_ref'    => 'ref_tx_999',
+                    'flw_ref'   => 'FLW-MOCK-12345',
+                    'amount'    => 5000,
                     'currency'  => 'NGN',
-                    'reference' => 'ref_tx_999',
-                    'status'    => 'succeeded',
+                    'status'    => 'successful',
                     'customer'  => [
                         'email' => 'user@example.com',
+                        'name'  => 'John Doe',
                     ],
                 ],
             ], 200),
         ]);
 
         $service = new FlutterwaveService();
-        $verified = $service->verifyTransaction('chg_abc123');
+        $verified = $service->verifyTransaction('2882001');
 
         $this->assertTrue($verified['is_successful']);
         $this->assertTrue($service->isSuccessful($verified));
-        $this->assertEquals('ref_tx_999', $verified['reference']);
         $this->assertEquals('ref_tx_999', $verified['tx_ref']);
-        $this->assertEquals(2500.0, $verified['amount']);
+        $this->assertEquals('ref_tx_999', $verified['reference']);
+        $this->assertEquals(5000, $verified['amount']);
     }
 
-    public function test_is_valid_webhook_with_v4_hmac_sha256_base64_signature(): void
+    public function test_verify_transaction_by_ref_in_v3(): void
+    {
+        Http::fake([
+            'https://api.flutterwave.com/v3/transactions/verify_by_reference*' => Http::response([
+                'status'  => 'success',
+                'message' => 'Transaction fetched successfully',
+                'data'    => [
+                    'id'       => 2882002,
+                    'tx_ref'   => 'ref_tx_ref_query',
+                    'amount'   => 15000,
+                    'currency' => 'NGN',
+                    'status'   => 'successful',
+                ],
+            ], 200),
+        ]);
+
+        $service = new FlutterwaveService();
+        $verified = $service->verifyTransactionByRef('ref_tx_ref_query');
+
+        $this->assertTrue($verified['is_successful']);
+        $this->assertEquals('ref_tx_ref_query', $verified['tx_ref']);
+        $this->assertEquals(15000, $verified['amount']);
+    }
+
+    public function test_is_valid_webhook_verifies_v3_secret_hash(): void
     {
         $service = new FlutterwaveService();
         $secretHash = 'test_secret_hash_789';
-        $payload = json_encode([
-            'id'        => 'wbk_123',
-            'type'      => 'charge.completed',
-            'timestamp' => 1735116884019,
-            'data'      => [
-                'id'        => 'chg_abc123',
-                'status'    => 'succeeded',
-                'amount'    => 2500,
-                'currency'  => 'NGN',
-                'reference' => 'tx_ref_001',
-            ],
-        ]);
 
-        // Compute official Flutterwave v4 Base64 HMAC-SHA256 signature
-        $validBase64Signature = base64_encode(hash_hmac('sha256', $payload, $secretHash, true));
-        $this->assertTrue($service->isValidWebhook($validBase64Signature, $payload));
+        // Valid direct secret hash (v3 verif-hash standard)
+        $this->assertTrue($service->isValidWebhook($secretHash));
 
-        // Direct secret match also accepted
-        $this->assertTrue($service->isValidWebhook($secretHash, $payload));
-
-        // Tampered payload rejected
-        $tamperedPayload = json_encode(['data' => ['amount' => 100]]);
-        $this->assertFalse($service->isValidWebhook($validBase64Signature, $tamperedPayload));
-
-        // Invalid signature rejected
-        $this->assertFalse($service->isValidWebhook('invalid_signature', $payload));
+        // Invalid secret hash rejected
+        $this->assertFalse($service->isValidWebhook('invalid_hash'));
+        $this->assertFalse($service->isValidWebhook(null));
     }
 }
+

@@ -110,8 +110,9 @@ class WebhookController extends Controller
 
     public function handleFlutterwave(Request $request)
     {
-        $signature = $request->header('flutterwave-signature')
-            ?? $request->header('verif-hash')
+        $signature = $request->header('verif-hash')
+            ?? $request->header('verif_hash')
+            ?? $request->header('flutterwave-signature')
             ?? $request->header('x-flutterwave-signature');
         $payload = $request->getContent();
 

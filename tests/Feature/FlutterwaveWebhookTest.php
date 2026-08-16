@@ -20,11 +20,10 @@ class FlutterwaveWebhookTest extends TestCase
     {
         parent::setUp();
 
-        Config::set('flutterwave.clientId', 'test_client_id_123');
-        Config::set('flutterwave.clientSecret', 'test_client_secret_456');
+        Config::set('flutterwave.publicKey', 'FLWPUBK_TEST-123456789-X');
+        Config::set('flutterwave.secretKey', 'FLWSECK_TEST-987654321-X');
         Config::set('flutterwave.secretHash', 'test_webhook_hash_secret');
-        Config::set('flutterwave.version', 'v4');
-        Config::set('flutterwave.paymentUrl', 'https://developersandbox-api.flutterwave.com');
+        Config::set('flutterwave.paymentUrl', 'https://api.flutterwave.com/v3');
 
         Country::create([
             'id'         => 1,
@@ -42,7 +41,7 @@ class FlutterwaveWebhookTest extends TestCase
         ]);
     }
 
-    public function test_flutterwave_v4_webhook_successfully_credits_user_wallet(): void
+    public function test_flutterwave_v3_webhook_successfully_credits_user_wallet(): void
     {
         $user = User::create([
             'email'             => 'flw_user@example.com',
@@ -60,15 +59,13 @@ class FlutterwaveWebhookTest extends TestCase
         ]);
 
         $payload = [
-            'id'        => 'wbk_998877',
-            'type'      => 'charge.completed',
-            'timestamp' => 1735116884019,
-            'data'      => [
-                'id'        => 'chg_webhook_123',
-                'status'    => 'succeeded',
+            'event' => 'charge.completed',
+            'data'  => [
+                'id'        => 2882001,
+                'status'    => 'successful',
                 'amount'    => 5000.0,
                 'currency'  => 'NGN',
-                'reference' => 'ref_wf_test_001',
+                'tx_ref'    => 'ref_wf_test_001',
                 'customer'  => [
                     'email' => 'flw_user@example.com',
                 ],
@@ -76,22 +73,17 @@ class FlutterwaveWebhookTest extends TestCase
         ];
 
         $rawBody = json_encode($payload);
-        $signature = base64_encode(hash_hmac('sha256', $rawBody, 'test_webhook_hash_secret', true));
 
         // Mock verification request
         Http::fake([
-            'https://idp.flutterwave.com/realms/flutterwave/protocol/openid-connect/token' => Http::response([
-                'access_token' => 'flw_token_123',
-                'expires_in'   => 600,
-            ], 200),
-            'https://developersandbox-api.flutterwave.com/charges/chg_webhook_123' => Http::response([
+            'https://api.flutterwave.com/v3/transactions/2882001/verify' => Http::response([
                 'status' => 'success',
                 'data'   => [
-                    'id'        => 'chg_webhook_123',
-                    'status'    => 'succeeded',
+                    'id'        => 2882001,
+                    'status'    => 'successful',
                     'amount'    => 5000.0,
                     'currency'  => 'NGN',
-                    'reference' => 'ref_wf_test_001',
+                    'tx_ref'    => 'ref_wf_test_001',
                     'customer'  => [
                         'email' => 'flw_user@example.com',
                     ],
@@ -106,8 +98,8 @@ class FlutterwaveWebhookTest extends TestCase
             [],
             [],
             [
-                'HTTP_FLUTTERWAVE_SIGNATURE' => $signature,
-                'CONTENT_TYPE'               => 'application/json',
+                'HTTP_VERIF_HASH' => 'test_webhook_hash_secret',
+                'CONTENT_TYPE'    => 'application/json',
             ],
             $rawBody
         );
@@ -128,8 +120,8 @@ class FlutterwaveWebhookTest extends TestCase
             [],
             [],
             [
-                'HTTP_FLUTTERWAVE_SIGNATURE' => 'invalid_signature_hash',
-                'CONTENT_TYPE'               => 'application/json',
+                'HTTP_VERIF_HASH' => 'invalid_signature_hash',
+                'CONTENT_TYPE'    => 'application/json',
             ],
             json_encode(['test' => 'data'])
         );
