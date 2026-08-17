@@ -75,12 +75,6 @@ class UsersController extends Controller
         return $this->handleSuccessCollectionResponse("Successfully fetched user referrals", UserResource::collection($referrals));
     }
 
-    public function updateNotificationToken(\App\Http\Requests\User\UpdateNotificationTokenRequest $request){
-        $user = $this->usersRepositoryInterface->updateNotificationToken(auth()->user(), $request->token);
-        return $this->handleSuccessResponse("Notification token updated successfully", new UserResource($user));
-    }
-
-
     public function account_types(){
 
         $accountTypes = AccountType::cases();

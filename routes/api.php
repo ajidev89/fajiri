@@ -74,7 +74,9 @@ Route::controller(UserController::class)->middleware(['auth:sanctum'])->group(fu
         Route::get('referrals', 'referrals');
         Route::get('subscriptions', 'subscriptions');
         Route::delete('/', 'deactivate');
+        Route::post('/notification-token', 'updateNotificationToken');
     });
+    Route::post('/users/notification-token', 'updateNotificationToken');
 });
 
 Route::controller(CampaignController::class)->group(function () { 
@@ -116,7 +118,6 @@ Route::controller(UsersController::class)->group(function () {
     Route::get('/users/account-types', 'account_types');
     Route::group(['prefix' => 'users', 'middleware' => ['auth:sanctum', 'permission:user_management']], function () {
         Route::get('/', 'index');
-        Route::post('/notification-token', 'updateNotificationToken');
         Route::get('/{user}', 'show');
         Route::get('/{user}/audits', 'audits');
         Route::get('/{user}/transactions', 'transactions');

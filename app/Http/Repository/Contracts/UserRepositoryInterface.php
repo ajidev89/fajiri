@@ -14,4 +14,5 @@ interface UserRepositoryInterface {
     public function referrals();
     public function subscriptions($request);
     public function deactivate();
+    public function updateNotificationToken($request);
 }

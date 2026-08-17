@@ -192,4 +192,17 @@ class UserRepository implements UserRepositoryInterface {
             return $this->handleErrorResponse($e->getMessage(), 400);
         }
     }
+
+    public function updateNotificationToken($request) {
+        try {
+            $user = $this->user();
+            $user->update([
+                'notification_token' => $request->token
+            ]);
+
+            return $this->handleSuccessResponse("Notification token updated successfully", new UserResource($user));
+        } catch (\Exception $e) {
+            return $this->handleErrorResponse($e->getMessage(), 400);
+        }
+    }
 }

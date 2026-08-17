@@ -55,4 +55,8 @@ class UserController extends Controller
     public function deactivate(){
         return $this->userRepositoryInterface->deactivate();
     }
+
+    public function updateNotificationToken(\App\Http\Requests\User\UpdateNotificationTokenRequest $request){
+        return $this->userRepositoryInterface->updateNotificationToken($request);
+    }
 }
