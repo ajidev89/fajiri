@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Repository\Contracts\UsersRepositoryInterface;
 use App\Http\Resources\User\UserResource;
 use App\Http\Requests\User\UpdateRequest;
+use App\Http\Requests\User\UpdateNotificationTokenRequest;
 use App\Models\User;  
 
 class UsersController extends Controller
@@ -79,5 +80,12 @@ class UsersController extends Controller
 
         $accountTypes = AccountType::cases();
         return $this->handleSuccessCollectionResponse("Successfully fetched account types", \App\Http\Resources\AccountTypeResource::collection($accountTypes));
+    }
+
+    // Update notification token for authenticated user
+    public function updateNotificationToken(UpdateNotificationTokenRequest $request)
+    {
+        $user = $this->usersRepositoryInterface->updateNotificationToken(auth()->user(), $request->token);
+        return $this->handleSuccessResponse("Notification token updated successfully", new UserResource($user));
     }
 }

@@ -225,6 +225,12 @@ class PollRepository implements PollRepositoryInterface
 
             if (in_array($type->value, [PollType::RADIO->value, PollType::CHECKBOX->value])) {
                 $optionIds = (array) $request->option_ids;
+
+                // RADIO polls must have exactly one selected option
+                if ($type->value === PollType::RADIO->value && count($optionIds) > 1) {
+                    return $this->handleErrorResponse('Radio polls can only have one selected option.', 422);
+                }
+
                 foreach ($optionIds as $optionId) {
                     $this->pollResponse->create([
                         'poll_id'        => $poll->id,

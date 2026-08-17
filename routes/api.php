@@ -116,6 +116,7 @@ Route::controller(InitiativeController::class)->group(function () {
 
 Route::controller(UsersController::class)->group(function () { 
     Route::get('/users/account-types', 'account_types');
+    Route::post('/users/notification-token', 'updateNotificationToken')->middleware(['auth:sanctum']);
     Route::group(['prefix' => 'users', 'middleware' => ['auth:sanctum', 'permission:user_management']], function () {
         Route::get('/', 'index');
         Route::get('/{user}', 'show');
