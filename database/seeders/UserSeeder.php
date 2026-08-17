@@ -23,7 +23,7 @@ class UserSeeder extends Seeder
 
         // Create the specific user
         $user = User::updateOrCreate(
-            ['email' => 'ajidagba21@yopmail.com'],
+            ['email' => 'testuser@yopmail.com'],
             [
                 'username' => 'ajidev_canada',
                 'password' => Hash::make('password'), // Default password

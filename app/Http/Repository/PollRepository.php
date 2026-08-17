@@ -29,10 +29,37 @@ class PollRepository implements PollRepositoryInterface
      */
     public function index($request)
     {
-        $query = $this->poll->with(['options', 'addedBy.profile'])
-            ->when($request->search, fn($q) => $q->where('title', 'like', "%{$request->search}%"))
-            ->when($request->status, fn($q) => $q->where('status', $request->status))
-            ->when($request->type, fn($q) => $q->where('type', $request->type));
+        $user = auth('sanctum')->user() ?? auth()->user();
+        $isAdmin = $user && (
+            $user->hasPermission('poll_management') ||
+            $user->hasRole('super-admin') ||
+            ($user->role && $user->role->slug === 'super-admin')
+        );
+
+        $query = $this->poll->with(['options', 'addedBy.profile']);
+
+        if ($request->filled('search')) {
+            $query->where('title', 'like', "%{$request->search}%");
+        }
+
+        if ($request->filled('status')) {
+            $status = strtolower(trim($request->status));
+            $status = match ($status) {
+                'open', 'ongoing', 'published', 'active' => PollStatus::ACTIVE->value,
+                'closed', 'ended', 'inactive', 'expired' => PollStatus::INACTIVE->value,
+                'draft' => PollStatus::DRAFT->value,
+                default => $status,
+            };
+            $query->where('status', $status);
+        } elseif (!$isAdmin) {
+            // Regular app users default to active polls
+            $query->where('status', PollStatus::ACTIVE->value);
+        }
+
+        if ($request->filled('type')) {
+            $type = strtolower(trim($request->type));
+            $query->where('type', $type);
+        }
 
         $sortBy    = $request->sort_by ?? 'created_at';
         $sortOrder = $request->sort_order ?? 'desc';

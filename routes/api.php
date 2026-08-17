@@ -348,6 +348,9 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth:sanctum']], function (
 // Authenticated user poll routes
 Route::group(['middleware' => ['auth:sanctum']], function () {
     Route::get('/polls', [\App\Http\Controllers\API\PollController::class, 'index']);
+    Route::get('/poll', [\App\Http\Controllers\API\PollController::class, 'index']);
     Route::get('/polls/{poll}', [\App\Http\Controllers\API\PollController::class, 'show']);
+    Route::get('/poll/{poll}', [\App\Http\Controllers\API\PollController::class, 'show']);
     Route::post('/polls/{poll}/vote', [\App\Http\Controllers\API\PollController::class, 'vote']);
+    Route::post('/poll/{poll}/vote', [\App\Http\Controllers\API\PollController::class, 'vote']);
 });

@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             AddAdminAccount::class,
             PlanSeeder::class,
             UserSeeder::class,
+            PollSeeder::class,
         ]);
     }
 }
