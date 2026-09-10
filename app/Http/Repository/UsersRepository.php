@@ -2,82 +2,103 @@
 
 namespace App\Http\Repository;
 
+use App\Enums\User\Status;
 use App\Http\Repository\Contracts\UsersRepositoryInterface;
 use App\Models\User;
-use App\Enums\User\Status;
 
-class UsersRepository implements UsersRepositoryInterface { 
-
+class UsersRepository implements UsersRepositoryInterface
+{
     public function __construct(public User $user) {}
 
-    public function index() {
-        $users = $this->user->whereHas('role', fn($q) => $q->where('slug', 'user'))
-            ->where('status', Status::ACTIVE)
-            ->with('profile')
+    public function index($request = null)
+    {
+        $search = $request?->input('search') ?? $request?->input('q');
+
+        return $this->user->whereHas('role', fn ($q) => $q->where('slug', 'user'))
+            ->with(['profile', 'role', 'country', 'wallet'])
+            ->search($search)
+            ->filter($request?->only(['status', 'account_type', 'sub_account_type', 'country_id']) ?? [])
             ->latest()
-            ->paginate(10);
-        return $users;
+            ->paginate($request?->per_page ?? 10);
     }
 
-    public function find(User $user) {
+    public function find(User $user)
+    {
         return $user;
     }
 
-
-    public function update(User $user, array $data) {
+    public function update(User $user, array $data)
+    {
         $user->update($data);
+
         return $user;
     }
 
-    public function suspend(User $user) {
+    public function suspend(User $user)
+    {
         $user->update(['status' => 'suspended']);
         $user->tokens()->delete();
         $user->audit('status_change', 'User account has been suspended by an administrator.');
+
         return $user;
     }
 
-    public function unsuspend(User $user) {
+    public function unsuspend(User $user)
+    {
         $user->update(['status' => 'active']);
         $user->audit('status_change', 'User account has been unsuspended by an administrator.');
+
         return $user;
     }
 
-    public function deactivate(User $user) {
+    public function deactivate(User $user)
+    {
         $user->update(['status' => Status::DEACTIVATED->value]);
         $user->tokens()->delete();
         $user->audit('status_change', 'User account has been deactivated by an administrator.');
+
         return $user;
     }
 
-    public function reactivate(User $user) {
+    public function reactivate(User $user)
+    {
         $user->update(['status' => Status::ACTIVE->value]);
         $user->audit('status_change', 'User account has been reactivated by an administrator.');
+
         return $user;
     }
 
-    public function delete(User $user) {
+    public function delete(User $user)
+    {
         $user->delete();
+
         return $user;
     }
 
-    public function audits(User $user) {
+    public function audits(User $user)
+    {
         return $user->audits()->with('performer')->latest()->paginate(10);
     }
-    
-    public function donations(User $user) {
+
+    public function donations(User $user)
+    {
         return $user->donations()->with(['donatable', 'user.profile'])->latest()->paginate(10);
     }
 
-    public function transactions(User $user) {
+    public function transactions(User $user)
+    {
         return $user->transactions()->with('wallet')->latest()->paginate(10);
     }
 
-    public function referrals(User $user) {
+    public function referrals(User $user)
+    {
         return $user->referrals()->with(['profile', 'role'])->latest()->paginate(10);
     }
 
-    public function updateNotificationToken(User $user, string $token) {
+    public function updateNotificationToken(User $user, string $token)
+    {
         $user->update(['notification_token' => $token]);
+
         return $user;
     }
 }

@@ -5,87 +5,117 @@ namespace App\Http\Controllers\API;
 use App\Enums\User\AccountType;
 use App\Http\Controllers\Controller;
 use App\Http\Repository\Contracts\UsersRepositoryInterface;
-use App\Http\Resources\User\UserResource;
-use App\Http\Requests\User\UpdateRequest;
 use App\Http\Requests\User\UpdateNotificationTokenRequest;
-use App\Models\User;  
+use App\Http\Requests\User\UpdateRequest;
+use App\Http\Resources\AccountTypeResource;
+use App\Http\Resources\AuditResource;
+use App\Http\Resources\Donation\DonationResource;
+use App\Http\Resources\Transaction\TransactionResource;
+use App\Http\Resources\User\UserResource;
+use App\Models\User;
+use Illuminate\Http\Request;
 
 class UsersController extends Controller
 {
+    public function __construct(protected UsersRepositoryInterface $usersRepositoryInterface) {}
 
-    public function __construct(protected UsersRepositoryInterface $usersRepositoryInterface)
-    {}
+    public function index(Request $request)
+    {
+        $users = $this->usersRepositoryInterface->index($request);
 
-    public function index(){
-        $users = $this->usersRepositoryInterface->index();
-        return $this->handleSuccessCollectionResponse("Successfully fetched users", UserResource::collection($users));
+        return $this->handleSuccessCollectionResponse('Successfully fetched users', UserResource::collection($users));
     }
 
-    public function show(User $user){
+    public function show(User $user)
+    {
         $user = $this->usersRepositoryInterface->find($user);
-        return $this->handleSuccessResponse("Successfully fetched user", new UserResource($user));
+
+        return $this->handleSuccessResponse('Successfully fetched user', new UserResource($user));
     }
 
-    public function update(User $user, UpdateRequest $request){
+    public function update(User $user, UpdateRequest $request)
+    {
         $user = $this->usersRepositoryInterface->update($user, $request->validated());
-        return $this->handleSuccessResponse("Successfully updated user", new UserResource($user));
+
+        return $this->handleSuccessResponse('Successfully updated user', new UserResource($user));
     }
 
-    public function suspend(User $user){
+    public function suspend(User $user)
+    {
         $user = $this->usersRepositoryInterface->suspend($user);
-        return $this->handleSuccessResponse("Successfully suspended user", new UserResource($user));
+
+        return $this->handleSuccessResponse('Successfully suspended user', new UserResource($user));
     }
 
-    public function unsuspend(User $user){
+    public function unsuspend(User $user)
+    {
         $user = $this->usersRepositoryInterface->unsuspend($user);
-        return $this->handleSuccessResponse("Successfully unsuspended user", new UserResource($user));
+
+        return $this->handleSuccessResponse('Successfully unsuspended user', new UserResource($user));
     }
 
-    public function deactivate(User $user){
+    public function deactivate(User $user)
+    {
         $user = $this->usersRepositoryInterface->deactivate($user);
-        return $this->handleSuccessResponse("Successfully deactivated user", new UserResource($user));
+
+        return $this->handleSuccessResponse('Successfully deactivated user', new UserResource($user));
     }
 
-    public function reactivate(User $user){
+    public function reactivate(User $user)
+    {
         $user = $this->usersRepositoryInterface->reactivate($user);
-        return $this->handleSuccessResponse("Successfully reactivated user", new UserResource($user));
+
+        return $this->handleSuccessResponse('Successfully reactivated user', new UserResource($user));
     }
 
-    public function delete(User $user){
+    public function delete(User $user)
+    {
         $user = $this->usersRepositoryInterface->delete($user);
-        return $this->handleSuccessResponse("Successfully deleted user", new UserResource($user));
+
+        return $this->handleSuccessResponse('Successfully deleted user', new UserResource($user));
     }
 
-    public function audits(User $user){
+    public function audits(User $user)
+    {
         $audits = $this->usersRepositoryInterface->audits($user);
-        return $this->handleSuccessCollectionResponse("Successfully fetched user audits", \App\Http\Resources\AuditResource::collection($audits));
+
+        return $this->handleSuccessCollectionResponse('Successfully fetched user audits', AuditResource::collection($audits));
     }
 
-    public function donations(User $user){
+    public function donations(User $user)
+    {
         $donations = $this->usersRepositoryInterface->donations($user);
-        return $this->handleSuccessCollectionResponse("Successfully fetched user donations", \App\Http\Resources\Donation\DonationResource::collection($donations));
+
+        return $this->handleSuccessCollectionResponse('Successfully fetched user donations', DonationResource::collection($donations));
     }
 
-    public function transactions(User $user){
+    public function transactions(User $user)
+    {
         $transactions = $this->usersRepositoryInterface->transactions($user);
-        return $this->handleSuccessCollectionResponse("Successfully fetched user transactions", \App\Http\Resources\Transaction\TransactionResource::collection($transactions));
+
+        return $this->handleSuccessCollectionResponse('Successfully fetched user transactions', TransactionResource::collection($transactions));
     }
 
-    public function referrals(User $user){
+    public function referrals(User $user)
+    {
         $referrals = $this->usersRepositoryInterface->referrals($user);
-        return $this->handleSuccessCollectionResponse("Successfully fetched user referrals", UserResource::collection($referrals));
+
+        return $this->handleSuccessCollectionResponse('Successfully fetched user referrals', UserResource::collection($referrals));
     }
 
-    public function account_types(){
+    public function account_types()
+    {
 
         $accountTypes = AccountType::cases();
-        return $this->handleSuccessCollectionResponse("Successfully fetched account types", \App\Http\Resources\AccountTypeResource::collection($accountTypes));
+
+        return $this->handleSuccessCollectionResponse('Successfully fetched account types', AccountTypeResource::collection($accountTypes));
     }
 
     // Update notification token for authenticated user
     public function updateNotificationToken(UpdateNotificationTokenRequest $request)
     {
         $user = $this->usersRepositoryInterface->updateNotificationToken(auth()->user(), $request->token);
-        return $this->handleSuccessResponse("Notification token updated successfully", new UserResource($user));
+
+        return $this->handleSuccessResponse('Notification token updated successfully', new UserResource($user));
     }
 }

@@ -4,22 +4,26 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
+use App\Enums\User\AccountType;
+use App\Traits\Auditable;
+use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
-use App\Enums\User\AccountType;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Str;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasUuids, HasFactory, Notifiable, HasUuids, HasApiTokens, \App\Traits\HasWallet, \App\Traits\Auditable;
+    /** @use HasFactory<UserFactory> */
+    use \App\Traits\HasWallet, Auditable, HasApiTokens, HasFactory, HasUuids, HasUuids, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -37,12 +41,12 @@ class User extends Authenticatable
         'sub_account_type',
         'notification_token',
         'password',
-        "role_id",
-        "country_id",
-        "pin",
-        "status",
-        "referral_code",
-        "referred_by"
+        'role_id',
+        'country_id',
+        'pin',
+        'status',
+        'referral_code',
+        'referred_by',
     ];
 
     /**
@@ -73,11 +77,11 @@ class User extends Authenticatable
     protected static function booted()
     {
         static::creating(function ($user) {
-            if (!$user->referral_code) {
+            if (! $user->referral_code) {
                 $user->referral_code = static::generateUniqueReferralCode();
             }
 
-            if (!$user->member_id) {
+            if (! $user->member_id) {
                 $user->member_id = static::generateUniqueMemberId($user->account_type);
             }
         });
@@ -97,7 +101,7 @@ class User extends Authenticatable
 
         do {
             $number = str_pad(mt_rand(1, 999999), 6, '0', STR_PAD_LEFT);
-            $memberId = $prefix . $number;
+            $memberId = $prefix.$number;
         } while (static::where('member_id', $memberId)->exists());
 
         return $memberId;
@@ -106,13 +110,14 @@ class User extends Authenticatable
     public static function generateUniqueReferralCode()
     {
         do {
-            $code = 'FAJ-' . strtoupper(Str::random(6));
+            $code = 'FAJ-'.strtoupper(Str::random(6));
         } while (static::where('referral_code', $code)->exists());
 
         return $code;
     }
 
-    public function markPhoneAsVerified(){
+    public function markPhoneAsVerified()
+    {
         return $this->forceFill([
             'phone_verified_at' => now(),
         ])->save();
@@ -155,6 +160,65 @@ class User extends Authenticatable
         });
     }
 
+    /**
+     * Search users by identity fields and profile name.
+     */
+    public function scopeSearch(Builder $query, ?string $term): Builder
+    {
+        if (! filled($term)) {
+            return $query;
+        }
+
+        $term = trim($term);
+
+        return $query->where(function (Builder $q) use ($term) {
+            $q->where('email', 'like', "%{$term}%")
+                ->orWhere('phone', 'like', "%{$term}%")
+                ->orWhere('username', 'like', "%{$term}%")
+                ->orWhere('member_id', 'like', "%{$term}%")
+                ->orWhereHas('profile', function (Builder $profileQuery) use ($term) {
+                    $profileQuery->where('first_name', 'like', "%{$term}%")
+                        ->orWhere('last_name', 'like', "%{$term}%")
+                        ->orWhere('middle_name', 'like', "%{$term}%");
+
+                    $parts = preg_split('/\s+/', $term, -1, PREG_SPLIT_NO_EMPTY);
+
+                    if (count($parts) >= 2) {
+                        $profileQuery->orWhere(function (Builder $nameQuery) use ($parts) {
+                            $nameQuery->where('first_name', 'like', "%{$parts[0]}%")
+                                ->where('last_name', 'like', '%'.$parts[array_key_last($parts)].'%');
+                        });
+                    }
+                });
+        });
+    }
+
+    /**
+     * Filter users by status, membership, and country.
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        return $query
+            ->when(
+                ! empty($filters['status']) && $filters['status'] !== 'all',
+                fn (Builder $q) => $q->where('status', $filters['status'])
+            )
+            ->when(
+                ! empty($filters['account_type']),
+                fn (Builder $q) => $q->where('account_type', $filters['account_type'])
+            )
+            ->when(
+                ! empty($filters['sub_account_type']),
+                fn (Builder $q) => $q->where('sub_account_type', $filters['sub_account_type'])
+            )
+            ->when(
+                ! empty($filters['country_id']),
+                fn (Builder $q) => $q->where('country_id', $filters['country_id'])
+            );
+    }
+
     public function donations(): HasMany
     {
         return $this->hasMany(Donation::class);
@@ -187,12 +251,13 @@ class User extends Authenticatable
         return $this->hasMany(Notification::class);
     }
 
-    public function transactions(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
+    public function transactions(): HasManyThrough
     {
         return $this->hasManyThrough(Transaction::class, Wallet::class);
     }
 
-    public function canUsePaystack() {
+    public function canUsePaystack()
+    {
         return $this->country->currency === 'NGN';
     }
 
@@ -230,7 +295,7 @@ class User extends Authenticatable
             return true;
         }
 
-        if (!$this->role) {
+        if (! $this->role) {
             return false;
         }
 

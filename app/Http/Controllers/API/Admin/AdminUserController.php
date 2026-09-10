@@ -2,27 +2,31 @@
 
 namespace App\Http\Controllers\API\Admin;
 
+use App\Enums\User\AccountType;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\User\UserResource;
+use App\Models\Country;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
 
 class AdminUserController extends Controller
 {
     /**
      * List all administrative users.
      */
-    public function indexAdminUsers()
+    public function indexAdminUsers(Request $request)
     {
         $userRole = Role::where('slug', 'user')->first();
-        
-        $admins = User::with(['role', 'profile', 'wallet'])
+        $search = $request->input('search') ?? $request->input('q');
+
+        $admins = User::with(['role', 'profile', 'wallet', 'country'])
             ->where('role_id', '!=', $userRole?->id)
+            ->search($search)
+            ->filter($request->only(['status', 'account_type', 'sub_account_type', 'country_id']))
             ->latest()
-            ->paginate(15);
+            ->paginate($request->per_page ?? 15);
 
         return $this->handleSuccessCollectionResponse(
             'Admin users fetched successfully',
@@ -52,7 +56,7 @@ class AdminUserController extends Controller
             return $this->handleErrorResponse('Cannot create a regular user via admin user endpoints.', 400);
         }
 
-        $country = \App\Models\Country::findOrFail($validated['country_id']);
+        $country = Country::findOrFail($validated['country_id']);
 
         $user = User::create([
             'email' => $validated['email'],
@@ -60,7 +64,7 @@ class AdminUserController extends Controller
             'password' => Hash::make($validated['password']),
             'role_id' => $validated['role_id'],
             'country_id' => $validated['country_id'],
-            'account_type' => \App\Enums\User\AccountType::IDENTIFIED_MEMBERSHIP,
+            'account_type' => AccountType::IDENTIFIED_MEMBERSHIP,
             'email_verified_at' => now(),
             'phone_verified_at' => ($validated['phone'] ?? null) ? now() : null,
             'status' => 'active',
@@ -71,7 +75,7 @@ class AdminUserController extends Controller
             'last_name' => $validated['last_name'],
             'gender' => $validated['gender'] ?? 'male',
             'dob' => $validated['dob'] ?? '1990-01-01',
-            'avatar' => 'https://ui-avatars.com/api/?name=' . urlencode($validated['first_name'] . ' ' . $validated['last_name']),
+            'avatar' => 'https://ui-avatars.com/api/?name='.urlencode($validated['first_name'].' '.$validated['last_name']),
         ]);
 
         $user->wallet()->create([
