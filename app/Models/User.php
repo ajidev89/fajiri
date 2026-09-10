@@ -4,8 +4,10 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
+use App\Enums\Family\Relationship;
 use App\Enums\User\AccountType;
 use App\Traits\Auditable;
+use App\Traits\HasWallet;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -23,7 +25,7 @@ use Laravel\Sanctum\HasApiTokens;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use \App\Traits\HasWallet, Auditable, HasApiTokens, HasFactory, HasUuids, HasUuids, Notifiable;
+    use Auditable, HasApiTokens, HasFactory, HasUuids, HasUuids, HasWallet, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -126,6 +128,63 @@ class User extends Authenticatable
     public function profile(): HasOne
     {
         return $this->hasOne(Profile::class, 'user_id', 'id');
+    }
+
+    public function familyMembers(): HasMany
+    {
+        return $this->hasMany(FamilyMember::class);
+    }
+
+    public function selfFamilyMember(): HasOne
+    {
+        return $this->hasOne(FamilyMember::class)->where('relationship', Relationship::ME->value);
+    }
+
+    public function ensureSelfFamilyMember(bool $sync = false): FamilyMember
+    {
+        $this->loadMissing('profile');
+
+        $attributes = $this->selfFamilyMemberAttributes();
+        $member = $this->selfFamilyMember;
+
+        if ($member) {
+            if ($sync) {
+                $member->update($attributes);
+            }
+
+            return $member;
+        }
+
+        return $this->familyMembers()->create([
+            ...$attributes,
+            'relationship' => Relationship::ME->value,
+            'parent_id' => null,
+        ]);
+    }
+
+    /**
+     * @return array{full_name: string, dob: mixed, gender: string, photo: mixed, is_alive: bool}
+     */
+    private function selfFamilyMemberAttributes(): array
+    {
+        $profile = $this->profile;
+        $fullName = trim(($profile?->first_name ?? '').' '.($profile?->last_name ?? ''));
+
+        if ($fullName === '') {
+            $fullName = $this->username ?: Str::before((string) $this->email, '@') ?: 'Member';
+        }
+
+        $gender = in_array($profile?->gender, ['male', 'female'], true)
+            ? $profile->gender
+            : 'male';
+
+        return [
+            'full_name' => $fullName,
+            'dob' => $profile?->dob ?? '1990-01-01',
+            'gender' => $gender,
+            'photo' => $profile?->avatar,
+            'is_alive' => true,
+        ];
     }
 
     public function role(): BelongsTo

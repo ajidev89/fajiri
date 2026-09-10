@@ -8,6 +8,7 @@ enum Relationship: string
 {
     use EnumTrait;
 
+    case ME = 'me';
     case SON = 'son';
     case DAUGHTER = 'daughter';
     case PARTNER = 'partner';

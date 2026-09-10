@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Enums\Family\Relationship;
 use App\Http\Controllers\Controller;
 use App\Http\Repository\Contracts\FamilyMemberRepositoryInterface;
 use App\Http\Requests\Family\FamilyMemberRequest;
@@ -10,13 +11,12 @@ use Illuminate\Http\Request;
 
 class FamilyMemberController extends Controller
 {
-    public function __construct(protected FamilyMemberRepositoryInterface $repository)
-    {
-    }
+    public function __construct(protected FamilyMemberRepositoryInterface $repository) {}
 
     public function index()
     {
         $members = $this->repository->all(auth()->id());
+
         return FamilyMemberResource::collection($members)->additional([
             'message' => 'Family tree fetched successfully',
             'status' => true,
@@ -26,6 +26,7 @@ class FamilyMemberController extends Controller
     public function adminIndex(Request $request)
     {
         $members = $this->repository->adminAll($request);
+
         return FamilyMemberResource::collection($members)->additional([
             'message' => 'Family tree fetched successfully',
             'status' => true,
@@ -35,8 +36,9 @@ class FamilyMemberController extends Controller
     public function adminShow($id)
     {
         $member = $this->repository->find($id);
-        
+
         $member->load(['children', 'parent']);
+
         return (new FamilyMemberResource($member))->additional([
             'message' => 'Family member details fetched successfully',
             'status' => true,
@@ -48,6 +50,7 @@ class FamilyMemberController extends Controller
         $data = $request->validated();
         $data['user_id'] = auth()->id();
         $member = $this->repository->create($data);
+
         return (new FamilyMemberResource($member))->additional([
             'message' => 'Family member added successfully',
             'status' => true,
@@ -57,12 +60,13 @@ class FamilyMemberController extends Controller
     public function show($id)
     {
         $member = $this->repository->find($id);
-        
+
         if ($member->user_id !== auth()->id()) {
             return $this->handleErrorResponse('Unauthorized', 403);
         }
 
         $member->load(['children', 'parent']);
+
         return (new FamilyMemberResource($member))->additional([
             'message' => 'Family member details fetched successfully',
             'status' => true,
@@ -78,6 +82,7 @@ class FamilyMemberController extends Controller
         }
 
         $member = $this->repository->update($id, $request->validated());
+
         return (new FamilyMemberResource($member))->additional([
             'message' => 'Family member updated successfully',
             'status' => true,
@@ -92,7 +97,12 @@ class FamilyMemberController extends Controller
             return $this->handleErrorResponse('Unauthorized', 403);
         }
 
+        if ($member->relationship === Relationship::ME->value) {
+            return $this->handleErrorResponse('The account holder family record cannot be deleted.', 403);
+        }
+
         $this->repository->delete($id);
+
         return $this->handleSuccessResponse('Family member deleted successfully');
     }
 }
