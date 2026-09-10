@@ -20,6 +20,9 @@ class UserObserver
             'receive_payment_confirmation' => true,
             'membership_status_updates' => true,
         ]);
+
+        $user->loadMissing('profile');
+        $user->ensureSelfFamilyMember();
     }
 
     /**

@@ -2,6 +2,12 @@
 
 namespace App\Providers;
 
+use App\Http\Observers\CampaignObserver;
+use App\Models\Campaign;
+use App\Models\Profile;
+use App\Models\User;
+use App\Observers\ProfileObserver;
+use App\Observers\UserObserver;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,8 +25,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        \App\Models\Campaign::observe(\App\Http\Observers\CampaignObserver::class);
-        \App\Models\User::observe(\App\Observers\UserObserver::class);
-        
+        Campaign::observe(CampaignObserver::class);
+        User::observe(UserObserver::class);
+        Profile::observe(ProfileObserver::class);
+
     }
 }
