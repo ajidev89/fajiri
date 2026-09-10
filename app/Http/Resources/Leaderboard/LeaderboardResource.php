@@ -31,6 +31,7 @@ class LeaderboardResource extends JsonResource
                 'created_at' => $this->profile->created_at,
                 'updated_at' => $this->profile->updated_at,
             ],
+            "country_iso" => $this->country->iso2,
             "total_engagement" => $this->total_engagement,
             "campaign_donations_count" => $this->campaign_donations_count,
             "need_donations_count" => $this->need_donations_count,
