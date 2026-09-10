@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Http\Repository\Contracts\AnalyticsRepositoryInterface;
+use App\Http\Resources\Leaderboard\LeaderboardResource;
 
 class AnalyticsController extends Controller
 {
@@ -29,7 +30,7 @@ class AnalyticsController extends Controller
 
     public function leaderboard(Request $request){
         $data = $this->analyticsRepository->leaderboard($request);
-        return $this->handleSuccessResponse("Successfully fetched leaderboard", $data);
+        return $this->handleSuccessCollectionResponse("Successfully fetched leaderboard", LeaderboardResource::collection($data));
     }
 
     public function disbursementStats(){
