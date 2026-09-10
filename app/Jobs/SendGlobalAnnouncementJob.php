@@ -2,89 +2,112 @@
 
 namespace App\Jobs;
 
-use App\Models\Announcement;
-use App\Models\User;
+use App\Enums\User\AccountType;
 use App\Http\Services\FirebaseNotification;
+use App\Models\Announcement;
+use App\Models\Notification;
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use App\Enums\User\AccountType;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class SendGlobalAnnouncementJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $announcement;
+    public function __construct(public Announcement $announcement) {}
 
-    /**
-     * Create a new job instance.
-     */
-    public function __construct(Announcement $announcement)
-    {
-        $this->announcement = $announcement;
-    }
-
-    /**
-     * Execute the job.
-     */
     public function handle(FirebaseNotification $firebase): void
     {
-        $targetAudience = $this->announcement->target_audience ?? [];
+        $this->targetedUsers()->chunk(500, function ($users) use ($firebase) {
+            $this->createInAppNotifications($users);
 
-        $query = User::whereNotNull('notification_token');
-
-        if (!empty($targetAudience) && !in_array('all', $targetAudience)) {
-            $query->where(function ($q) use ($targetAudience) {
-                // Check for roles
-                $roles = array_intersect($targetAudience, [
-                    'admin', 'user', 'fundraiser', 'membership-manager', 
-                    'donation-manager', 'campaign-manager', 'poll-manager', 
-                    'financial-officer', 'system-administrator'
-                ]);
-                
-                if (!empty($roles)) {
-                    $q->orWhereHas('role', function ($r) use ($roles) {
-                        $r->whereIn('slug', $roles);
-                    });
-                }
-
-                // Check for Account Types
-                $accountTypes = [];
-                if (in_array('fim', $targetAudience)) $accountTypes[] = AccountType::IDENTIFIED_MEMBERSHIP->value;
-                if (in_array('fpm', $targetAudience)) $accountTypes[] = AccountType::PROGRAM_MEMBERSHIP->value;
-                if (in_array('fcm', $targetAudience)) $accountTypes[] = AccountType::CORPORATE_MEMBERSHIP->value;
-                
-                if (!empty($accountTypes)) {
-                    $q->orWhereIn('account_type', $accountTypes);
-                }
-
-                // Check for Status
-                if (in_array('active_users', $targetAudience)) {
-                    $q->orWhere('status', 'active');
-                }
-                if (in_array('non_active_users', $targetAudience)) {
-                    $q->orWhere('status', '!=', 'active');
-                }
-            });
-        }
-
-        $query->chunk(500, function ($users) use ($firebase) {
-            // Prepare the payload for FirebaseNotification
-            $payload = [
-                'title' => $this->announcement->title,
-                'description' => $this->announcement->content,
-                'type' => 'announcement'
-            ];
-            
-            // Batch send the push notification
             try {
-                $firebase->pushNotificationBatch($users->all(), $payload);
+                $firebase->pushNotificationBatch($users->all(), [
+                    'title' => $this->announcement->title,
+                    'description' => $this->announcement->content,
+                    'type' => 'announcement',
+                ]);
             } catch (\Exception $e) {
-                \Log::error("Failed to send batch announcement: " . $e->getMessage());
+                Log::error('Failed to send batch announcement: '.$e->getMessage());
             }
         });
+    }
+
+    private function targetedUsers(): Builder
+    {
+        $targetAudience = $this->announcement->target_audience ?? [];
+        $query = User::query();
+
+        if (empty($targetAudience) || in_array('all', $targetAudience)) {
+            return $query;
+        }
+
+        return $query->where(function ($q) use ($targetAudience) {
+            $roles = array_intersect($targetAudience, [
+                'admin', 'user', 'fundraiser', 'membership-manager',
+                'donation-manager', 'campaign-manager', 'poll-manager',
+                'financial-officer', 'system-administrator',
+            ]);
+
+            if (! empty($roles)) {
+                $q->orWhereHas('role', function ($r) use ($roles) {
+                    $r->whereIn('slug', $roles);
+                });
+            }
+
+            $accountTypes = [];
+            if (in_array('fim', $targetAudience)) {
+                $accountTypes[] = AccountType::IDENTIFIED_MEMBERSHIP->value;
+            }
+            if (in_array('fpm', $targetAudience)) {
+                $accountTypes[] = AccountType::PROGRAM_MEMBERSHIP->value;
+            }
+            if (in_array('fcm', $targetAudience)) {
+                $accountTypes[] = AccountType::CORPORATE_MEMBERSHIP->value;
+            }
+
+            if (! empty($accountTypes)) {
+                $q->orWhereIn('account_type', $accountTypes);
+            }
+
+            if (in_array('active_users', $targetAudience)) {
+                $q->orWhere('status', 'active');
+            }
+            if (in_array('non_active_users', $targetAudience)) {
+                $q->orWhere('status', '!=', 'active');
+            }
+        });
+    }
+
+    private function createInAppNotifications(Collection $users): void
+    {
+        if ($users->isEmpty()) {
+            return;
+        }
+
+        $now = now();
+
+        $records = $users->map(fn (User $user) => [
+            'id' => (string) Str::uuid(),
+            'user_id' => $user->id,
+            'title' => $this->announcement->title,
+            'message' => $this->announcement->content,
+            'type' => 'announcement',
+            'data' => json_encode([
+                'announcement_id' => $this->announcement->id,
+                'image_url' => $this->announcement->image_url,
+            ]),
+            'created_at' => $now,
+            'updated_at' => $now,
+        ])->all();
+
+        Notification::insert($records);
     }
 }
