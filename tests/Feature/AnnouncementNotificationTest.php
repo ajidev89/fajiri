@@ -87,6 +87,21 @@ class AnnouncementNotificationTest extends TestCase
             ->assertJsonPath('data.0.type', 'announcement');
     }
 
+    public function test_admin_can_list_announcements(): void
+    {
+        Announcement::create([
+            'title' => 'Community Update',
+            'content' => 'New programs are live this week.',
+            'target_audience' => ['all'],
+        ]);
+
+        $this->actingAs($this->admin)
+            ->getJson('/v1/admin/announcements')
+            ->assertOk()
+            ->assertJsonPath('message', 'Successfully fetched announcements')
+            ->assertJsonPath('data.0.title', 'Community Update');
+    }
+
     public function test_announcement_notifications_respect_target_audience(): void
     {
         $targeted = $this->createMember('targeted@example.com');

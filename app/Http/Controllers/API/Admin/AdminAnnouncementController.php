@@ -3,8 +3,9 @@
 namespace App\Http\Controllers\API\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Announcement;
+use App\Http\Resources\Announcement\AnnouncementResource;
 use App\Jobs\SendGlobalAnnouncementJob;
+use App\Models\Announcement;
 use Illuminate\Http\Request;
 
 class AdminAnnouncementController extends Controller
@@ -12,7 +13,11 @@ class AdminAnnouncementController extends Controller
     public function index()
     {
         $announcements = Announcement::latest()->paginate(15);
-        return $this->handleSuccessCollectionResponse("Successfully fetched announcements", $announcements);
+
+        return $this->handleSuccessCollectionResponse(
+            'Successfully fetched announcements',
+            AnnouncementResource::collection($announcements)
+        );
     }
 
     public function store(Request $request)
@@ -22,14 +27,16 @@ class AdminAnnouncementController extends Controller
             'content' => 'required|string',
             'image_url' => 'nullable|url',
             'target_audience' => 'nullable|array',
-            'target_audience.*' => 'string'
+            'target_audience.*' => 'string',
         ]);
 
         $announcement = Announcement::create($validated);
 
-        // Dispatch the job to send push notifications in the background
         SendGlobalAnnouncementJob::dispatch($announcement);
 
-        return $this->handleSuccessResponse("Announcement created and notifications dispatched", $announcement);
+        return $this->handleSuccessResponse(
+            'Announcement created and notifications dispatched',
+            new AnnouncementResource($announcement)
+        );
     }
 }
