@@ -40,7 +40,22 @@ class EventRepository implements EventRepositoryInterface
             ->when($request->added_by, function ($query) use ($request) {
                 return $query->where('added_by', $request->added_by);
             })
-            ->latest()
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $term = $request->input('search');
+                $query->where(function ($q) use ($term) {
+                    $q->where('title', 'like', "%{$term}%")
+                        ->orWhere('description', 'like', "%{$term}%");
+                });
+            });
+
+        $sortBy = in_array($request->input('sort_by'), ['created_at', 'updated_at', 'title', 'status'], true)
+            ? $request->input('sort_by')
+            : 'created_at';
+        $sortOrder = in_array(strtolower((string) $request->input('sort_order', 'desc')), ['asc', 'desc'], true)
+            ? strtolower((string) $request->input('sort_order', 'desc'))
+            : 'desc';
+
+        $events = $events->orderBy($sortBy, $sortOrder)
             ->paginate($request->per_page ?? 15);
 
         return $this->handleSuccessCollectionResponse("Events fetched successfully", EventResource::collection($events));

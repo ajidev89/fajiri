@@ -11,6 +11,8 @@ use App\Enums\Disbursement\Status;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Request;
 use App\Http\Repository\Contracts\AnalyticsRepositoryInterface;
 
 class AnalyticsRepository implements AnalyticsRepositoryInterface {
@@ -234,17 +236,27 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
 
     public function leaderboard($request = null)
     {
-        $limit = 50;
-        
         $query = $this->user->whereHas('role', function ($query) {
                 $query->where('slug', 'user');
             });
 
-        if ($request && $request->country_id) {
+        if ($request && $request->filled('country_id') && $request->country_id !== 'all') {
             $query->where('country_id', $request->country_id);
         }
 
-        return $query->with(['profile', 'country'])
+        if ($request && $request->filled('search')) {
+            $term = $request->input('search');
+            $query->where(function ($q) use ($term) {
+                $q->where('username', 'like', "%{$term}%")
+                    ->orWhere('email', 'like', "%{$term}%")
+                    ->orWhereHas('profile', function ($profile) use ($term) {
+                        $profile->where('first_name', 'like', "%{$term}%")
+                            ->orWhere('last_name', 'like', "%{$term}%");
+                    });
+            });
+        }
+
+        $users = $query->with(['profile', 'country'])
             ->withCount([
                 'referrals',
                 'donations as campaign_donations_count' => function ($query) {
@@ -257,18 +269,47 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
                 },
                 'eventAttendees as event_attendance_count'
             ])
-            ->get(['id', 'username', 'country_id', 'referrals_count', 'campaign_donations_count', 'need_donations_count', 'event_attendance_count'])
+            ->get()
             ->map(function ($user) {
                 $user->name = ($user->profile->first_name ?? '') . ' ' . ($user->profile->last_name ?? '');
                 $user->country_iso2 = $user->country->iso2 ?? null;
-                $user->total_engagement = $user->referrals_count + 
-                                        $user->campaign_donations_count + 
-                                        $user->need_donations_count + 
+                $user->total_engagement = $user->referrals_count +
+                                        $user->campaign_donations_count +
+                                        $user->need_donations_count +
                                         $user->event_attendance_count;
                 return $user;
-            })
-            ->sortByDesc('total_engagement')
-            ->values()
-            ->take($limit);
+            });
+
+        $sortable = [
+            'total_engagement',
+            'referrals_count',
+            'campaign_donations_count',
+            'need_donations_count',
+            'event_attendance_count',
+            'username',
+            'created_at',
+        ];
+        $sortBy = $request && in_array($request->input('sort_by'), $sortable, true)
+            ? $request->input('sort_by')
+            : 'total_engagement';
+        $sortOrder = $request && in_array(strtolower((string) $request->input('sort_order', 'desc')), ['asc', 'desc'], true)
+            ? strtolower((string) $request->input('sort_order', 'desc'))
+            : 'desc';
+
+        $sorted = ($sortOrder === 'asc' ? $users->sortBy($sortBy) : $users->sortByDesc($sortBy))->values();
+
+        $page = max((int) data_get($request, 'page', 1), 1);
+        $perPage = min(max((int) data_get($request, 'per_page', 15), 1), 50);
+
+        return new LengthAwarePaginator(
+            $sorted->forPage($page, $perPage)->values(),
+            $sorted->count(),
+            $perPage,
+            $page,
+            [
+                'path' => $request instanceof Request ? $request->url() : '/',
+                'query' => $request instanceof Request ? $request->query() : [],
+            ]
+        );
     }
 }

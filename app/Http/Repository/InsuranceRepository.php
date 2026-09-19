@@ -14,15 +14,28 @@ class InsuranceRepository implements InsuranceRepositoryInterface
     {
         $query = Insurance::query()->with('country');
 
-        if ($request && $request->has('all')) {
-            return $query->latest()->paginate(10);
+        if ($request && $request->filled('search')) {
+            $term = $request->input('search');
+            $query->where(function ($q) use ($term) {
+                $q->where('name', 'like', "%{$term}%")
+                    ->orWhere('description', 'like', "%{$term}%");
+            });
         }
 
-        if ($this->user()) {
+        if ($request && $request->has('all')) {
+            // keep all rows
+        } elseif ($this->user()) {
             $query->where('country_id', $this->user()->country_id);
         }
 
-        return $query->latest()->paginate(10);
+        $sortBy = $request && in_array($request->input('sort_by'), ['created_at', 'updated_at', 'name'], true)
+            ? $request->input('sort_by')
+            : 'created_at';
+        $sortOrder = $request && in_array(strtolower((string) $request->input('sort_order', 'desc')), ['asc', 'desc'], true)
+            ? strtolower((string) $request->input('sort_order', 'desc'))
+            : 'desc';
+
+        return $query->orderBy($sortBy, $sortOrder)->paginate($request->per_page ?? 10);
     }
 
     public function all()

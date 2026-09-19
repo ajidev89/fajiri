@@ -15,10 +15,10 @@ class FundraiserController extends Controller
     {
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $fundraisers = $this->fundraiserRepository->index();
-        return $this->handleSuccessResponse('Fundraisers fetched successfully', UserResource::collection($fundraisers));
+        $fundraisers = $this->fundraiserRepository->index($request);
+        return $this->handleSuccessCollectionResponse('Fundraisers fetched successfully', UserResource::collection($fundraisers));
     }
 
     public function store(StoreFundraiserRequest $request)

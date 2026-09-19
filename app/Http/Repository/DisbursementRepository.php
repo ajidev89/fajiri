@@ -22,17 +22,36 @@ class DisbursementRepository implements DisbursementRepositoryInterface
         $this->currencyService = $currencyService;
     }
 
-    public function all()
+    public function all($request = null)
     {
         $user = $this->user();
-        if ($user->role->slug === 'admin') {
-            return Disbursement::with(['disbursable', 'requestedBy', 'disbursedBy'])->latest()->get();
+        $query = Disbursement::with(['disbursable', 'requestedBy', 'disbursedBy']);
+
+        if (! in_array($user->role->slug ?? '', ['admin', 'super-admin'], true)) {
+            $query->where('requested_by', $user->id);
         }
 
-        return Disbursement::with(['disbursable', 'requestedBy', 'disbursedBy'])
-            ->where('requested_by', $user->id)
-            ->latest()
-            ->get();
+        if ($request && $request->filled('status') && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+
+        if ($request && $request->filled('search')) {
+            $term = $request->input('search');
+            $query->where(function ($q) use ($term) {
+                $q->where('disbursement_code', 'like', "%{$term}%")
+                    ->orWhere('beneficiary_name', 'like', "%{$term}%");
+            });
+        }
+
+        $sortBy = $request && in_array($request->input('sort_by'), ['created_at', 'updated_at', 'amount', 'status', 'beneficiary_name', 'disbursement_code'], true)
+            ? $request->input('sort_by')
+            : 'created_at';
+        $sortOrder = $request && in_array(strtolower((string) $request->input('sort_order', 'desc')), ['asc', 'desc'], true)
+            ? strtolower((string) $request->input('sort_order', 'desc'))
+            : 'desc';
+
+        return $query->orderBy($sortBy, $sortOrder)
+            ->paginate($request?->per_page ?? 20);
     }
 
     public function find($id)

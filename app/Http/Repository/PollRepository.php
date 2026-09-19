@@ -61,8 +61,12 @@ class PollRepository implements PollRepositoryInterface
             $query->where('type', $type);
         }
 
-        $sortBy    = $request->sort_by ?? 'created_at';
-        $sortOrder = $request->sort_order ?? 'desc';
+        $sortBy = in_array($request->input('sort_by'), ['created_at', 'updated_at', 'title', 'status', 'start_date'], true)
+            ? $request->input('sort_by')
+            : 'created_at';
+        $sortOrder = in_array(strtolower((string) $request->input('sort_order', 'desc')), ['asc', 'desc'], true)
+            ? strtolower((string) $request->input('sort_order', 'desc'))
+            : 'desc';
         $query->orderBy($sortBy, $sortOrder);
 
         $polls = $query->paginate($request->per_page ?? 15);

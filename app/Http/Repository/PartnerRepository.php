@@ -20,10 +20,26 @@ class PartnerRepository implements PartnerRepositoryInterface
 
     public function index($request)
     {
-        $partners = $this->partner->latest()
+        $partners = $this->partner
             ->when($request->country_id, function ($query) use ($request) {
                 return $query->where('country_id', $request->country_id);
             })
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $term = $request->input('search');
+                $query->where(function ($q) use ($term) {
+                    $q->where('name', 'like', "%{$term}%")
+                        ->orWhere('website', 'like', "%{$term}%");
+                });
+            });
+
+        $sortBy = in_array($request->input('sort_by'), ['created_at', 'updated_at', 'name'], true)
+            ? $request->input('sort_by')
+            : 'created_at';
+        $sortOrder = in_array(strtolower((string) $request->input('sort_order', 'desc')), ['asc', 'desc'], true)
+            ? strtolower((string) $request->input('sort_order', 'desc'))
+            : 'desc';
+
+        $partners = $partners->orderBy($sortBy, $sortOrder)
             ->paginate($request->per_page ?? 15);
 
         return $this->handleSuccessCollectionResponse("Partners fetched successfully", PartnerResource::collection($partners));

@@ -15,10 +15,43 @@ class CategoryRepository implements CategoryRepositoryInterface
     {
     }
 
-    public function index()
+    public function index($request = null)
     {
-        $categories = $this->category->latest()->get();
-        return $this->handleSuccessResponse("Categories fetched successfully", $categories);
+        $query = $this->category->newQuery();
+
+        if ($request && $request->filled('search')) {
+            $term = $request->input('search');
+            $query->where(function ($q) use ($term) {
+                $q->where('name', 'like', "%{$term}%")
+                    ->orWhere('description', 'like', "%{$term}%");
+            });
+        }
+
+        $sortBy = $request && in_array($request->input('sort_by'), ['created_at', 'updated_at', 'name'], true)
+            ? $request->input('sort_by')
+            : 'created_at';
+        $sortOrder = $request && in_array(strtolower((string) $request->input('sort_order', 'desc')), ['asc', 'desc'], true)
+            ? strtolower((string) $request->input('sort_order', 'desc'))
+            : 'desc';
+
+        $sorted = $query->orderBy($sortBy, $sortOrder);
+
+        if ($request && $request->filled('page')) {
+            $paginated = $sorted->paginate($request->per_page ?? 15);
+            return response()->json([
+                'message' => 'Categories fetched successfully',
+                'status' => true,
+                'data' => $paginated->items(),
+                'meta' => [
+                    'current_page' => $paginated->currentPage(),
+                    'last_page' => $paginated->lastPage(),
+                    'per_page' => $paginated->perPage(),
+                    'total' => $paginated->total(),
+                ],
+            ]);
+        }
+
+        return $this->handleSuccessResponse("Categories fetched successfully", $sorted->get());
     }
 
     public function store($request)

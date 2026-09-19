@@ -17,12 +17,34 @@ class FundraiserRepository implements FundraiserRepositoryInterface
     {
     }
 
-    public function index()
+    public function index($request = null)
     {
-        return $this->model->fundraisers()
-            ->with(['role', 'campaigns', 'needs', 'profile'])
-            ->latest()
-            ->get();
+        $query = $this->model->fundraisers()
+            ->with(['role', 'campaigns', 'needs', 'profile']);
+
+        if ($request && $request->filled('search')) {
+            $term = $request->input('search');
+            $query->where(function ($q) use ($term) {
+                $q->where('email', 'like', "%{$term}%")
+                    ->orWhereHas('profile', function ($profile) use ($term) {
+                        $profile->where('first_name', 'like', "%{$term}%")
+                            ->orWhere('last_name', 'like', "%{$term}%");
+                    });
+            });
+        }
+
+        if ($request && $request->filled('status') && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+
+        $sortBy = $request && in_array($request->input('sort_by'), ['created_at', 'updated_at', 'email', 'status'], true)
+            ? $request->input('sort_by')
+            : 'created_at';
+        $sortOrder = $request && in_array(strtolower((string) $request->input('sort_order', 'desc')), ['asc', 'desc'], true)
+            ? strtolower((string) $request->input('sort_order', 'desc'))
+            : 'desc';
+
+        return $query->orderBy($sortBy, $sortOrder)->paginate($request?->per_page ?? 15);
     }
 
     public function store(array $data)

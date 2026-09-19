@@ -31,9 +31,9 @@ class DisbursementController extends Controller
     /**
      * Get all disbursements for current user or admin
      */
-    public function index()
+    public function index(Request $request)
     {
-        $disbursements = $this->disbursementRepository->all();
+        $disbursements = $this->disbursementRepository->all($request);
         return DisbursementResource::collection($disbursements);
     }
 

@@ -57,7 +57,7 @@ class CampaignRepository implements CampaignRepositoryInterface
 
     public function all($request)
     {
-        return $this->campaign->query()
+        $query = $this->campaign->query()
             ->with('category')
             ->when($request->campaign_type, function ($query) use ($request) {
                 $query->where('campaign_type', $request->campaign_type);
@@ -70,10 +70,31 @@ class CampaignRepository implements CampaignRepositoryInterface
             })
             ->when($request->added_by, function ($query) use ($request) {
                 $query->where('added_by', $request->added_by);
-            })
-            ->where('status', 'active')
-            ->latest()
-            ->paginate(10);
+            });
+
+        if ($request->filled('status') && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        } elseif ($request->input('status') !== 'all') {
+            $query->where('status', 'active');
+        }
+
+        if ($request->filled('search')) {
+            $term = $request->input('search');
+            $query->where(function ($q) use ($term) {
+                $q->where('title', 'like', "%{$term}%")
+                    ->orWhere('body', 'like', "%{$term}%");
+            });
+        }
+
+        $sortBy = in_array($request->input('sort_by'), ['created_at', 'updated_at', 'title', 'goal_amount', 'collected_amount', 'status'], true)
+            ? $request->input('sort_by')
+            : 'created_at';
+        $sortOrder = in_array(strtolower((string) $request->input('sort_order', 'desc')), ['asc', 'desc'], true)
+            ? strtolower((string) $request->input('sort_order', 'desc'))
+            : 'desc';
+
+        return $query->orderBy($sortBy, $sortOrder)
+            ->paginate($request->per_page ?? 10);
     }
 
     public function urgentCampaigns()

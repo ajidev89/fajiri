@@ -36,7 +36,22 @@ class PostRepository implements PostRepositoryInterface
             ->when($request->country_id, function ($query) use ($request) {
                 return $query->where('country_id', $request->country_id);
             })
-            ->latest()
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $term = $request->input('search');
+                $query->where(function ($q) use ($term) {
+                    $q->where('title', 'like', "%{$term}%")
+                        ->orWhere('body', 'like', "%{$term}%");
+                });
+            });
+
+        $sortBy = in_array($request->input('sort_by'), ['created_at', 'updated_at', 'title', 'status'], true)
+            ? $request->input('sort_by')
+            : 'created_at';
+        $sortOrder = in_array(strtolower((string) $request->input('sort_order', 'desc')), ['asc', 'desc'], true)
+            ? strtolower((string) $request->input('sort_order', 'desc'))
+            : 'desc';
+
+        $posts = $posts->orderBy($sortBy, $sortOrder)
             ->paginate($request->per_page ?? 15);
 
         return $this->handleSuccessCollectionResponse("Posts fetched successfully", PostResource::collection($posts));

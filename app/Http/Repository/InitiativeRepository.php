@@ -20,11 +20,26 @@ class InitiativeRepository implements InitiativeRepositoryInterface
             $query->where('added_by', $request->added_by);
         }
 
-        if ($request && $request->has('status')) {
+        if ($request && $request->filled('status') && $request->status !== 'all') {
             $query->where('status', $request->status);
         }
 
-        return $query->latest()->paginate(10);
+        if ($request && $request->filled('search')) {
+            $term = $request->input('search');
+            $query->where(function ($q) use ($term) {
+                $q->where('title', 'like', "%{$term}%")
+                    ->orWhere('description', 'like', "%{$term}%");
+            });
+        }
+
+        $sortBy = $request && in_array($request->input('sort_by'), ['created_at', 'updated_at', 'title', 'status'], true)
+            ? $request->input('sort_by')
+            : 'created_at';
+        $sortOrder = $request && in_array(strtolower((string) $request->input('sort_order', 'desc')), ['asc', 'desc'], true)
+            ? strtolower((string) $request->input('sort_order', 'desc'))
+            : 'desc';
+
+        return $query->orderBy($sortBy, $sortOrder)->paginate($request->per_page ?? 10);
     }
 
     public function find($id)

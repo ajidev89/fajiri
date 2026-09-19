@@ -4,22 +4,32 @@ namespace App\Http\Repository;
 
 use App\Enums\User\Status;
 use App\Http\Repository\Contracts\UsersRepositoryInterface;
+use App\Http\Traits\AppliesListQuery;
 use App\Models\User;
 
 class UsersRepository implements UsersRepositoryInterface
 {
+    use AppliesListQuery;
+
     public function __construct(public User $user) {}
 
     public function index($request = null)
     {
         $search = $request?->input('search') ?? $request?->input('q');
 
-        return $this->user->whereHas('role', fn ($q) => $q->where('slug', 'user'))
+        $query = $this->user->whereHas('role', fn ($q) => $q->where('slug', 'user'))
             ->with(['profile', 'role', 'country', 'wallet'])
             ->search($search)
-            ->filter($request?->only(['status', 'account_type', 'sub_account_type', 'country_id']) ?? [])
-            ->latest()
-            ->paginate($request?->per_page ?? 10);
+            ->filter($request?->only(['status', 'account_type', 'sub_account_type', 'country_id']) ?? []);
+
+        $this->applyListQuery(
+            $query,
+            $request,
+            [],
+            ['created_at', 'updated_at', 'email', 'status'],
+        );
+
+        return $query->paginate($request?->per_page ?? 10);
     }
 
     public function find(User $user)

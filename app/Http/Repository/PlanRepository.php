@@ -49,7 +49,26 @@ class PlanRepository implements PlanRepositoryInterface
             $query->where('level', $filters['level']);
         }
 
-        return $query->get();
+        if (!empty($filters['search'])) {
+            $term = $filters['search'];
+            $query->where(function ($q) use ($term) {
+                $q->where('name', 'like', "%{$term}%")
+                    ->orWhere('description', 'like', "%{$term}%");
+            });
+        }
+
+        $sortBy = in_array($filters['sort_by'] ?? '', ['created_at', 'updated_at', 'name', 'price'], true)
+            ? $filters['sort_by']
+            : 'created_at';
+        $sortOrder = in_array(strtolower((string) ($filters['sort_order'] ?? 'desc')), ['asc', 'desc'], true)
+            ? strtolower((string) ($filters['sort_order'] ?? 'desc'))
+            : 'desc';
+
+        if (!empty($filters['page'])) {
+            return $query->orderBy($sortBy, $sortOrder)->paginate($filters['per_page'] ?? 15);
+        }
+
+        return $query->orderBy($sortBy, $sortOrder)->get();
     }
 
     public function findById($id)

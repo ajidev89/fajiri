@@ -24,8 +24,16 @@ class AdminUserController extends Controller
         $admins = User::with(['role', 'profile', 'wallet', 'country'])
             ->where('role_id', '!=', $userRole?->id)
             ->search($search)
-            ->filter($request->only(['status', 'account_type', 'sub_account_type', 'country_id']))
-            ->latest()
+            ->filter($request->only(['status', 'account_type', 'sub_account_type', 'country_id']));
+
+        $sortBy = in_array($request->input('sort_by'), ['created_at', 'updated_at', 'email', 'status'], true)
+            ? $request->input('sort_by')
+            : 'created_at';
+        $sortOrder = in_array(strtolower((string) $request->input('sort_order', 'desc')), ['asc', 'desc'], true)
+            ? strtolower((string) $request->input('sort_order', 'desc'))
+            : 'desc';
+
+        $admins = $admins->orderBy($sortBy, $sortOrder)
             ->paginate($request->per_page ?? 15);
 
         return $this->handleSuccessCollectionResponse(

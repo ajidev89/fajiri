@@ -41,7 +41,7 @@ class DonationController extends Controller
             default => null,
         };
 
-        $donations = $this->donationRepository->index($donatableType);
+        $donations = $this->donationRepository->index($donatableType, $request);
 
         return $this->handleSuccessCollectionResponse('Donations fetched successfully', DonationResource::collection($donations));
     }

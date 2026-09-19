@@ -20,8 +20,37 @@ class FamilyMemberRepository implements FamilyMemberRepositoryInterface
 
     public function adminAll($request)
     {
-        return $this->familyMember->with(['children', 'parent', 'user'])
-            ->latest()
+        $query = $this->familyMember->with(['children', 'parent', 'user']);
+
+        if ($request->filled('search')) {
+            $term = $request->input('search');
+            $query->where(function ($q) use ($term) {
+                $q->where('full_name', 'like', "%{$term}%")
+                    ->orWhere('relationship', 'like', "%{$term}%")
+                    ->orWhere('added_by', 'like', "%{$term}%");
+            });
+        }
+
+        if ($request->filled('gender') && $request->gender !== 'all') {
+            $query->where('gender', $request->gender);
+        }
+
+        if ($request->filled('status') && $request->status !== 'all') {
+            if ($request->status === 'alive') {
+                $query->where('is_alive', true);
+            } elseif (in_array($request->status, ['deceased', 'inactive'], true)) {
+                $query->where('is_alive', false);
+            }
+        }
+
+        $sortBy = in_array($request->input('sort_by'), ['created_at', 'updated_at', 'full_name'], true)
+            ? $request->input('sort_by')
+            : 'created_at';
+        $sortOrder = in_array(strtolower((string) $request->input('sort_order', 'desc')), ['asc', 'desc'], true)
+            ? strtolower((string) $request->input('sort_order', 'desc'))
+            : 'desc';
+
+        return $query->orderBy($sortBy, $sortOrder)
             ->paginate($request->per_page ?? 15);
     }
 

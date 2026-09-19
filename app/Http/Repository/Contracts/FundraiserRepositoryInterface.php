@@ -6,7 +6,7 @@ use App\Models\User;
 
 interface FundraiserRepositoryInterface
 {
-    public function index();
+    public function index($request = null);
     public function store(array $data);
     public function sendResetLink(User $user);
 }

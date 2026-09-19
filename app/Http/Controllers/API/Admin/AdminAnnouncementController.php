@@ -10,9 +10,27 @@ use Illuminate\Http\Request;
 
 class AdminAnnouncementController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $announcements = Announcement::latest()->paginate(15);
+        $query = Announcement::query();
+
+        if ($request->filled('search')) {
+            $term = $request->input('search');
+            $query->where(function ($q) use ($term) {
+                $q->where('title', 'like', "%{$term}%")
+                    ->orWhere('content', 'like', "%{$term}%");
+            });
+        }
+
+        $sortBy = in_array($request->input('sort_by'), ['created_at', 'updated_at', 'title'], true)
+            ? $request->input('sort_by')
+            : 'created_at';
+        $sortOrder = in_array(strtolower((string) $request->input('sort_order', 'desc')), ['asc', 'desc'], true)
+            ? strtolower((string) $request->input('sort_order', 'desc'))
+            : 'desc';
+
+        $announcements = $query->orderBy($sortBy, $sortOrder)
+            ->paginate($request->per_page ?? 15);
 
         return $this->handleSuccessCollectionResponse(
             'Successfully fetched announcements',

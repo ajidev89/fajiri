@@ -21,17 +21,34 @@ class AdminDisbursementController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Disbursement::with(['disbursable', 'requestedBy.profile', 'requestedBy.kyc', 'disbursedBy'])->latest();
+        $query = Disbursement::with(['disbursable', 'requestedBy.profile', 'requestedBy.kyc', 'disbursedBy']);
 
-        if ($request->has('status') && !empty($request->status)) {
+        if ($request->filled('status') && $request->status !== 'all') {
             $query->where('status', $request->status);
         }
 
-        if ($request->has('risk_level') && !empty($request->risk_level)) {
+        if ($request->filled('risk_level') && $request->risk_level !== 'all') {
             $query->where('risk_level', $request->risk_level);
         }
 
-        $disbursements = $query->paginate($request->get('per_page', 20));
+        if ($request->filled('search')) {
+            $term = $request->input('search');
+            $query->where(function ($q) use ($term) {
+                $q->where('disbursement_code', 'like', "%{$term}%")
+                    ->orWhere('beneficiary_name', 'like', "%{$term}%")
+                    ->orWhere('account_name', 'like', "%{$term}%");
+            });
+        }
+
+        $sortBy = in_array($request->input('sort_by'), ['created_at', 'updated_at', 'amount', 'status'], true)
+            ? $request->input('sort_by')
+            : 'created_at';
+        $sortOrder = in_array(strtolower((string) $request->input('sort_order', 'desc')), ['asc', 'desc'], true)
+            ? strtolower((string) $request->input('sort_order', 'desc'))
+            : 'desc';
+
+        $disbursements = $query->orderBy($sortBy, $sortOrder)
+            ->paginate($request->get('per_page', 20));
 
         return DisbursementResource::collection($disbursements);
     }

@@ -11,14 +11,36 @@ class DonationRepository implements DonationRepositoryInterface
     /**
      * List donations ordered by highest base USD amount first (ranking).
      */
-    public function index(?string $donatableType = null)
+    public function index(?string $donatableType = null, $request = null)
     {
-        return Donation::with(['donatable', 'user.profile'])
-            ->where('status', 'completed')
-            ->when($donatableType, fn ($q) => $q->where('donatable_type', $donatableType))
-            ->orderBy('base_amount_usd', 'desc')
+        $query = Donation::with(['donatable', 'user.profile'])
+            ->when($donatableType, fn ($q) => $q->where('donatable_type', $donatableType));
+
+        if ($request && $request->filled('status') && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        } elseif (! $request || $request->input('status') !== 'all') {
+            $query->where('status', 'completed');
+        }
+
+        if ($request && $request->filled('search')) {
+            $term = $request->input('search');
+            $query->where(function ($q) use ($term) {
+                $q->where('name', 'like', "%{$term}%")
+                    ->orWhere('email', 'like', "%{$term}%")
+                    ->orWhere('reference', 'like', "%{$term}%");
+            });
+        }
+
+        $sortBy = $request && in_array($request->input('sort_by'), ['created_at', 'amount', 'base_amount_usd', 'name', 'status'], true)
+            ? $request->input('sort_by')
+            : 'base_amount_usd';
+        $sortOrder = $request && in_array(strtolower((string) $request->input('sort_order', 'desc')), ['asc', 'desc'], true)
+            ? strtolower((string) $request->input('sort_order', 'desc'))
+            : 'desc';
+
+        return $query->orderBy($sortBy, $sortOrder)
             ->orderBy('created_at', 'desc')
-            ->paginate(15);
+            ->paginate($request?->per_page ?? 15);
     }
 
     public function create(array $data)
