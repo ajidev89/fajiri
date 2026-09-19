@@ -2,12 +2,13 @@
 
 namespace App\Http\Resources;
 
+use App\Http\Traits\ConvertedAmountTrait;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class CampaignResource extends JsonResource
 {
-    use \App\Http\Traits\ConvertedAmountTrait;
+    use ConvertedAmountTrait;
 
     public function toArray(Request $request): array
     {
@@ -20,6 +21,12 @@ class CampaignResource extends JsonResource
             'title' => $this->title,
             'body' => $this->body,
             'type' => $this->type,
+            'category_id' => $this->category_id,
+            'category' => $this->category ? [
+                'id' => $this->category->id,
+                'name' => $this->category->name,
+                'slug' => $this->category->slug,
+            ] : null,
             'campaign_type' => $this->campaign_type,
             'images' => $this->images,
             'status' => $this->status,

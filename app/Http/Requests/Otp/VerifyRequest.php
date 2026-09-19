@@ -6,7 +6,7 @@ use App\Enums\Otp\Channel;
 use App\Http\Requests\ApiRequest;
 use App\Http\Services\TwilioService;
 use App\Models\Otp;
-use App\Rules\ValidatePhoneNumber;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
 use Illuminate\Validation\ValidationException;
@@ -24,7 +24,7 @@ class VerifyRequest extends ApiRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -36,60 +36,80 @@ class VerifyRequest extends ApiRequest
                     request('channel') === Channel::EMAIL->value,
                     ['email']
                 ),
-
-                // Rule::when(
-                //     request('channel') === Channel::PHONE->value,
-                //     new ValidatePhoneNumber() // or your ValidatePhoneNumber rule
-                // ),
             ],
-            'code' => "required|digits:6"
+            'code' => 'required|digits:6',
         ];
     }
 
-    public function fulfill()
+    public function fulfill(): void
     {
-        $identifier = $this->input('identifier');
-        $code = $this->input('code');
+        $identifier = (string) $this->input('identifier');
+        $code = (string) $this->input('code');
+        $channel = (string) $this->input('channel');
 
-        $emails = ["wisdomzilla13@gmail.com"];
-
-        $phone = ["+2349063328998", "+2349131461128", "+12345678901"];
-
-        // Skip Twilio verification for test numbers
-        if (!in_array($identifier, $phone)) {
-            if ($this->input('channel') === Channel::PHONE->value) {
-                return TwilioService::verifySms($code, $identifier);
-            }
-        }
-
-        if (in_array($identifier, $phone) && Channel::PHONE->value) {
+        if ($this->acceptsDefaultOtp($identifier, $code, $channel)) {
             return;
         }
 
-        if (in_array($identifier, $emails)) {
+        $testPhones = config('otp.test_phones', []);
+
+        if ($channel === Channel::PHONE->value && ! in_array($identifier, $testPhones, true)) {
+            TwilioService::verifySms($code, $identifier);
+
             return;
         }
 
-        $otp = Otp::where('identifier', $identifier)->latest()->first();
+        if ($channel === Channel::PHONE->value && in_array($identifier, $testPhones, true)) {
+            return;
+        }
 
-        if (!$otp) {
+        $otpQuery = Otp::query()->where('channel', $channel);
+
+        if ($channel === Channel::EMAIL->value) {
+            $otpQuery->whereRaw('LOWER(identifier) = ?', [strtolower($identifier)]);
+        } else {
+            $otpQuery->where('identifier', $identifier);
+        }
+
+        $otp = $otpQuery->latest()->first();
+
+        if (! $otp) {
             throw ValidationException::withMessages([
-                'otp' => 'OTP not found.'
+                'otp' => 'OTP not found.',
             ]);
         }
 
         if ($otp->isExpired()) {
             throw ValidationException::withMessages([
-                'otp' => 'OTP expired. Please resend.'
+                'otp' => 'OTP expired. Please resend.',
             ]);
         }
 
-        if (!$otp->verify($code)) {
+        if (! $otp->verify($code)) {
             throw ValidationException::withMessages([
-                'otp' => 'Invalid OTP.'
+                'otp' => 'Invalid OTP.',
             ]);
         }
 
         $otp->delete();
+    }
+
+    protected function acceptsDefaultOtp(string $identifier, string $code, string $channel): bool
+    {
+        $default = (string) config('otp.default', '123456');
+
+        if (! hash_equals($default, $code)) {
+            return false;
+        }
+
+        if (config('otp.allow_default')) {
+            return true;
+        }
+
+        if ($channel === Channel::EMAIL->value) {
+            return in_array(strtolower($identifier), config('otp.test_emails', []), true);
+        }
+
+        return in_array($identifier, config('otp.test_phones', []), true);
     }
 }

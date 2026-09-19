@@ -2,6 +2,10 @@
 
 namespace App\Models;
 
+use App\Enums\Campagin\CampaignType;
+use App\Enums\Campagin\Status;
+use App\Enums\Campagin\Type;
+use App\Services\CurrencyService;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,6 +21,7 @@ class Campaign extends Model
         'title',
         'body',
         'type',
+        'category_id',
         'campaign_type',
         'status',
         'images',
@@ -30,9 +35,9 @@ class Campaign extends Model
     protected $casts = [
         'images' => 'array',
         'goal_amount' => 'float',
-        'type' => \App\Enums\Campagin\Type::class,
-        'campaign_type' => \App\Enums\Campagin\CampaignType::class,
-        'status' => \App\Enums\Campagin\Status::class,
+        'type' => Type::class,
+        'campaign_type' => CampaignType::class,
+        'status' => Status::class,
         'end_date' => 'datetime',
     ];
 
@@ -42,9 +47,10 @@ class Campaign extends Model
     public function getGoalAmountInUserCurrencyAttribute(): float
     {
         $userCurrency = auth()->user()->wallet->currency ?? 'NGN';
-        return app(\App\Services\CurrencyService::class)->convert(
-            $this->goal_amount, 
-            $this->currency ?? 'NGN', 
+
+        return app(CurrencyService::class)->convert(
+            $this->goal_amount,
+            $this->currency ?? 'NGN',
             $userCurrency
         );
     }
@@ -55,9 +61,10 @@ class Campaign extends Model
     public function getCollectedAmountInUserCurrencyAttribute(): float
     {
         $userCurrency = auth()->user()->wallet->currency ?? 'NGN';
-        return app(\App\Services\CurrencyService::class)->convert(
-            $this->collected_amount, 
-            $this->currency ?? 'NGN', 
+
+        return app(CurrencyService::class)->convert(
+            $this->collected_amount,
+            $this->currency ?? 'NGN',
             $userCurrency
         );
     }
@@ -70,6 +77,11 @@ class Campaign extends Model
         'collected_amount',
         'donors_count',
     ];
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(Category::class);
+    }
 
     public function addedBy(): BelongsTo
     {

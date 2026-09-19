@@ -7,13 +7,16 @@ use App\Http\Controllers\Controller;
 use App\Http\Repository\Contracts\CampaignRepositoryInterface;
 use App\Http\Repository\Contracts\DonationRepositoryInterface;
 use App\Http\Requests\Campaign\DonationRequest;
+use App\Http\Requests\Campaign\InitializeDonationRequest;
 use App\Http\Resources\CampaignResource;
 use App\Http\Resources\Donation\DonationResource;
 use App\Models\Campaign;
 use App\Models\Donation;
 use App\Models\Need;
 use App\Models\Notification;
+use App\Models\User;
 use App\Services\CurrencyService;
+use App\Services\PaymentGateway;
 use App\Services\PaystackService;
 use Exception;
 use Illuminate\Http\Request;
@@ -26,7 +29,8 @@ class DonationController extends Controller
         protected CampaignRepositoryInterface $campaignRepository,
         protected DonationRepositoryInterface $donationRepository,
         protected CurrencyService $currencyService,
-        protected PaystackService $paystackService
+        protected PaystackService $paystackService,
+        protected PaymentGateway $paymentGateway
     ) {}
 
     public function index(Request $request)
@@ -40,6 +44,14 @@ class DonationController extends Controller
         $donations = $this->donationRepository->index($donatableType);
 
         return $this->handleSuccessCollectionResponse('Donations fetched successfully', DonationResource::collection($donations));
+    }
+
+    /**
+     * List available donation payment mediums.
+     */
+    public function mediums()
+    {
+        return $this->handleSuccessResponse('Donation mediums fetched successfully', Medium::options());
     }
 
     /**
@@ -190,24 +202,25 @@ class DonationController extends Controller
     }
 
     /**
-     * Initialize a Paystack donation payment.
+     * Initialize a donation payment for the requested gateway.
      */
-    public function initializePayment(DonationRequest $request, $type, $id)
+    public function initializePayment(InitializeDonationRequest $request, $type, $id)
     {
         try {
             $donatable = $this->getDonatable($type, $id);
-            $user = auth()->user();
+            $gateway = strtolower((string) ($request->gateway ?? 'paystack'));
+            if ($gateway === 'rave') {
+                $gateway = Medium::FLUTTERWAVE->value;
+            }
+
+            $email = auth()->user()?->email ?? $request->email;
+            $user = auth()->user() ?? User::query()
+                ->whereRaw('LOWER(email) = ?', [strtolower((string) $email)])
+                ->first();
 
             $targetCurrency = $this->getDonatableCurrency($donatable, $type);
             $donorCurrency = strtoupper((string) ($user?->wallet?->currency ?? $request->currency ?? $targetCurrency));
-            $email = $user?->email ?? $request->email;
-            $name = $user
-                ? trim(($user->profile?->first_name ?? '').' '.($user->profile?->last_name ?? ''))
-                : $request->name;
-
-            if ($name === '') {
-                $name = $request->name ?? $email;
-            }
+            $name = $this->resolveDonorName($request->name, $user, $email);
 
             $amount = (float) $request->amount;
             $rate = $this->currencyService->getExchangeRate($donorCurrency, $targetCurrency);
@@ -217,19 +230,22 @@ class DonationController extends Controller
                 ? $amount
                 : round($this->currencyService->convert($amount, $donorCurrency, 'USD'), 2);
 
-            $paystackAmount = $donorCurrency === 'NGN'
-                ? $amount
-                : $this->currencyService->convert($amount, $donorCurrency, 'NGN');
+            $referencePrefix = match ($gateway) {
+                Medium::STRIPE->value => 'STR_',
+                Medium::PAYPAL->value => 'PPL_',
+                Medium::FLUTTERWAVE->value => 'FLW_',
+                Medium::NOMBA->value => 'NMB_',
+                default => 'PAY_',
+            };
+            $reference = $referencePrefix.uniqid();
 
-            $reference = 'PAY_'.uniqid();
-
-            $this->donationRepository->create([
+            $donation = $this->donationRepository->create([
                 'donatable_id' => $donatable->id,
                 'donatable_type' => get_class($donatable),
                 'user_id' => $user?->id,
                 'amount' => $amount,
                 'currency' => $donorCurrency,
-                'medium' => Medium::PAYSTACK,
+                'medium' => Medium::from($gateway),
                 'name' => $name,
                 'email' => $email,
                 'converted_amount' => $convertedAmount,
@@ -239,22 +255,42 @@ class DonationController extends Controller
                 'reference' => $reference,
             ]);
 
-            $result = $this->paystackService->initializeTransaction([
-                'amount' => (int) round($paystackAmount * 100),
+            $result = $this->paymentGateway->initializeDonation($gateway, [
+                'amount' => $amount,
+                'currency' => $donorCurrency,
                 'email' => $email,
+                'name' => $name,
                 'reference' => $reference,
+                'user_id' => $user?->id,
+                'donatable_id' => $donatable->id,
+                'title' => 'Donation to '.$this->getDonatableTitle($donatable, $type),
                 'callback_url' => config('app.url').'/donations/verify',
-                'metadata' => [
-                    'donatable_id' => $donatable->id,
-                    'user_id' => $user?->id,
-                    'type' => 'donation',
-                ],
+                'cancel_url' => config('app.url')."/{$type}/{$id}",
             ]);
+
+            if (! empty($result['reference']) && $result['reference'] !== $reference) {
+                $donation->update(['reference' => $result['reference']]);
+            }
 
             return $this->handleSuccessResponse('Transaction initialized', $result);
         } catch (Throwable $e) {
             return $this->handleErrorResponse($e->getMessage(), 400);
         }
+    }
+
+    protected function resolveDonorName(?string $requestedName, ?User $user, string $email): string
+    {
+        if (filled($requestedName)) {
+            return $requestedName;
+        }
+
+        $profileName = trim(($user?->profile?->first_name ?? '').' '.($user?->profile?->last_name ?? ''));
+
+        if ($profileName !== '') {
+            return $profileName;
+        }
+
+        return $email;
     }
 
     /**

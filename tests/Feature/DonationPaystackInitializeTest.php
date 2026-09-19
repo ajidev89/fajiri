@@ -49,6 +49,12 @@ class DonationPaystackInitializeTest extends TestCase
                     'reference' => 'PAY_testref',
                 ],
             ], 200),
+            'https://api.flutterwave.com/v3/payments' => Http::response([
+                'status' => 'success',
+                'data' => [
+                    'link' => 'https://checkout.flutterwave.com/flw123',
+                ],
+            ], 200),
             '*' => Http::response([
                 'conversion_rate' => 1500,
                 'rates' => ['NGN' => 1500, 'USD' => 1],
@@ -130,13 +136,128 @@ class DonationPaystackInitializeTest extends TestCase
         ]);
     }
 
-    public function test_guest_initialize_requires_email_and_name(): void
+    public function test_guest_initialize_requires_email(): void
     {
         $campaign = $this->createCampaign('NGN');
 
         $this->postJson("/v1/donations/campaign/{$campaign->id}/paystack/initialize", [
             'amount' => 5000,
         ])->assertStatus(422);
+    }
+
+    public function test_guest_can_initialize_without_a_name(): void
+    {
+        $campaign = $this->createCampaign('NGN');
+
+        $this->postJson("/v1/donations/campaign/{$campaign->id}/initialize", [
+            'amount' => 5000,
+            'email' => 'guest@example.com',
+            'gateway' => 'paystack',
+        ])
+            ->assertOk()
+            ->assertJsonPath('status', true);
+
+        $this->assertDatabaseHas('donations', [
+            'donatable_id' => $campaign->id,
+            'email' => 'guest@example.com',
+            'name' => 'guest@example.com',
+            'user_id' => null,
+            'status' => 'pending',
+        ]);
+    }
+
+    public function test_guest_can_initialize_donation_by_passing_gateway(): void
+    {
+        $campaign = $this->createCampaign('NGN');
+
+        $this->postJson("/v1/donations/campaign/{$campaign->id}/initialize", [
+            'amount' => 5000,
+            'email' => 'guest@example.com',
+            'name' => 'Guest Donor',
+            'gateway' => 'paystack',
+        ])
+            ->assertOk()
+            ->assertJsonPath('status', true)
+            ->assertJsonPath('data.authorization_url', 'https://checkout.paystack.com/abc123');
+
+        $this->assertDatabaseHas('donations', [
+            'donatable_id' => $campaign->id,
+            'email' => 'guest@example.com',
+            'user_id' => null,
+            'medium' => 'paystack',
+            'status' => 'pending',
+        ]);
+    }
+
+    public function test_guest_donation_is_tied_to_user_when_email_matches(): void
+    {
+        $campaign = $this->createCampaign('NGN');
+        $member = $this->createMember('member@example.com');
+
+        $this->postJson("/v1/donations/campaign/{$campaign->id}/initialize", [
+            'amount' => 2500,
+            'email' => 'Member@example.com',
+            'name' => 'Guest Name',
+            'gateway' => 'flutterwave',
+        ])
+            ->assertOk()
+            ->assertJsonPath('status', true)
+            ->assertJsonPath('data.authorization_url', 'https://checkout.flutterwave.com/flw123');
+
+        $this->assertDatabaseHas('donations', [
+            'donatable_id' => $campaign->id,
+            'email' => 'Member@example.com',
+            'user_id' => $member->id,
+            'medium' => 'flutterwave',
+            'status' => 'pending',
+        ]);
+    }
+
+    public function test_authenticated_donor_is_not_replaced_by_another_users_email(): void
+    {
+        $campaign = $this->createCampaign('NGN');
+        $donor = $this->createMember('donor@example.com');
+        $other = $this->createMember('other@example.com');
+
+        $this->actingAs($donor)
+            ->postJson("/v1/donations/campaign/{$campaign->id}/initialize", [
+                'amount' => 1000,
+                'email' => $other->email,
+                'gateway' => 'paystack',
+            ])
+            ->assertOk();
+
+        $this->assertDatabaseHas('donations', [
+            'donatable_id' => $campaign->id,
+            'user_id' => $donor->id,
+            'email' => $donor->email,
+            'medium' => 'paystack',
+        ]);
+    }
+
+    public function test_unknown_gateway_is_rejected(): void
+    {
+        $campaign = $this->createCampaign('NGN');
+
+        $this->postJson("/v1/donations/campaign/{$campaign->id}/initialize", [
+            'amount' => 5000,
+            'email' => 'guest@example.com',
+            'name' => 'Guest Donor',
+            'gateway' => 'wallet',
+        ])->assertStatus(422);
+    }
+
+    protected function createMember(string $email): User
+    {
+        return User::create([
+            'email' => $email,
+            'password' => Hash::make('password123'),
+            'role_id' => $this->userRole->id,
+            'country_id' => 1,
+            'account_type' => AccountType::IDENTIFIED_MEMBERSHIP,
+            'email_verified_at' => now(),
+            'status' => 'active',
+        ]);
     }
 
     protected function createCampaign(string $currency): Campaign

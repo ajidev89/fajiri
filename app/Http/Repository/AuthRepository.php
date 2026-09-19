@@ -2,16 +2,18 @@
 
 namespace App\Http\Repository;
 
+use App\Enums\Otp\Channel;
+use App\Enums\User\Status;
 use App\Http\Repository\Contracts\AuthRepositoryInterface;
 use App\Http\Resources\User\UserResource;
 use App\Http\Traits\AuthUserTrait;
 use App\Http\Traits\ResponseTrait;
 use App\Jobs\Otp\SendOneTimePasswordJob;
+use App\Models\Country;
 use App\Models\Otp;
 use App\Models\Profile;
 use App\Models\Role;
 use App\Models\User;
-use App\Enums\User\Status;
 use Exception;
 use Google_Client;
 use Illuminate\Auth\Events\PasswordReset;
@@ -23,8 +25,7 @@ use Illuminate\Support\Str;
 
 class AuthRepository implements AuthRepositoryInterface
 {
-
-    use ResponseTrait, AuthUserTrait;
+    use AuthUserTrait, ResponseTrait;
 
     public function __construct(protected User $model, protected Role $role, protected Profile $profile, protected Otp $otp) {}
 
@@ -46,8 +47,8 @@ class AuthRepository implements AuthRepositoryInterface
                 $email = decryptToken($request->input('email.token'));
             }
 
-            $role = $this->role->where('slug', "user")->first();
-            $country = \App\Models\Country::findOrFail($request->country_id);
+            $role = $this->role->where('slug', 'user')->first();
+            $country = Country::findOrFail($request->country_id);
 
             $referrer = null;
             if ($request->referral_code) {
@@ -55,20 +56,20 @@ class AuthRepository implements AuthRepositoryInterface
             }
 
             $user = $this->model->create([
-                "email" => $request->input('email.value'),
-                "phone" => $request->phone['value'] ?? null,
-                "account_type" => $request->account_type ?? null,
-                "sub_account_type" => $request->sub_account_type ?? null,
-                "password" => Hash::make($request->password),
-                "role_id" => $role->id,
-                "country_id" => $request->country_id,
-                "referred_by" => $referrer?->id
+                'email' => $request->input('email.value'),
+                'phone' => $request->phone['value'] ?? null,
+                'account_type' => $request->account_type ?? null,
+                'sub_account_type' => $request->sub_account_type ?? null,
+                'password' => Hash::make($request->password),
+                'role_id' => $role->id,
+                'country_id' => $request->country_id,
+                'referred_by' => $referrer?->id,
             ]);
 
             // Create wallet with country currency
             $user->wallet()->create([
                 'currency' => $country->currency ?? 'NGN',
-                'balance' => 0
+                'balance' => 0,
             ]);
 
             if ($phone && $phone['value'] === $request->phone['value']) {
@@ -80,13 +81,13 @@ class AuthRepository implements AuthRepositoryInterface
             }
 
             $user->profile()->create([
-                "first_name" => $request->first_name,
-                "last_name" => $request->last_name,
-                "dob" => $request->dob,
-                "gender" => $request->gender,
-                "address" => $request->address,
-                "occupation" => $request->occupation,
-                "avatar" => $request->avatar,
+                'first_name' => $request->first_name,
+                'last_name' => $request->last_name,
+                'dob' => $request->dob,
+                'gender' => $request->gender,
+                'address' => $request->address,
+                'occupation' => $request->occupation,
+                'avatar' => $request->avatar,
             ]);
 
             DB::commit();
@@ -95,12 +96,13 @@ class AuthRepository implements AuthRepositoryInterface
 
             $user->loadMissing('role.permissions');
 
-            return $this->handleSuccessResponse("Successfully registered", [
-                "user" => new UserResource($user)
+            return $this->handleSuccessResponse('Successfully registered', [
+                'user' => new UserResource($user),
             ]);
         } catch (Exception $e) {
             info($e);
             DB::rollBack();
+
             return $this->handleErrorResponse($e->getMessage(), 400);
         }
     }
@@ -119,8 +121,8 @@ class AuthRepository implements AuthRepositoryInterface
 
         $authenticated = Auth::attempt($credentials);
 
-        if (!$authenticated && $field === 'phone') {
-            $altIdentifier = str_starts_with($identifier, '+') ? substr($identifier, 1) : '+' . $identifier;
+        if (! $authenticated && $field === 'phone') {
+            $altIdentifier = str_starts_with($identifier, '+') ? substr($identifier, 1) : '+'.$identifier;
             if (Auth::attempt(['phone' => $altIdentifier, 'password' => $request->password])) {
                 $authenticated = true;
                 $identifier = $altIdentifier;
@@ -132,6 +134,7 @@ class AuthRepository implements AuthRepositoryInterface
 
             if ($user->status !== Status::ACTIVE->value) {
                 Auth::logout();
+
                 return $this->handleErrorResponse("Your account is {$user->status}. Please contact support.", 401);
             }
 
@@ -198,27 +201,27 @@ class AuthRepository implements AuthRepositoryInterface
     {
         $request->fulfill();
 
-        $user = $this->model->where($request->channel, $request->identifier)->firstorFail();
+        $user = $this->findUserByChannel((string) $request->channel, (string) $request->identifier);
 
         $token = $user->createToken($user->email ?? $user->phone ?? 'auth_token')->plainTextToken;
 
         $user->audit('login', 'User successfully logged into the platform.');
 
         return $this->handleSuccessResponse('Successfully verified otp', [
-            "token" => $token,
-            "type" => "bearer"
+            'token' => $token,
+            'type' => 'bearer',
         ]);
     }
 
     public function loginWithGoogle($request)
     {
         $client = new Google_Client([
-            'client_id' => config('services.google.client_id')
+            'client_id' => config('services.google.client_id'),
         ]);
 
         $payload = $client->verifyIdToken($request->id_token);
 
-        if (!$payload) {
+        if (! $payload) {
             return response()->json(['error' => 'Invalid token'], 401);
         }
 
@@ -242,13 +245,12 @@ class AuthRepository implements AuthRepositoryInterface
         ]);
     }
 
-
     public function logout()
     {
 
         $this->user()->tokens()->delete();
 
-        return $this->handleSuccessResponse("Successfully logged out");
+        return $this->handleSuccessResponse('Successfully logged out');
     }
 
     public function generateMagicLink($request)
@@ -261,12 +263,12 @@ class AuthRepository implements AuthRepositoryInterface
             ['user' => $user->id]
         );
 
-        $frontendBaseUrl = "https://app.fajiri.org/profile/complete-profile";
+        $frontendBaseUrl = 'https://app.fajiri.org/profile/complete-profile';
         $queryString = parse_url($backendUrl, PHP_URL_QUERY);
-        $url = $frontendBaseUrl . '?' . $queryString;
+        $url = $frontendBaseUrl.'?'.$queryString;
 
-        return $this->handleSuccessResponse("Login link generated", [
-            'url' => $url
+        return $this->handleSuccessResponse('Login link generated', [
+            'url' => $url,
         ]);
     }
 
@@ -285,9 +287,20 @@ class AuthRepository implements AuthRepositoryInterface
         $user->loadMissing('role.permissions');
 
         return $this->handleSuccessResponse('Successfully logged in via magic link', [
-            "token" => $token,
-            "type" => "bearer",
-            "user" => new UserResource($user)
+            'token' => $token,
+            'type' => 'bearer',
+            'user' => new UserResource($user),
         ]);
+    }
+
+    protected function findUserByChannel(string $channel, string $identifier): User
+    {
+        $query = $this->model->newQuery();
+
+        if ($channel === Channel::EMAIL->value) {
+            return $query->whereRaw('LOWER(email) = ?', [strtolower($identifier)])->firstOrFail();
+        }
+
+        return $query->where($channel, $identifier)->firstOrFail();
     }
 }

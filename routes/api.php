@@ -1,35 +1,43 @@
 <?php
 
+use App\Http\Controllers\API\Admin\AdminAnnouncementController;
+use App\Http\Controllers\API\Admin\AdminUserController;
+use App\Http\Controllers\API\Admin\RolePermissionController;
+use App\Http\Controllers\API\AdminDisbursementController;
 use App\Http\Controllers\API\AnalyticsController;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\CampaignController;
+use App\Http\Controllers\API\CategoryController;
+use App\Http\Controllers\API\ContactController;
 use App\Http\Controllers\API\CountryController;
+use App\Http\Controllers\API\CurrencyController;
+use App\Http\Controllers\API\DisbursementController;
 use App\Http\Controllers\API\DonationController;
+use App\Http\Controllers\API\EventController;
+use App\Http\Controllers\API\FamilyMemberController;
+use App\Http\Controllers\API\FundraiserController;
 use App\Http\Controllers\API\InitiativeController;
+use App\Http\Controllers\API\InsuranceController;
+use App\Http\Controllers\API\MediaController;
 use App\Http\Controllers\API\NeedController;
 use App\Http\Controllers\API\NotificationController;
 use App\Http\Controllers\API\OtpController;
+use App\Http\Controllers\API\PartnerController;
 use App\Http\Controllers\API\PaymentController;
 use App\Http\Controllers\API\PlanController;
-use App\Http\Controllers\API\UserController;
-use App\Http\Controllers\API\InsuranceController;
-use App\Http\Controllers\API\UsersController;
-use App\Http\Controllers\API\WithdrawalController;
-use App\Http\Controllers\API\CategoryController;
+use App\Http\Controllers\API\PollController;
 use App\Http\Controllers\API\PostController;
-use App\Http\Controllers\API\EventController;
-use App\Http\Controllers\API\PartnerController;
-use App\Http\Controllers\API\DisbursementController;
-use App\Http\Controllers\API\AdminDisbursementController;
-use App\Http\Controllers\API\FundraiserController;
-use App\Http\Controllers\API\MediaController;
-use App\Http\Controllers\API\FamilyMemberController;
-
+use App\Http\Controllers\API\PreferenceController;
+use App\Http\Controllers\API\PublicMemberController;
+use App\Http\Controllers\API\UserController;
+use App\Http\Controllers\API\UsersController;
+use App\Http\Controllers\API\WebhookController;
+use App\Http\Controllers\API\WithdrawalController;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/contact', [\App\Http\Controllers\API\ContactController::class, 'submit']);
-Route::get('/member/{member_id}', [\App\Http\Controllers\API\PublicMemberController::class, 'show']);
-Route::controller(AuthController::class)->group(function () { 
+Route::post('/contact', [ContactController::class, 'submit']);
+Route::get('/member/{member_id}', [PublicMemberController::class, 'show']);
+Route::controller(AuthController::class)->group(function () {
     Route::group(['prefix' => 'auth'], function () {
         Route::post('/login', 'login');
         Route::post('/register', 'register');
@@ -46,27 +54,27 @@ Route::controller(AuthController::class)->group(function () {
     });
 });
 
-Route::controller(OtpController::class)->group(function () { 
+Route::controller(OtpController::class)->group(function () {
     Route::group(['prefix' => 'otp'], function () {
         Route::post('/send', 'index');
         Route::post('/verify', 'verify');
     });
 });
 
-Route::controller(CountryController::class)->group(function () { 
+Route::controller(CountryController::class)->group(function () {
     Route::group(['prefix' => 'countries'], function () {
         Route::get('/', 'index');
     });
 });
 
-Route::controller(UserController::class)->middleware(['auth:sanctum'])->group(function () { 
+Route::controller(UserController::class)->middleware(['auth:sanctum'])->group(function () {
     Route::group(['prefix' => 'user'], function () {
         Route::get('/', 'index');
         Route::post('/change-password', 'changePassword');
         Route::post('/avatar', 'updateAvatar');
         Route::get('/transactions', 'transactions');
-        Route::get('/preferences', [\App\Http\Controllers\API\PreferenceController::class, 'index']);
-        Route::put('/preferences', [\App\Http\Controllers\API\PreferenceController::class, 'update']);
+        Route::get('/preferences', [PreferenceController::class, 'index']);
+        Route::put('/preferences', [PreferenceController::class, 'update']);
         Route::post('/pin', 'updatePin');
         Route::put('/profile', 'updateProfile');
         Route::post('transfer', 'transfer');
@@ -79,7 +87,7 @@ Route::controller(UserController::class)->middleware(['auth:sanctum'])->group(fu
     Route::post('/users/notification-token', 'updateNotificationToken');
 });
 
-Route::controller(CampaignController::class)->group(function () { 
+Route::controller(CampaignController::class)->group(function () {
     Route::group(['prefix' => 'campaigns'], function () {
         Route::get('/', 'index');
         Route::get('/urgent', 'urgentCampaigns');
@@ -93,7 +101,7 @@ Route::controller(CampaignController::class)->group(function () {
     });
 });
 
-Route::controller(NeedController::class)->group(function () { 
+Route::controller(NeedController::class)->group(function () {
     Route::group(['prefix' => 'needs'], function () {
         Route::get('/', 'index');
         Route::post('/', 'create')->middleware(['auth:sanctum']);
@@ -103,8 +111,7 @@ Route::controller(NeedController::class)->group(function () {
     });
 });
 
-
-Route::controller(InitiativeController::class)->group(function () { 
+Route::controller(InitiativeController::class)->group(function () {
     Route::group(['prefix' => 'initiatives'], function () {
         Route::get('/', 'index');
         Route::post('/', 'store')->middleware(['auth:sanctum', 'permission:campaign_management']);
@@ -114,7 +121,7 @@ Route::controller(InitiativeController::class)->group(function () {
     });
 });
 
-Route::controller(UsersController::class)->group(function () { 
+Route::controller(UsersController::class)->group(function () {
     Route::get('/users/account-types', 'account_types');
     Route::post('/users/notification-token', 'updateNotificationToken')->middleware(['auth:sanctum']);
     Route::group(['prefix' => 'users', 'middleware' => ['auth:sanctum', 'permission:user_management']], function () {
@@ -133,7 +140,7 @@ Route::controller(UsersController::class)->group(function () {
     });
 });
 
-Route::controller(InsuranceController::class)->group(function () { 
+Route::controller(InsuranceController::class)->group(function () {
     Route::group(['prefix' => 'insurances'], function () {
         Route::get('/', 'index')->middleware(['auth:sanctum']);
         Route::get('/all', 'all');
@@ -147,8 +154,10 @@ Route::controller(InsuranceController::class)->group(function () {
 Route::controller(DonationController::class)->group(function () {
     Route::group(['prefix' => 'donations'], function () {
         Route::get('/', 'index')->middleware(['auth:sanctum', 'permission:donation_management']);
+        Route::get('/mediums', 'mediums');
         Route::get('/leaderboard', 'leaderboard');
         Route::post('/{type}/{id}/wallet', 'donateViaWallet')->middleware(['auth:sanctum']);
+        Route::post('/{type}/{id}/initialize', 'initializePayment');
         Route::post('/{type}/{id}/paystack/initialize', 'initializePayment');
         Route::get('/verify', 'verifyPaystack');
         Route::get('/{donation}', 'show')->whereUuid('donation')->middleware(['auth:sanctum', 'permission:donation_management']);
@@ -157,7 +166,7 @@ Route::controller(DonationController::class)->group(function () {
     });
 });
 
-Route::controller(PlanController::class)->middleware(['auth:sanctum'])->group(function () { 
+Route::controller(PlanController::class)->middleware(['auth:sanctum'])->group(function () {
     Route::group(['prefix' => 'plans'], function () {
         Route::get('/', 'index')->withoutMiddleware(['auth:sanctum']);
         Route::get('/{id}', 'show')->withoutMiddleware(['auth:sanctum']);
@@ -172,11 +181,11 @@ Route::controller(PlanController::class)->middleware(['auth:sanctum'])->group(fu
 });
 
 Route::controller(PaymentController::class)->group(function () {
-    Route::post('/webhooks/stripe', [\App\Http\Controllers\API\WebhookController::class, 'handleStripe']);
-    Route::post('/webhooks/paystack', [\App\Http\Controllers\API\WebhookController::class, 'handlePaystack']);
-    Route::post('/webhooks/paypal', [\App\Http\Controllers\API\WebhookController::class, 'handlePayPal']);
-    Route::post('/webhooks/flutterwave', [\App\Http\Controllers\API\WebhookController::class, 'handleFlutterwave']);
-    Route::post('/webhooks/nomba', [\App\Http\Controllers\API\WebhookController::class, 'handleNomba']);
+    Route::post('/webhooks/stripe', [WebhookController::class, 'handleStripe']);
+    Route::post('/webhooks/paystack', [WebhookController::class, 'handlePaystack']);
+    Route::post('/webhooks/paypal', [WebhookController::class, 'handlePayPal']);
+    Route::post('/webhooks/flutterwave', [WebhookController::class, 'handleFlutterwave']);
+    Route::post('/webhooks/nomba', [WebhookController::class, 'handleNomba']);
 
     Route::group(['middleware' => ['auth:sanctum'], 'prefix' => 'payments'], function () {
         Route::post('/initialize', 'initialize');
@@ -210,12 +219,12 @@ Route::controller(MediaController::class)->middleware(['auth:sanctum'])->group(f
     });
 });
 
-Route::controller(AnalyticsController::class)->middleware(['auth:sanctum','permission:reports_analytics'])->group(function () {
+Route::controller(AnalyticsController::class)->middleware(['auth:sanctum', 'permission:reports_analytics'])->group(function () {
     Route::group(['prefix' => 'analytics'], function () {
         Route::get('/', 'index');
         Route::get('/donation-chartly-annualy', 'donationChartlyAnnualy');
         Route::get('/top-performing-campaigns', 'topPerformingCampaigns');
-        Route::get('/leaderboard', 'leaderboard')->withoutMiddleware(['auth:sanctum','admin', 'permission:reports_analytics']);
+        Route::get('/leaderboard', 'leaderboard')->withoutMiddleware(['auth:sanctum', 'admin', 'permission:reports_analytics']);
         Route::get('/disbursements', 'disbursementStats')->middleware(['permission:financial_records']);
     });
 
@@ -310,7 +319,7 @@ Route::controller(FamilyMemberController::class)->middleware(['auth:sanctum'])->
     });
 });
 
-Route::controller(\App\Http\Controllers\API\CurrencyController::class)->group(function () {
+Route::controller(CurrencyController::class)->group(function () {
     Route::group(['prefix' => 'currencies'], function () {
         Route::get('/', 'index');
         Route::get('/rates', 'rates');
@@ -319,42 +328,42 @@ Route::controller(\App\Http\Controllers\API\CurrencyController::class)->group(fu
 });
 
 Route::group(['prefix' => 'admin', 'middleware' => ['auth:sanctum']], function () {
-    Route::get('/announcements', [\App\Http\Controllers\API\Admin\AdminAnnouncementController::class, 'index']);
-    Route::post('/announcements', [\App\Http\Controllers\API\Admin\AdminAnnouncementController::class, 'store']);
+    Route::get('/announcements', [AdminAnnouncementController::class, 'index']);
+    Route::post('/announcements', [AdminAnnouncementController::class, 'store']);
 
     Route::group(['middleware' => ['permission:system_settings']], function () {
-        Route::get('/roles', [\App\Http\Controllers\API\Admin\RolePermissionController::class, 'indexRoles']);
-        Route::post('/roles', [\App\Http\Controllers\API\Admin\RolePermissionController::class, 'storeRole']);
-        Route::get('/roles/{role}', [\App\Http\Controllers\API\Admin\RolePermissionController::class, 'showRole']);
-        Route::put('/roles/{role}', [\App\Http\Controllers\API\Admin\RolePermissionController::class, 'updateRole']);
-        Route::delete('/roles/{role}', [\App\Http\Controllers\API\Admin\RolePermissionController::class, 'deleteRole']);
-        Route::get('/permissions', [\App\Http\Controllers\API\Admin\RolePermissionController::class, 'indexPermissions']);
+        Route::get('/roles', [RolePermissionController::class, 'indexRoles']);
+        Route::post('/roles', [RolePermissionController::class, 'storeRole']);
+        Route::get('/roles/{role}', [RolePermissionController::class, 'showRole']);
+        Route::put('/roles/{role}', [RolePermissionController::class, 'updateRole']);
+        Route::delete('/roles/{role}', [RolePermissionController::class, 'deleteRole']);
+        Route::get('/permissions', [RolePermissionController::class, 'indexPermissions']);
     });
 
     Route::group(['middleware' => ['permission:user_management']], function () {
-        Route::get('/users', [\App\Http\Controllers\API\Admin\AdminUserController::class, 'indexAdminUsers']);
-        Route::post('/users', [\App\Http\Controllers\API\Admin\AdminUserController::class, 'storeAdminUser']);
-        Route::put('/users/{user}', [\App\Http\Controllers\API\Admin\AdminUserController::class, 'updateAdminUser']);
-        Route::delete('/users/{user}', [\App\Http\Controllers\API\Admin\AdminUserController::class, 'deleteAdminUser']);
+        Route::get('/users', [AdminUserController::class, 'indexAdminUsers']);
+        Route::post('/users', [AdminUserController::class, 'storeAdminUser']);
+        Route::put('/users/{user}', [AdminUserController::class, 'updateAdminUser']);
+        Route::delete('/users/{user}', [AdminUserController::class, 'deleteAdminUser']);
     });
 
     Route::group(['middleware' => ['permission:poll_management']], function () {
-        Route::get('/polls', [\App\Http\Controllers\API\PollController::class, 'index']);
-        Route::post('/polls', [\App\Http\Controllers\API\PollController::class, 'store']);
-        Route::get('/polls/{poll}', [\App\Http\Controllers\API\PollController::class, 'show']);
-        Route::put('/polls/{poll}', [\App\Http\Controllers\API\PollController::class, 'update']);
-        Route::delete('/polls/{poll}', [\App\Http\Controllers\API\PollController::class, 'destroy']);
-        Route::get('/polls/{poll}/summary', [\App\Http\Controllers\API\PollController::class, 'summary']);
-        Route::get('/polls/{poll}/responses', [\App\Http\Controllers\API\PollController::class, 'responses']);
+        Route::get('/polls', [PollController::class, 'index']);
+        Route::post('/polls', [PollController::class, 'store']);
+        Route::get('/polls/{poll}', [PollController::class, 'show']);
+        Route::put('/polls/{poll}', [PollController::class, 'update']);
+        Route::delete('/polls/{poll}', [PollController::class, 'destroy']);
+        Route::get('/polls/{poll}/summary', [PollController::class, 'summary']);
+        Route::get('/polls/{poll}/responses', [PollController::class, 'responses']);
     });
 });
 
 // Authenticated user poll routes
 Route::group(['middleware' => ['auth:sanctum']], function () {
-    Route::get('/polls', [\App\Http\Controllers\API\PollController::class, 'index']);
-    Route::get('/poll', [\App\Http\Controllers\API\PollController::class, 'index']);
-    Route::get('/polls/{poll}', [\App\Http\Controllers\API\PollController::class, 'show']);
-    Route::get('/poll/{poll}', [\App\Http\Controllers\API\PollController::class, 'show']);
-    Route::post('/polls/{poll}/vote', [\App\Http\Controllers\API\PollController::class, 'vote']);
-    Route::post('/poll/{poll}/vote', [\App\Http\Controllers\API\PollController::class, 'vote']);
+    Route::get('/polls', [PollController::class, 'index']);
+    Route::get('/poll', [PollController::class, 'index']);
+    Route::get('/polls/{poll}', [PollController::class, 'show']);
+    Route::get('/poll/{poll}', [PollController::class, 'show']);
+    Route::post('/polls/{poll}/vote', [PollController::class, 'vote']);
+    Route::post('/poll/{poll}/vote', [PollController::class, 'vote']);
 });
