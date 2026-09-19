@@ -24,6 +24,9 @@ class Donation extends Model
         'email',
         'status',
         'reference',
+        'flagged_at',
+        'flag_reason',
+        'flagged_by',
     ];
 
     protected $casts = [
@@ -31,6 +34,7 @@ class Donation extends Model
         'converted_amount' => 'float',
         'base_amount_usd' => 'float',
         'rate'            => 'float',
+        'flagged_at'      => 'datetime',
     ];
 
     public function donatable()
@@ -41,5 +45,15 @@ class Donation extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function flaggedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'flagged_by');
+    }
+
+    public function isFlagged(): bool
+    {
+        return $this->flagged_at !== null;
     }
 }

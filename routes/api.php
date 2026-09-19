@@ -151,6 +151,9 @@ Route::controller(DonationController::class)->group(function () {
         Route::post('/{type}/{id}/wallet', 'donateViaWallet')->middleware(['auth:sanctum']);
         Route::post('/{type}/{id}/paystack/initialize', 'initializePayment');
         Route::get('/verify', 'verifyPaystack');
+        Route::get('/{donation}', 'show')->whereUuid('donation')->middleware(['auth:sanctum', 'permission:donation_management']);
+        Route::post('/{donation}/flag', 'flag')->whereUuid('donation')->middleware(['auth:sanctum', 'permission:donation_management']);
+        Route::delete('/{donation}/flag', 'unflag')->whereUuid('donation')->middleware(['auth:sanctum', 'permission:donation_management']);
     });
 });
 
