@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Exception;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -10,16 +11,22 @@ use Illuminate\Support\Facades\Log;
 class NombaService
 {
     protected string $baseUrl;
-    protected ?string $clientId;
-    protected ?string $clientSecret;
-    protected ?string $accountId;
+
+    protected string $mode;
+
+    protected ?string $clientId = null;
+
+    protected ?string $clientSecret = null;
+
+    protected ?string $accountId = null;
 
     public function __construct()
     {
-        $this->baseUrl      = Config::get('nomba.baseUrl', 'https://api.nomba.com/v1');
-        $this->clientId     = Config::get('nomba.clientId');
+        $this->mode = Config::get('nomba.mode', 'test');
+        $this->baseUrl = rtrim((string) Config::get('nomba.baseUrl', 'https://sandbox.nomba.com'), '/');
+        $this->clientId = Config::get('nomba.clientId');
         $this->clientSecret = Config::get('nomba.clientSecret');
-        $this->accountId    = Config::get('nomba.accountId');
+        $this->accountId = Config::get('nomba.accountId');
     }
 
     /**
@@ -27,18 +34,34 @@ class NombaService
      */
     public function getAccessToken(): string
     {
-        $response = Http::post("{$this->baseUrl}/auth/token", [
-            'grant_type'    => 'client_credentials',
-            'client_id'     => $this->clientId,
-            'client_secret' => $this->clientSecret,
-        ]);
+        return Cache::remember('nomba:access_token:'.$this->mode, now()->addMinutes(25), function () {
+            $response = Http::withHeaders($this->headers())
+                ->acceptJson()
+                ->asJson()
+                ->post("{$this->baseUrl}/v1/auth/token/issue", [
+                    'grant_type' => 'client_credentials',
+                    'client_id' => $this->clientId,
+                    'client_secret' => $this->clientSecret,
+                ]);
 
-        if ($response->failed()) {
-            Log::error('Nomba auth failed', ['body' => $response->body()]);
-            throw new Exception('Nomba authentication failed: ' . $response->body());
-        }
+            if ($response->failed()) {
+                Log::error('Nomba auth failed', [
+                    'url' => "{$this->baseUrl}/v1/auth/token/issue",
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
 
-        return $response->json('data.access_token');
+                throw new Exception('Nomba authentication failed: '.$response->body());
+            }
+
+            $token = $response->json('data.access_token');
+
+            if (! $token) {
+                throw new Exception('Nomba authentication failed: access token missing from response');
+            }
+
+            return $token;
+        });
     }
 
     /**
@@ -49,25 +72,27 @@ class NombaService
         $token = $this->getAccessToken();
 
         $payload = [
-            'orderReference' => $data['reference'] ?? 'nomba_' . uniqid() . '_' . time(),
-            'amount'         => (float) $data['amount'],
-            'currency'       => strtoupper($data['currency'] ?? 'NGN'),
-            'accountId'      => $this->accountId,
-            'callbackUrl'    => $data['callback_url'] ?? config('app.url') . '/payments/verify/nomba',
-            'customerEmail'  => $data['email'],
-            'customerName'   => $data['name'] ?? null,
-            'description'    => $data['description'] ?? 'Payment for Fajiri',
+            'order' => [
+                'orderReference' => $data['reference'] ?? 'nomba_'.uniqid().'_'.time(),
+                'amount' => number_format((float) $data['amount'], 2, '.', ''),
+                'currency' => strtoupper($data['currency'] ?? 'NGN'),
+                'callbackUrl' => $data['callback_url'] ?? config('app.url').'/payments/verify/nomba',
+                'customerEmail' => $data['email'],
+            ],
         ];
 
         $response = Http::withToken($token)
-            ->post("{$this->baseUrl}/checkout/order", $payload);
+            ->withHeaders($this->headers())
+            ->acceptJson()
+            ->asJson()
+            ->post($this->checkoutUrl('/order'), $payload);
 
         if ($response->failed()) {
             Log::error('Nomba checkout order failed', ['body' => $response->body()]);
-            throw new Exception('Nomba order creation failed: ' . $response->body());
+            throw new Exception('Nomba order creation failed: '.$response->body());
         }
 
-        return $response->json('data');
+        return $response->json('data') ?? [];
     }
 
     /**
@@ -78,14 +103,16 @@ class NombaService
         $token = $this->getAccessToken();
 
         $response = Http::withToken($token)
-            ->get("{$this->baseUrl}/checkout/order/reference/{$reference}");
+            ->withHeaders($this->headers())
+            ->acceptJson()
+            ->get($this->checkoutUrl('/order/reference/'.$reference));
 
         if ($response->failed()) {
             Log::error('Nomba verify failed', ['body' => $response->body()]);
-            throw new Exception('Nomba verification failed: ' . $response->body());
+            throw new Exception('Nomba verification failed: '.$response->body());
         }
 
-        return $response->json('data');
+        return $response->json('data') ?? [];
     }
 
     /**
@@ -93,11 +120,29 @@ class NombaService
      */
     public function isValidWebhook(?string $signature, string $payload): bool
     {
-        if (!$signature || !$this->clientSecret) {
+        if (! $signature || ! $this->clientSecret) {
             return true;
         }
 
         $computedSignature = hash_hmac('sha256', $payload, $this->clientSecret);
+
         return hash_equals($computedSignature, $signature);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function headers(): array
+    {
+        return array_filter([
+            'accountId' => $this->accountId,
+        ]);
+    }
+
+    protected function checkoutUrl(string $path): string
+    {
+        $prefix = $this->mode === 'live' ? '/v1/checkout' : '/sandbox/checkout';
+
+        return $this->baseUrl.$prefix.$path;
     }
 }

@@ -310,6 +310,11 @@ class User extends Authenticatable
         return $this->hasMany(Notification::class);
     }
 
+    public function unreadNotifications(): HasMany
+    {
+        return $this->notifications()->whereNull('read_at');
+    }
+
     public function transactions(): HasManyThrough
     {
         return $this->hasManyThrough(Transaction::class, Wallet::class);

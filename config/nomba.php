@@ -6,6 +6,6 @@ return [
     'accountId' => env('NOMBA_ACCOUNT_ID'),
     'mode' => env('NOMBA_MODE', 'test'),
     'baseUrl' => env('NOMBA_MODE', 'test') === 'live'
-        ? 'https://api.nomba.com/v1'
-        : 'https://api.nomba.com/v1',
+        ? 'https://api.nomba.com'
+        : 'https://sandbox.nomba.com',
 ];

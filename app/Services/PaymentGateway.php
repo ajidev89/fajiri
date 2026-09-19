@@ -166,7 +166,7 @@ class PaymentGateway
                 ]);
 
                 return [
-                    'authorization_url' => $result['checkoutUrl'] ?? $result['link'] ?? null,
+                    'authorization_url' => $result['checkoutLink'] ?? $result['checkoutUrl'] ?? $result['link'] ?? null,
                     'order_reference' => $result['orderReference'] ?? null,
                     'data' => $result,
                 ];
@@ -357,7 +357,7 @@ class PaymentGateway
         ]);
 
         return [
-            'authorization_url' => $result['checkoutUrl'] ?? $result['link'] ?? null,
+            'authorization_url' => $result['checkoutLink'] ?? $result['checkoutUrl'] ?? $result['link'] ?? null,
             'order_reference' => $result['orderReference'] ?? null,
             'reference' => $result['orderReference'] ?? $reference,
         ];

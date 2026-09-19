@@ -10,13 +10,14 @@ use Exception;
 
 class NotificationRepository implements NotificationRepositoryInterface
 {
-    use ResponseTrait, AuthUserTrait;
+    use AuthUserTrait, ResponseTrait;
 
     public function index()
     {
         try {
             $notifications = $this->user()->notifications()->latest()->get();
-            return $this->handleSuccessResponse("Notifications fetched successfully", $notifications);
+
+            return $this->handleSuccessResponse('Notifications fetched successfully', $notifications);
         } catch (Exception $e) {
             return $this->handleErrorResponse($e->getMessage());
         }
@@ -27,13 +28,28 @@ class NotificationRepository implements NotificationRepositoryInterface
         return Notification::create($data);
     }
 
+    public function markAsRead(string $id)
+    {
+        try {
+            $notification = $this->user()->notifications()->findOrFail($id);
+
+            if ($notification->read_at === null) {
+                $notification->update(['read_at' => now()]);
+            }
+
+            return $this->handleSuccessResponse('Notification marked as read', $notification->fresh());
+        } catch (Exception $e) {
+            return $this->handleErrorResponse($e->getMessage());
+        }
+    }
+
     public function destroy(string $id)
     {
         try {
             $notification = $this->user()->notifications()->findOrFail($id);
             $notification->delete(); // Soft delete as defined in model
-            
-            return $this->handleSuccessResponse("Notification deleted successfully");
+
+            return $this->handleSuccessResponse('Notification deleted successfully');
         } catch (Exception $e) {
             return $this->handleErrorResponse($e->getMessage());
         }

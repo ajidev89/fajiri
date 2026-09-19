@@ -196,6 +196,7 @@ Route::controller(PaymentController::class)->group(function () {
 Route::controller(NotificationController::class)->middleware(['auth:sanctum'])->group(function () {
     Route::group(['prefix' => 'notifications'], function () {
         Route::get('/', 'index');
+        Route::post('/{id}/read', 'markAsRead');
         Route::delete('/{id}', 'destroy');
     });
 });

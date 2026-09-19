@@ -11,4 +11,5 @@ Artisan::command('inspire', function () {
 Schedule::command('queue:work --queue=default --stop-when-empty --timeout=900 --tries=1')
     ->everyMinute()
     ->withoutOverlapping(15)
-    ->name('queue-work');
+    ->name('queue-work')
+    ->appendOutputTo(storage_path('logs/queue.log'));
