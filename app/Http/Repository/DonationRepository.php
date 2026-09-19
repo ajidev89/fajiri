@@ -11,9 +11,11 @@ class DonationRepository implements DonationRepositoryInterface
     /**
      * List donations ordered by highest base USD amount first (ranking).
      */
-    public function index()
+    public function index(?string $donatableType = null)
     {
-        return Donation::where('status', 'completed')
+        return Donation::with(['donatable', 'user.profile'])
+            ->where('status', 'completed')
+            ->when($donatableType, fn ($q) => $q->where('donatable_type', $donatableType))
             ->orderBy('base_amount_usd', 'desc')
             ->orderBy('created_at', 'desc')
             ->paginate(15);

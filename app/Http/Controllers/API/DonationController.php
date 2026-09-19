@@ -9,6 +9,7 @@ use App\Http\Requests\Campaign\DonationRequest;
 use App\Http\Resources\CampaignResource;
 use App\Http\Resources\Donation\DonationResource;
 use App\Models\Campaign;
+use App\Models\Donation;
 use App\Models\Need;
 use App\Services\CurrencyService;
 use App\Services\PaystackService;
@@ -28,10 +29,62 @@ class DonationController extends Controller
         protected StripeService $stripeService
     ) {}
 
-    public function index()
+    public function index(Request $request)
     {
-        $donations = $this->donationRepository->index();
+        $donatableType = match ($request->query('type')) {
+            'campaign'        => Campaign::class,
+            'need', 'needs'   => Need::class,
+            default           => null,
+        };
+
+        $donations = $this->donationRepository->index($donatableType);
         return $this->handleSuccessCollectionResponse('Donations fetched successfully', DonationResource::collection($donations));
+    }
+
+    /**
+     * Admin: view a single donation.
+     */
+    public function show(Donation $donation)
+    {
+        $donation->load(['donatable', 'user.profile', 'flaggedBy']);
+
+        return $this->handleSuccessResponse('Donation fetched successfully', new DonationResource($donation));
+    }
+
+    /**
+     * Admin: flag a donation as suspicious.
+     */
+    public function flag(Request $request, Donation $donation)
+    {
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'max:1000'],
+        ]);
+
+        $donation->update([
+            'flagged_at'  => now(),
+            'flag_reason' => $validated['reason'],
+            'flagged_by'  => auth()->id(),
+        ]);
+
+        $donation->load(['donatable', 'user.profile', 'flaggedBy']);
+
+        return $this->handleSuccessResponse('Donation flagged successfully', new DonationResource($donation));
+    }
+
+    /**
+     * Admin: remove the flag from a donation.
+     */
+    public function unflag(Donation $donation)
+    {
+        $donation->update([
+            'flagged_at'  => null,
+            'flag_reason' => null,
+            'flagged_by'  => null,
+        ]);
+
+        $donation->load(['donatable', 'user.profile', 'flaggedBy']);
+
+        return $this->handleSuccessResponse('Donation flag removed', new DonationResource($donation));
     }
 
     /**
