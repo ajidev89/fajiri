@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Enums\Donations\Medium;
 use App\Http\Controllers\Controller;
 use App\Http\Repository\Contracts\CampaignRepositoryInterface;
 use App\Http\Repository\Contracts\DonationRepositoryInterface;
@@ -11,13 +12,13 @@ use App\Http\Resources\Donation\DonationResource;
 use App\Models\Campaign;
 use App\Models\Donation;
 use App\Models\Need;
+use App\Models\Notification;
 use App\Services\CurrencyService;
 use App\Services\PaystackService;
-use App\Services\StripeService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Enums\Donations\Medium;
+use Throwable;
 
 class DonationController extends Controller
 {
@@ -25,19 +26,19 @@ class DonationController extends Controller
         protected CampaignRepositoryInterface $campaignRepository,
         protected DonationRepositoryInterface $donationRepository,
         protected CurrencyService $currencyService,
-        protected PaystackService $paystackService,
-        protected StripeService $stripeService
+        protected PaystackService $paystackService
     ) {}
 
     public function index(Request $request)
     {
         $donatableType = match ($request->query('type')) {
-            'campaign'        => Campaign::class,
-            'need', 'needs'   => Need::class,
-            default           => null,
+            'campaign' => Campaign::class,
+            'need', 'needs' => Need::class,
+            default => null,
         };
 
         $donations = $this->donationRepository->index($donatableType);
+
         return $this->handleSuccessCollectionResponse('Donations fetched successfully', DonationResource::collection($donations));
     }
 
@@ -61,9 +62,9 @@ class DonationController extends Controller
         ]);
 
         $donation->update([
-            'flagged_at'  => now(),
+            'flagged_at' => now(),
             'flag_reason' => $validated['reason'],
-            'flagged_by'  => auth()->id(),
+            'flagged_by' => auth()->id(),
         ]);
 
         $donation->load(['donatable', 'user.profile', 'flaggedBy']);
@@ -77,9 +78,9 @@ class DonationController extends Controller
     public function unflag(Donation $donation)
     {
         $donation->update([
-            'flagged_at'  => null,
+            'flagged_at' => null,
             'flag_reason' => null,
-            'flagged_by'  => null,
+            'flagged_by' => null,
         ]);
 
         $donation->load(['donatable', 'user.profile', 'flaggedBy']);
@@ -101,6 +102,7 @@ class DonationController extends Controller
         }
 
         $donors = $this->donationRepository->leaderboard($limit, $donatableType, $request->id);
+
         return $this->handleSuccessResponse('Donor leaderboard fetched successfully', $donors);
     }
 
@@ -148,33 +150,33 @@ class DonationController extends Controller
                 $user->withdraw($amount, "Donation to {$type}: {$title}");
 
                 $donation = $this->donationRepository->create([
-                    'donatable_id'     => $donatable->id,
-                    'donatable_type'   => get_class($donatable),
-                    'user_id'          => $user->id,
-                    'amount'           => $amount,
-                    'currency'         => $donorCurrency,
+                    'donatable_id' => $donatable->id,
+                    'donatable_type' => get_class($donatable),
+                    'user_id' => $user->id,
+                    'amount' => $amount,
+                    'currency' => $donorCurrency,
                     'converted_amount' => $convertedAmount,
-                    'base_amount_usd'  => $baseAmountUsd,
-                    'rate'             => $rate,
-                    'medium'           => Medium::WALLET,
-                    'name'             => $user->profile->first_name . ' ' . $user->profile->last_name,
-                    'email'            => $user->email,
-                    'status'           => 'completed',
-                    'reference'        => 'WAL_' . uniqid(),
+                    'base_amount_usd' => $baseAmountUsd,
+                    'rate' => $rate,
+                    'medium' => Medium::WALLET,
+                    'name' => $user->profile->first_name.' '.$user->profile->last_name,
+                    'email' => $user->email,
+                    'status' => 'completed',
+                    'reference' => 'WAL_'.uniqid(),
                 ]);
 
                 // Notify donor
-                \App\Models\Notification::create([
+                Notification::create([
                     'user_id' => $user->id,
-                    'title'   => 'Donation Successful',
-                    'message' => "Your donation of {$donorCurrency} " . number_format($amount, 2) . " to '{$title}' was successful.",
-                    'type'    => "{$type}_donation",
-                    'data'    => [
-                        'donation_id'    => $donation->id,
-                        'donatable_id'   => $donatable->id,
+                    'title' => 'Donation Successful',
+                    'message' => "Your donation of {$donorCurrency} ".number_format($amount, 2)." to '{$title}' was successful.",
+                    'type' => "{$type}_donation",
+                    'data' => [
+                        'donation_id' => $donation->id,
+                        'donatable_id' => $donatable->id,
                         'donatable_type' => get_class($donatable),
-                        'amount'         => $amount,
-                        'currency'       => $donorCurrency,
+                        'amount' => $amount,
+                        'currency' => $donorCurrency,
                     ],
                 ]);
 
@@ -188,88 +190,69 @@ class DonationController extends Controller
     }
 
     /**
-     * Initialize donation payment
+     * Initialize a Paystack donation payment.
      */
     public function initializePayment(DonationRequest $request, $type, $id)
     {
-        $donatable = $this->getDonatable($type, $id);
-        $user = auth()->user();
-
-        $targetCurrency = $this->getDonatableCurrency($donatable, $type);
-        $donorCurrency = $user ? ($user->wallet->currency ?? 'NGN') : ($request->currency ?? $targetCurrency);
-        $email = $user ? $user->email : $request->email;
-        $name = $user ? $user->profile->first_name . ' ' . $user->profile->last_name : $request->name;
-
-        $amount = $request->amount;
-        $rate = $this->currencyService->getExchangeRate($donorCurrency, $targetCurrency);
-        $convertedAmount = round($amount * $rate, 2);
-
-        $baseAmountUsd = strtoupper($donorCurrency) === 'USD'
-            ? (float) $amount
-            : round($this->currencyService->convert((float) $amount, $donorCurrency, 'USD'), 2);
-
         try {
-            $reference = (strtoupper($donorCurrency) === 'NGN' ? 'PAY_' : 'STR_') . uniqid();
+            $donatable = $this->getDonatable($type, $id);
+            $user = auth()->user();
 
-            // Create pending donation
-            $this->donationRepository->create([
-                'donatable_id'     => $donatable->id,
-                'donatable_type'   => get_class($donatable),
-                'user_id'          => $user->id ?? null,
-                'amount'           => $amount,
-                'currency'         => $donorCurrency,
-                'medium'           => strtoupper($donorCurrency) === 'NGN' ? Medium::PAYSTACK : Medium::STRIPE,
-                'name'             => $name,
-                'email'            => $email,
-                'converted_amount' => $convertedAmount,
-                'base_amount_usd'  => $baseAmountUsd,
-                'rate'             => $rate,
-                'status'           => 'pending',
-                'reference'        => $reference,
-            ]);
+            $targetCurrency = $this->getDonatableCurrency($donatable, $type);
+            $donorCurrency = strtoupper((string) ($user?->wallet?->currency ?? $request->currency ?? $targetCurrency));
+            $email = $user?->email ?? $request->email;
+            $name = $user
+                ? trim(($user->profile?->first_name ?? '').' '.($user->profile?->last_name ?? ''))
+                : $request->name;
 
-            if (strtoupper($donorCurrency) === 'NGN') {
-                $payload = [
-                    'amount'       => $amount * 100,
-                    'email'        => $email,
-                    'reference'    => $reference,
-                    'callback_url' => config('app.url') . '/donations/verify',
-                    'metadata'     => [
-                        'donatable_id' => $donatable->id,
-                        'user_id'      => $user->id ?? null,
-                        'type'         => "donation",
-                    ],
-                ];
-
-                $result = $this->paystackService->initializeTransaction($payload);
-            } else {
-                $stripeAmount = $this->currencyService->convert($amount, $targetCurrency, $donorCurrency);
-
-                $session = $this->stripeService->createOneTimePaymentSession(
-                    $user ?? (object)['email' => $email],
-                    $stripeAmount,
-                    $donorCurrency,
-                    config('app.url') . '/donations/verify',
-                    config('app.url') . "/{$type}/{$id}",
-                    'Donation',
-                    "Donation to " . $this->getDonatableTitle($donatable, $type),
-                    [
-                        'donatable_id'      => $donatable->id,
-                        'type'              => 'donation',
-                        'reference'         => $reference,
-                        'original_amount'   => $amount,
-                        'original_currency' => $targetCurrency,
-                    ]
-                );
-
-                $result = [
-                    'authorization_url' => $session->url,
-                    'reference'         => $reference,
-                ];
+            if ($name === '') {
+                $name = $request->name ?? $email;
             }
 
+            $amount = (float) $request->amount;
+            $rate = $this->currencyService->getExchangeRate($donorCurrency, $targetCurrency);
+            $convertedAmount = round($amount * $rate, 2);
+
+            $baseAmountUsd = $donorCurrency === 'USD'
+                ? $amount
+                : round($this->currencyService->convert($amount, $donorCurrency, 'USD'), 2);
+
+            $paystackAmount = $donorCurrency === 'NGN'
+                ? $amount
+                : $this->currencyService->convert($amount, $donorCurrency, 'NGN');
+
+            $reference = 'PAY_'.uniqid();
+
+            $this->donationRepository->create([
+                'donatable_id' => $donatable->id,
+                'donatable_type' => get_class($donatable),
+                'user_id' => $user?->id,
+                'amount' => $amount,
+                'currency' => $donorCurrency,
+                'medium' => Medium::PAYSTACK,
+                'name' => $name,
+                'email' => $email,
+                'converted_amount' => $convertedAmount,
+                'base_amount_usd' => $baseAmountUsd,
+                'rate' => $rate,
+                'status' => 'pending',
+                'reference' => $reference,
+            ]);
+
+            $result = $this->paystackService->initializeTransaction([
+                'amount' => (int) round($paystackAmount * 100),
+                'email' => $email,
+                'reference' => $reference,
+                'callback_url' => config('app.url').'/donations/verify',
+                'metadata' => [
+                    'donatable_id' => $donatable->id,
+                    'user_id' => $user?->id,
+                    'type' => 'donation',
+                ],
+            ]);
+
             return $this->handleSuccessResponse('Transaction initialized', $result);
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return $this->handleErrorResponse($e->getMessage(), 400);
         }
     }
@@ -280,7 +263,7 @@ class DonationController extends Controller
     public function verifyPaystack(Request $request)
     {
         $reference = $request->reference;
-        if (!$reference) {
+        if (! $reference) {
             return response()->json(['message' => 'No reference provided'], 400);
         }
 
@@ -298,14 +281,14 @@ class DonationController extends Controller
                             ? $donation->donatable->title
                             : $donation->donatable->name;
 
-                        \App\Models\Notification::create([
+                        Notification::create([
                             'user_id' => $donation->user_id,
-                            'title'   => 'Donation Successful',
-                            'message' => "Your donation of {$donation->currency} " . number_format($donation->amount, 2) . " to '{$title}' was successful.",
-                            'type'    => 'donation_success',
-                            'data'    => [
-                                'donation_id'    => $donation->id,
-                                'donatable_id'   => $donation->donatable_id,
+                            'title' => 'Donation Successful',
+                            'message' => "Your donation of {$donation->currency} ".number_format($donation->amount, 2)." to '{$title}' was successful.",
+                            'type' => 'donation_success',
+                            'data' => [
+                                'donation_id' => $donation->id,
+                                'donatable_id' => $donation->donatable_id,
                                 'donatable_type' => $donation->donatable_type,
                             ],
                         ]);

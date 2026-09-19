@@ -39,19 +39,19 @@ return [
         'sid' => env('TWILIO_SID'),
         'token' => env('TWILIO_TOKEN'),
         'from' => env('TWILIO_FROM'),
-        'smssid' => env('TWILIO_SMSSID')
+        'smssid' => env('TWILIO_SMSSID'),
     ],
 
     'veriff' => [
         'baseurl' => env('VERIFF_BASEURL'),
         'apiKey' => env('VERIFF_APIKEY'),
-        'sigKey' => env('VERIFF_SIGKEY')
+        'sigKey' => env('VERIFF_SIGKEY'),
     ],
-    
+
     'cloudinary' => [
-        'cloud_name' =>env('CLOUDINARY_CLOUD_NAME'),
+        'cloud_name' => env('CLOUDINARY_CLOUD_NAME'),
         'api_key' => env('CLOUDINARY_API_KEY'),
-        'api_secret' => env('CLOUDINARY_API_SECRET')
+        'api_secret' => env('CLOUDINARY_API_SECRET'),
     ],
 
     'google' => [
@@ -64,12 +64,19 @@ return [
         'key' => env('EXCHANGERATE_API_KEY'),
         'base_url' => 'https://v6.exchangerate-api.com/v6/',
     ],
-    
+
     'stripe' => [
         'key' => env('STRIPE_KEY'),
         'secret' => env('STRIPE_SECRET'),
         'webhook' => env('STRIPE_WEBHOOK_SECRET'),
     ],
 
+    'firebase' => [
+        // Falls back to project_id inside the service account JSON when not set.
+        'projectId' => env('FIREBASE_PROJECT_ID'),
+        'credentials' => env('FIREBASE_CREDENTIALS', storage_path('firebase/service.json')),
+        'baseurl' => env('FIREBASE_BASE_URL', 'https://fcm.googleapis.com/v1/projects/'),
+        'concurrency' => (int) env('FIREBASE_PUSH_CONCURRENCY', 50),
+    ],
 
 ];

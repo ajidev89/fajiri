@@ -21,11 +21,20 @@ class SendGlobalAnnouncementJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    /**
+     * Run once: a retry would create duplicate in-app notifications for users
+     * who were already processed before the failure.
+     */
+    public int $tries = 1;
+
+    public int $timeout = 900;
+
     public function __construct(public Announcement $announcement) {}
 
     public function handle(FirebaseNotification $firebase): void
     {
-        $this->targetedUsers()->chunk(500, function ($users) use ($firebase) {
+        $this->targetedUsers()->chunkById(500, function ($users) use ($firebase) {
+            // Always record the in-app notification, even if the device push fails.
             $this->createInAppNotifications($users);
 
             try {
@@ -33,9 +42,15 @@ class SendGlobalAnnouncementJob implements ShouldQueue
                     'title' => $this->announcement->title,
                     'description' => $this->announcement->content,
                     'type' => 'announcement',
+                    'image' => $this->announcement->image_url,
+                    'data' => [
+                        'announcement_id' => $this->announcement->id,
+                    ],
                 ]);
-            } catch (\Exception $e) {
-                Log::error('Failed to send batch announcement: '.$e->getMessage());
+            } catch (\Throwable $e) {
+                Log::error('Failed to send batch announcement push: '.$e->getMessage(), [
+                    'announcement_id' => $this->announcement->id,
+                ]);
             }
         });
     }

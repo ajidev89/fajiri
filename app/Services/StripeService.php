@@ -6,12 +6,14 @@ use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Stripe\StripeClient;
-
+use Stripe\Webhook;
 
 class StripeService
 {
     protected string $baseUrl = 'https://api.stripe.com/v1';
+
     protected ?string $secretKey = null;
+
     protected ?StripeClient $client = null;
 
     public function __construct()
@@ -35,13 +37,14 @@ class StripeService
                 'quantity' => 1,
             ]],
             'mode' => 'subscription',
-            'success_url' => $successUrl . '?session_id={CHECKOUT_SESSION_ID}',
+            'success_url' => $successUrl.'?session_id={CHECKOUT_SESSION_ID}',
             'cancel_url' => $cancelUrl,
             'metadata' => [
-                'user_id' => $user->id,
+                'user_id' => $user->id ?? null,
                 'plan_id' => $plan->id,
             ],
         ];
+
         return $this->client->checkout->sessions->create($payload);
     }
 
@@ -65,15 +68,16 @@ class StripeService
                 'quantity' => 1,
             ]],
             'mode' => 'payment',
-            'success_url' => $successUrl . '?session_id={CHECKOUT_SESSION_ID}',
+            'success_url' => $successUrl.'?session_id={CHECKOUT_SESSION_ID}',
             'cancel_url' => $cancelUrl,
             'metadata' => array_merge([
-                'user_id' => $user->id,
+                'user_id' => is_object($user) && isset($user->id) ? $user->id : null,
                 'type' => 'wallet_funding',
                 'amount' => $amount,
-                'currency' => strtoupper($currency)
+                'currency' => strtoupper($currency),
             ], $metadata),
         ];
+
         return $this->client->checkout->sessions->create($payload);
     }
 
@@ -91,9 +95,10 @@ class StripeService
             ],
             'expand' => ['default_price'],
         ];
-        if (!empty($data['description'] ?? null)) {
+        if (! empty($data['description'] ?? null)) {
             $params['description'] = $data['description'];
         }
+
         return $this->client->products->create($params);
     }
 
@@ -145,14 +150,16 @@ class StripeService
     public function isValidWebhook(string $signature, string $payload): bool
     {
         $endpointSecret = config('services.stripe.webhook');
-        if (!$endpointSecret) {
+        if (! $endpointSecret) {
             return false;
         }
         try {
-            \Stripe\Webhook::constructEvent($payload, $signature, $endpointSecret);
+            Webhook::constructEvent($payload, $signature, $endpointSecret);
+
             return true;
         } catch (Exception $e) {
             Log::error('Stripe webhook verification failed', ['error' => $e->getMessage()]);
+
             return false;
         }
     }
@@ -165,7 +172,7 @@ class StripeService
 
         if ($response->failed()) {
             Log::error('Stripe API Error', ['response' => $response->json(), 'endpoint' => $endpoint]);
-            throw new Exception("Stripe error: " . ($response->json()['error']['message'] ?? $response->body()));
+            throw new Exception('Stripe error: '.($response->json()['error']['message'] ?? $response->body()));
         }
 
         return $response->json();
@@ -174,16 +181,16 @@ class StripeService
     // Existing methods from placeholder (kept for compatibility if needed elsewhere)
     public function createConnectedAccount($user)
     {
-        return (object)['id' => 'acct_placeholder'];
+        return (object) ['id' => 'acct_placeholder'];
     }
 
     public function bankAccount($user, array $data)
     {
-        return (object)['id' => 'ba_placeholder'];
+        return (object) ['id' => 'ba_placeholder'];
     }
 
     public function transfer(array $data)
     {
-        return (object)['id' => 'tr_placeholder'];
+        return (object) ['id' => 'tr_placeholder'];
     }
 }

@@ -2,12 +2,13 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 
 class CurrencyService
 {
     protected ?string $apiKey = null;
+
     protected string $baseUrl;
 
     public function __construct()
@@ -35,12 +36,16 @@ class CurrencyService
      */
     public function getExchangeRate(string $from, string $to): float
     {
+        if ($from === $to) {
+            return 1.0;
+        }
+
         $cacheKey = "exchange_rate_{$from}_{$to}";
 
         return Cache::remember($cacheKey, now()->addDay(), function () use ($from, $to) {
             // Using a free tier endpoint if key is missing for demonstration,
             // but production should use the authenticated endpoint.
-            $url = $this->apiKey 
+            $url = $this->apiKey
                 ? "{$this->baseUrl}{$this->apiKey}/pair/{$from}/{$to}"
                 : "https://open.er-api.com/v6/latest/{$from}";
 
@@ -48,7 +53,7 @@ class CurrencyService
 
             if ($response->successful()) {
                 $data = $response->json();
-                
+
                 if ($this->apiKey) {
                     return (float) ($data['conversion_rate'] ?? 1);
                 } else {
