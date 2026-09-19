@@ -161,6 +161,7 @@ class DonationPaystackInitializeTest extends TestCase
             'donatable_id' => $campaign->id,
             'email' => 'guest@example.com',
             'name' => 'guest@example.com',
+            'currency' => 'NGN',
             'user_id' => null,
             'status' => 'pending',
         ]);

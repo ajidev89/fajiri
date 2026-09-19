@@ -23,7 +23,6 @@ class InitializeDonationRequest extends ApiRequest
         return [
             'amount' => 'required|numeric|min:1',
             'gateway' => ['nullable', 'string', Rule::in($gateways)],
-            'currency' => 'nullable|string|size:3',
             'email' => auth()->check() ? 'nullable|email' : 'required|email',
             'name' => 'nullable|string|max:255',
         ];

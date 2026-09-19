@@ -219,7 +219,7 @@ class DonationController extends Controller
                 ->first();
 
             $targetCurrency = $this->getDonatableCurrency($donatable, $type);
-            $donorCurrency = strtoupper((string) ($user?->wallet?->currency ?? $request->currency ?? $targetCurrency));
+            $donorCurrency = $this->resolveDonorCurrency($user, $targetCurrency);
             $name = $this->resolveDonorName($request->name, $user, $email);
 
             $amount = (float) $request->amount;
@@ -276,6 +276,15 @@ class DonationController extends Controller
         } catch (Throwable $e) {
             return $this->handleErrorResponse($e->getMessage(), 400);
         }
+    }
+
+    protected function resolveDonorCurrency(?User $user, string $targetCurrency): string
+    {
+        return strtoupper((string) (
+            $user?->wallet?->currency
+            ?? $user?->country?->currency
+            ?? $targetCurrency
+        ));
     }
 
     protected function resolveDonorName(?string $requestedName, ?User $user, string $email): string
