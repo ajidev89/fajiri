@@ -36,16 +36,22 @@ class CampaignFinancialsService
             : ($disbursable->title ?? 'Campaign');
         $disbursableType = $disbursable::class;
 
-        // 1. Total Raised (completed donations converted to source currency)
+        // 1. Total Raised — completed donations only
         $totalRaised = 0.0;
         $platformFees = 0.0;
 
-        $donations = $disbursable->donations()->where('status', 'completed')->get();
+        $donations = $disbursable instanceof Need
+            ? $disbursable->completedDonations()->get()
+            : $disbursable->donations()->where('status', 'completed')->get();
         foreach ($donations as $donation) {
-            $donationAmount = (float) $donation->amount;
-            $donationCurrency = $donation->currency ?? 'NGN';
+            if ($isNeed) {
+                $convertedDonation = (float) ($donation->converted_amount ?? 0);
+            } else {
+                $donationAmount = (float) $donation->amount;
+                $donationCurrency = $donation->currency ?? 'NGN';
+                $convertedDonation = $this->currencyService->convert($donationAmount, $donationCurrency, $currency);
+            }
 
-            $convertedDonation = $this->currencyService->convert($donationAmount, $donationCurrency, $currency);
             $totalRaised += $convertedDonation;
 
             // Default platform processing fee estimate (2.5% standard charity platform fee)

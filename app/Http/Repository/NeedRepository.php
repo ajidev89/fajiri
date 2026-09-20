@@ -12,9 +12,7 @@ class NeedRepository implements NeedRepositoryInterface
     public function index($request = null)
     {
         $query = $this->need->query()
-            ->withSum(['donations as donations_sum_converted_amount' => function ($query) {
-                $query->where('status', 'completed');
-            }], 'converted_amount')
+            ->withSum('completedDonations as donations_sum_converted_amount', 'converted_amount')
             ->when($request && $request->added_by, function ($query) use ($request) {
                 $query->where('added_by', $request->added_by);
             })
@@ -44,6 +42,8 @@ class NeedRepository implements NeedRepositoryInterface
 
     public function find(Need $need)
     {
+        $need->loadSum('completedDonations as donations_sum_converted_amount', 'converted_amount');
+
         return $need;
     }
 

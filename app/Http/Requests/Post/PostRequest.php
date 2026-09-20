@@ -21,8 +21,9 @@ class PostRequest extends FormRequest
             'title' => 'required|string|max:255',
             'content' => 'required|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'status' => 'nullable|string|in:draft,published,archived',
+            'status' => 'nullable|string|in:draft,published,archived,scheduled',
             'is_featured' => 'nullable|boolean',
+            'published_at' => 'nullable|date',
         ];
     }
 }

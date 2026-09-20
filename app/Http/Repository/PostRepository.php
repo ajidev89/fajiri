@@ -85,7 +85,9 @@ class PostRepository implements PostRepositoryInterface
                 'image' => $imageUrl,
                 'status' => $request->status ?? 'draft',
                 'is_featured' => $request->is_featured ?? false,
-                'published_at' => ($request->status == 'published') ? now() : null,
+                'published_at' => $request->published_at
+                    ? $request->published_at
+                    : (($request->status == 'published') ? now() : null),
             ]);
 
             return $this->handleSuccessResponse("Post created successfully", new PostResource($post));
@@ -116,7 +118,9 @@ class PostRepository implements PostRepositoryInterface
                 $data['image'] = $upload['url'];
             }
 
-            if ($request->status == 'published' && $post->status != 'published') {
+            if ($request->filled('published_at')) {
+                $data['published_at'] = $request->published_at;
+            } elseif ($request->status == 'published' && $post->status != 'published') {
                 $data['published_at'] = now();
             }
 

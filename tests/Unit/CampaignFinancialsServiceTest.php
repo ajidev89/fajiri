@@ -118,11 +118,23 @@ class CampaignFinancialsServiceTest extends TestCase
             'status'           => 'completed',
         ]);
 
+        Donation::create([
+            'donatable_type'   => \App\Models\Need::class,
+            'donatable_id'     => $need->id,
+            'amount'           => 9000.0,
+            'converted_amount' => 9000.0,
+            'rate'             => 1.0,
+            'currency'         => 'USD',
+            'fee'              => 225.0,
+            'status'           => 'pending',
+        ]);
+
         $financials = $service->getFinancials($need);
 
         $this->assertEquals(2000.0, $financials['total_raised']);
         $this->assertEquals(50.0, $financials['platform_fees']);
         $this->assertEquals(1950.0, $financials['available_balance']);
+        $this->assertEquals(2000.0, $need->fresh()->collected_amount);
         $this->assertEquals('need', $financials['source_type']);
         $this->assertEquals($need->id, $financials['need_id']);
     }

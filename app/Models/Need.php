@@ -33,6 +33,11 @@ class Need extends Model
         return $this->morphMany(Donation::class, 'donatable');
     }
 
+    public function completedDonations(): MorphMany
+    {
+        return $this->donations()->where('status', 'completed');
+    }
+
     public function addedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'added_by');
@@ -44,6 +49,6 @@ class Need extends Model
             return (float) $this->attributes['donations_sum_converted_amount'];
         }
 
-        return (float) $this->donations()->where('status', 'completed')->sum('converted_amount');
+        return (float) $this->completedDonations()->sum('converted_amount');
     }
 }
