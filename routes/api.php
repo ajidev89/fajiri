@@ -98,6 +98,7 @@ Route::controller(CampaignController::class)->group(function () {
         Route::get('/user-donated', 'userDonatedCampaigns');
         Route::get('/{campaign}', 'show');
         Route::put('/{campaign}', 'update')->middleware(['auth:sanctum', 'permission:campaign_management']);
+        Route::post('/{campaign}/complete', 'complete')->middleware(['auth:sanctum', 'permission:campaign_management']);
         Route::delete('/{campaign}', 'destroy')->middleware(['auth:sanctum', 'permission:campaign_management']);
     });
 });

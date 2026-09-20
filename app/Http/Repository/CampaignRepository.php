@@ -2,6 +2,7 @@
 
 namespace App\Http\Repository;
 
+use App\Enums\Campagin\Status;
 use App\Enums\Campagin\Type;
 use App\Http\Repository\Contracts\CampaignRepositoryInterface;
 use App\Models\Campaign;
@@ -70,12 +71,23 @@ class CampaignRepository implements CampaignRepositoryInterface
             })
             ->when($request->added_by, function ($query) use ($request) {
                 $query->where('added_by', $request->added_by);
+            })
+            ->when($request->filled('is_urgent'), function ($query) use ($request) {
+                $query->where('is_urgent', filter_var($request->is_urgent, FILTER_VALIDATE_BOOLEAN));
             });
 
-        if ($request->filled('status') && $request->status !== 'all') {
+        $filter = strtolower((string) $request->input('filter', ''));
+
+        if (in_array($filter, ['in_progress', 'in-progress'], true)) {
+            $query->where('status', Status::ACTIVE->value);
+        } elseif (in_array($filter, ['complete', 'completed'], true)) {
+            $query->where('status', Status::COMPLETED->value);
+        } elseif ($request->filled('status') && $request->status !== 'all') {
             $query->where('status', $request->status);
-        } elseif ($request->input('status') !== 'all') {
-            $query->where('status', 'active');
+        } elseif ($request->input('status') === 'all') {
+            $query->whereIn('status', [Status::ACTIVE->value, Status::COMPLETED->value]);
+        } else {
+            $query->where('status', Status::ACTIVE->value);
         }
 
         if ($request->filled('search')) {
@@ -103,12 +115,9 @@ class CampaignRepository implements CampaignRepositoryInterface
 
     public function urgentCampaigns()
     {
-        $now = now();
-        $tenDaysFromNow = now()->addDays(10);
-
         return $this->campaign->with('category')
             ->where('status', 'active')
-            ->whereBetween('end_date', [$now, $tenDaysFromNow])
+            ->where('is_urgent', true)
             ->latest()
             ->paginate(10);
     }

@@ -191,6 +191,11 @@ class DonationController extends Controller
     public function donateViaWallet(DonationRequest $request, $type, $id)
     {
         $donatable = $this->getDonatable($type, $id);
+
+        if ($donatable instanceof Campaign && ! $donatable->isAcceptingDonations()) {
+            return $this->handleErrorResponse('This campaign is no longer accepting donations.', 422);
+        }
+
         $title = $this->getDonatableTitle($donatable, $type);
         $user = auth()->user();
         $donorCurrency = $user->wallet->currency ?? 'NGN';
@@ -255,6 +260,11 @@ class DonationController extends Controller
     {
         try {
             $donatable = $this->getDonatable($type, $id);
+
+            if ($donatable instanceof Campaign && ! $donatable->isAcceptingDonations()) {
+                return $this->handleErrorResponse('This campaign is no longer accepting donations.', 422);
+            }
+
             $gateway = strtolower((string) ($request->gateway ?? 'paystack'));
             if ($gateway === 'rave') {
                 $gateway = Medium::FLUTTERWAVE->value;

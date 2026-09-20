@@ -24,6 +24,7 @@ class Campaign extends Model
         'category_id',
         'campaign_type',
         'status',
+        'is_urgent',
         'images',
         'goal_amount',
         'currency',
@@ -38,6 +39,7 @@ class Campaign extends Model
         'type' => Type::class,
         'campaign_type' => CampaignType::class,
         'status' => Status::class,
+        'is_urgent' => 'boolean',
         'end_date' => 'datetime',
     ];
 
@@ -91,6 +93,11 @@ class Campaign extends Model
     public function donations(): MorphMany
     {
         return $this->morphMany(Donation::class, 'donatable');
+    }
+
+    public function isAcceptingDonations(): bool
+    {
+        return $this->status === Status::ACTIVE;
     }
 
     public function getCollectedAmountAttribute(): float

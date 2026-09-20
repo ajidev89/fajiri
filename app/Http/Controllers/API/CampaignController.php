@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Enums\Campagin\Status;
 use App\Http\Controllers\Controller;
 use App\Http\Repository\Contracts\CampaignRepositoryInterface;
 use App\Http\Repository\Contracts\DonationRepositoryInterface;
@@ -20,12 +21,14 @@ class CampaignController extends Controller
     public function analytics(Request $request)
     {
         $analytics = $this->campaignRepository->analytics($request);
+
         return $this->handleSuccessResponse('Analytics fetched successfully', $analytics);
     }
-    
+
     public function index(Request $request)
     {
         $campaigns = $this->campaignRepository->all($request);
+
         return CampaignResource::collection($campaigns);
     }
 
@@ -68,12 +71,14 @@ class CampaignController extends Controller
     public function types()
     {
         $types = $this->campaignRepository->types();
+
         return $this->handleSuccessResponse('Types fetched successfully', $types);
     }
 
     public function urgentCampaigns()
     {
         $campaigns = $this->campaignRepository->urgentCampaigns();
+
         return CampaignResource::collection($campaigns);
     }
 
@@ -82,6 +87,7 @@ class CampaignController extends Controller
         $data = $request->validated();
         $data['added_by'] = auth()->id();
         $campaign = $this->campaignRepository->create($data);
+
         return new CampaignResource($campaign);
     }
 
@@ -89,12 +95,24 @@ class CampaignController extends Controller
     {
         $campaign = $this->campaignRepository->find($id);
         $campaign->load('addedBy');
+
         return new CampaignResource($campaign);
     }
 
-    public function update(CampaignRequest $request,Campaign $campaign)
+    public function update(CampaignRequest $request, Campaign $campaign)
     {
         $campaign = $this->campaignRepository->update($campaign->id, $request->validated());
+
+        return new CampaignResource($campaign);
+    }
+
+    public function complete(Campaign $campaign)
+    {
+        $campaign = $this->campaignRepository->update($campaign->id, [
+            'status' => Status::COMPLETED->value,
+            'is_urgent' => false,
+        ]);
+
         return new CampaignResource($campaign);
     }
 
@@ -102,16 +120,19 @@ class CampaignController extends Controller
     {
         $user = auth()->user();
 
-        if ($campaign->added_by !== $user->id && !$user->hasPermission('campaign_management')) {
+        if ($campaign->added_by !== $user->id && ! $user->hasPermission('campaign_management')) {
             return $this->handleErrorResponse('Unauthorized', 403);
         }
 
         $this->campaignRepository->delete($campaign->id);
+
         return $this->handleSuccessResponse('Campaign deleted successfully');
     }
+
     public function userDonatedCampaigns(Request $request)
     {
         $campaigns = $this->campaignRepository->donatedCampaigns($request);
+
         return CampaignResource::collection($campaigns);
     }
 }

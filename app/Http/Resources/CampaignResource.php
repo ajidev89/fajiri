@@ -30,6 +30,7 @@ class CampaignResource extends JsonResource
             'campaign_type' => $this->campaign_type,
             'images' => $this->images,
             'status' => $this->status,
+            'is_urgent' => (bool) $this->is_urgent,
             'end_date' => $this->end_date,
             'goal_amount' => $convertedGoal['amount'],
             'collected_amount' => $convertedCollected['amount'],

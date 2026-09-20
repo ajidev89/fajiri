@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Campaign;
 use App\Models\Category;
 use App\Models\Country;
 use App\Models\User;
@@ -94,5 +95,40 @@ class CampaignCategoryTest extends TestCase
             ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.title', 'School Fees');
+    }
+
+    public function test_campaigns_can_be_filtered_by_in_progress_and_complete(): void
+    {
+        Campaign::create([
+            'added_by' => $this->admin->id,
+            'title' => 'Active Drive',
+            'body' => 'Still raising funds',
+            'goal_amount' => 10000,
+            'currency' => 'NGN',
+            'status' => 'active',
+            'type' => 'other',
+        ]);
+
+        Campaign::create([
+            'added_by' => $this->admin->id,
+            'title' => 'Finished Drive',
+            'body' => 'Goal reached',
+            'goal_amount' => 10000,
+            'currency' => 'NGN',
+            'status' => 'completed',
+            'type' => 'other',
+        ]);
+
+        $this->getJson('/v1/campaigns?filter=in_progress')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.title', 'Active Drive')
+            ->assertJsonPath('data.0.status', 'active');
+
+        $this->getJson('/v1/campaigns?filter=complete')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.title', 'Finished Drive')
+            ->assertJsonPath('data.0.status', 'completed');
     }
 }
