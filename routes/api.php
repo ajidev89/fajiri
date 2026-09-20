@@ -81,7 +81,7 @@ Route::controller(UserController::class)->middleware(['auth:sanctum'])->group(fu
         Route::get('withdraw-account', 'withdrawAccount');
         Route::get('referrals', 'referrals');
         Route::get('subscriptions', 'subscriptions');
-        Route::delete('/', 'deactivate');
+        Route::delete('/delete', 'deactivate');
         Route::post('/notification-token', 'updateNotificationToken');
     });
     Route::post('/users/notification-token', 'updateNotificationToken');
