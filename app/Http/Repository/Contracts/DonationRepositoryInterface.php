@@ -5,6 +5,7 @@ namespace App\Http\Repository\Contracts;
 interface DonationRepositoryInterface
 {
     public function index(?string $donatableType = null, $request = null);
+    public function filteredQuery(?string $donatableType = null, $request = null);
     public function create(array $data);
     public function findByDonatable(string $type, $id);
     public function findByReference(string $reference);

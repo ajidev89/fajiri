@@ -8,6 +8,8 @@ interface UsersRepositoryInterface
 {
     public function index($request = null);
 
+    public function filteredQuery($request = null);
+
     public function find(User $user);
 
     public function update(User $user, array $data);

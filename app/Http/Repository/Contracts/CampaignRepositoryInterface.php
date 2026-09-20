@@ -6,6 +6,7 @@ interface CampaignRepositoryInterface
 {
     public function analytics($request = null);
     public function all($request);
+    public function filteredQuery($request);
     public function urgentCampaigns();
     public function find($id);
     public function create(array $data);

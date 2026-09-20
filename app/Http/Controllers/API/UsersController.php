@@ -26,6 +26,39 @@ class UsersController extends Controller
         return $this->handleSuccessCollectionResponse('Successfully fetched users', UserResource::collection($users));
     }
 
+    public function export(Request $request)
+    {
+        $rows = $this->usersRepositoryInterface->filteredQuery($request)
+            ->lazy(500)
+            ->map(function (User $user) {
+                return [
+                    $user->member_id,
+                    $user->profile?->first_name,
+                    $user->profile?->last_name,
+                    $user->email,
+                    $user->phone,
+                    $user->username,
+                    $user->status,
+                    $user->account_type,
+                    $user->country?->name,
+                    optional($user->created_at)?->toDateTimeString(),
+                ];
+            });
+
+        return $this->streamCsv('users.csv', [
+            'Member ID',
+            'First Name',
+            'Last Name',
+            'Email',
+            'Phone',
+            'Username',
+            'Status',
+            'Account Type',
+            'Country',
+            'Date Joined',
+        ], $rows);
+    }
+
     public function show(User $user)
     {
         $user = $this->usersRepositoryInterface->find($user);

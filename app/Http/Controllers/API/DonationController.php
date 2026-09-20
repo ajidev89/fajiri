@@ -46,6 +46,53 @@ class DonationController extends Controller
         return $this->handleSuccessCollectionResponse('Donations fetched successfully', DonationResource::collection($donations));
     }
 
+    public function export(Request $request)
+    {
+        $donatableType = match ($request->query('type')) {
+            'campaign' => Campaign::class,
+            'need', 'needs' => Need::class,
+            default => null,
+        };
+
+        $rows = $this->donationRepository->filteredQuery($donatableType, $request)
+            ->lazy(500)
+            ->map(function (Donation $donation) {
+                $isCampaign = $donation->donatable_type === Campaign::class;
+
+                return [
+                    $donation->id,
+                    $donation->name,
+                    $donation->email,
+                    $isCampaign ? $donation->donatable?->title : $donation->donatable?->name,
+                    $isCampaign ? 'campaign' : 'need',
+                    $donation->medium,
+                    $donation->amount,
+                    $donation->currency,
+                    $donation->base_amount_usd,
+                    $donation->status,
+                    $donation->reference,
+                    $donation->flagged_at ? 'yes' : 'no',
+                    optional($donation->created_at)?->toDateTimeString(),
+                ];
+            });
+
+        return $this->streamCsv('donations.csv', [
+            'ID',
+            'Donor',
+            'Email',
+            'Title',
+            'Type',
+            'Medium',
+            'Amount',
+            'Currency',
+            'USD Amount',
+            'Status',
+            'Reference',
+            'Flagged',
+            'Date',
+        ], $rows);
+    }
+
     /**
      * List available donation payment mediums.
      */

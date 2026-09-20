@@ -17,10 +17,10 @@ class FundraiserRepository implements FundraiserRepositoryInterface
     {
     }
 
-    public function index($request = null)
+    public function filteredQuery($request = null)
     {
         $query = $this->model->fundraisers()
-            ->with(['role', 'campaigns', 'needs', 'profile']);
+            ->with(['role', 'campaigns', 'needs', 'profile', 'country']);
 
         if ($request && $request->filled('search')) {
             $term = $request->input('search');
@@ -44,7 +44,12 @@ class FundraiserRepository implements FundraiserRepositoryInterface
             ? strtolower((string) $request->input('sort_order', 'desc'))
             : 'desc';
 
-        return $query->orderBy($sortBy, $sortOrder)->paginate($request?->per_page ?? 15);
+        return $query->orderBy($sortBy, $sortOrder);
+    }
+
+    public function index($request = null)
+    {
+        return $this->filteredQuery($request)->paginate($request?->per_page ?? 15);
     }
 
     public function store(array $data)

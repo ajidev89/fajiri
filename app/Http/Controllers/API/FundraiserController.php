@@ -21,6 +21,35 @@ class FundraiserController extends Controller
         return $this->handleSuccessCollectionResponse('Fundraisers fetched successfully', UserResource::collection($fundraisers));
     }
 
+    public function export(Request $request)
+    {
+        $rows = $this->fundraiserRepository->filteredQuery($request)
+            ->lazy(500)
+            ->map(function (User $user) {
+                return [
+                    trim(($user->profile?->first_name ?? '').' '.($user->profile?->last_name ?? '')),
+                    $user->email,
+                    $user->username,
+                    $user->status,
+                    $user->country?->name,
+                    $user->campaigns?->count() ?? 0,
+                    $user->needs?->count() ?? 0,
+                    optional($user->created_at)?->toDateTimeString(),
+                ];
+            });
+
+        return $this->streamCsv('fundraisers.csv', [
+            'Name',
+            'Email',
+            'Username',
+            'Status',
+            'Country',
+            'Campaigns',
+            'Needs',
+            'Date Joined',
+        ], $rows);
+    }
+
     public function store(StoreFundraiserRequest $request)
     {
         $fundraiser = $this->fundraiserRepository->store($request->validated());

@@ -29,6 +29,42 @@ class CampaignController extends Controller
         return CampaignResource::collection($campaigns);
     }
 
+    public function export(Request $request)
+    {
+        $rows = $this->campaignRepository->filteredQuery($request)
+            ->lazy(200)
+            ->map(function (Campaign $campaign) {
+                $status = $campaign->status;
+                $statusValue = $status instanceof \BackedEnum ? $status->value : $status;
+
+                return [
+                    $campaign->id,
+                    $campaign->title,
+                    $campaign->category?->name,
+                    $statusValue,
+                    $campaign->goal_amount,
+                    $campaign->collected_amount,
+                    $campaign->currency,
+                    $campaign->type instanceof \BackedEnum ? $campaign->type->value : $campaign->type,
+                    optional($campaign->end_date)?->toDateString(),
+                    optional($campaign->created_at)?->toDateTimeString(),
+                ];
+            });
+
+        return $this->streamCsv('campaigns.csv', [
+            'ID',
+            'Title',
+            'Category',
+            'Status',
+            'Goal Amount',
+            'Raised Amount',
+            'Currency',
+            'Type',
+            'End Date',
+            'Created At',
+        ], $rows);
+    }
+
     public function types()
     {
         $types = $this->campaignRepository->types();

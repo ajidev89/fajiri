@@ -43,16 +43,10 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
             $needQuery->where('added_by', $added_by);
         }
 
-        $donatedCurrencies = $this->donatedCurrency($request);
-        $totalDonatedUsd = 0;
-        foreach ($donatedCurrencies as $item) {
-            $totalDonatedUsd += $this->currencyService->convert((float) $item->total_amount, $item->currency, 'USD');
-        }
-
         return [
             "total_donations" => $donationQuery->count(),
             "total_donations_amount" => [
-                (object) ['currency' => '$', 'total_amount' => $totalDonatedUsd]
+                (object) ['currency' => '$', 'total_amount' => $this->sumDonatedUsd($request)]
             ],
             "active_campaigns" => $campaignQuery->where('status', 'active')->count(),
             "active_campaigns_percentage_change" => $this->calculatePercentageChange($this->campaign, ['status' => 'active'], $request),
@@ -169,7 +163,8 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
                 DB::raw('MONTH(created_at) as month_num'),
                 'currency',
                 DB::raw('COUNT(id) as no_of_donations'),
-                DB::raw('SUM(amount) as total_amount')
+                DB::raw('SUM(amount) as total_amount'),
+                DB::raw('SUM(base_amount_usd) as total_usd')
             )
             ->where('status', 'completed')
             ->whereYear('created_at', now()->year);
@@ -187,23 +182,64 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
         for ($i = 1; $i <= 12; $i++) {
             $monthName = \Carbon\Carbon::create()->month($i)->format('F');
             $monthDonations = $donations->where('month_num', $i);
-            
+
             $totalUsdAmount = 0;
             $totalDonations = 0;
-            
+
             foreach ($monthDonations as $donation) {
-                $totalUsdAmount += $this->currencyService->convert((float) $donation->total_amount, $donation->currency, 'USD');
+                $totalUsdAmount += $this->usdFromAggregate($donation);
                 $totalDonations += $donation->no_of_donations;
             }
 
             $formatted[] = [
                 'month' => $monthName,
                 'no_of_donations' => $totalDonations,
-                'amounts' => (object) ['USD' => $totalUsdAmount],
+                'amounts' => (object) ['USD' => round($totalUsdAmount, 2)],
             ];
         }
 
         return $formatted;
+    }
+
+    private function sumDonatedUsd($request = null): float
+    {
+        $query = $this->donation->query()->where('status', 'completed');
+        $added_by = $request ? $request->added_by : null;
+
+        if ($added_by) {
+            $query->whereHasMorph('donatable', [\App\Models\Campaign::class, \App\Models\Need::class], function ($q) use ($added_by) {
+                $q->where('added_by', $added_by);
+            });
+        }
+
+        $usdSum = (float) (clone $query)->sum('base_amount_usd');
+        if ($usdSum > 0) {
+            return round($usdSum, 2);
+        }
+
+        $total = 0;
+        foreach ($this->donatedCurrency($request) as $item) {
+            $total += $this->usdFromAggregate($item);
+        }
+
+        return round($total, 2);
+    }
+
+    private function usdFromAggregate(object $item): float
+    {
+        $storedUsd = (float) ($item->total_usd ?? $item->base_amount_usd ?? 0);
+        if ($storedUsd > 0) {
+            return $storedUsd;
+        }
+
+        $amount = (float) ($item->total_amount ?? $item->amount ?? 0);
+        $currency = strtoupper((string) ($item->currency ?? 'USD'));
+
+        if (in_array($currency, ['USD', '$', ''], true)) {
+            return $amount;
+        }
+
+        return $this->currencyService->convert($amount, $currency, 'USD');
     }
 
 

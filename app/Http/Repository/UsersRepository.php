@@ -13,7 +13,7 @@ class UsersRepository implements UsersRepositoryInterface
 
     public function __construct(public User $user) {}
 
-    public function index($request = null)
+    public function filteredQuery($request = null)
     {
         $search = $request?->input('search') ?? $request?->input('q');
 
@@ -29,7 +29,12 @@ class UsersRepository implements UsersRepositoryInterface
             ['created_at', 'updated_at', 'email', 'status'],
         );
 
-        return $query->paginate($request?->per_page ?? 10);
+        return $query;
+    }
+
+    public function index($request = null)
+    {
+        return $this->filteredQuery($request)->paginate($request?->per_page ?? 10);
     }
 
     public function find(User $user)

@@ -90,6 +90,7 @@ Route::controller(UserController::class)->middleware(['auth:sanctum'])->group(fu
 Route::controller(CampaignController::class)->group(function () {
     Route::group(['prefix' => 'campaigns'], function () {
         Route::get('/', 'index');
+        Route::get('/export', 'export')->middleware(['auth:sanctum', 'permission:campaign_management']);
         Route::get('/urgent', 'urgentCampaigns');
         Route::post('/', 'store')->middleware(['auth:sanctum', 'permission:campaign_management']);
         Route::get('/types', 'types');
@@ -126,6 +127,7 @@ Route::controller(UsersController::class)->group(function () {
     Route::post('/users/notification-token', 'updateNotificationToken')->middleware(['auth:sanctum']);
     Route::group(['prefix' => 'users', 'middleware' => ['auth:sanctum', 'permission:user_management']], function () {
         Route::get('/', 'index');
+        Route::get('/export', 'export');
         Route::get('/{user}', 'show');
         Route::get('/{user}/audits', 'audits');
         Route::get('/{user}/transactions', 'transactions');
@@ -154,6 +156,7 @@ Route::controller(InsuranceController::class)->group(function () {
 Route::controller(DonationController::class)->group(function () {
     Route::group(['prefix' => 'donations'], function () {
         Route::get('/', 'index')->middleware(['auth:sanctum', 'permission:donation_management']);
+        Route::get('/export', 'export')->middleware(['auth:sanctum', 'permission:donation_management']);
         Route::get('/mediums', 'mediums');
         Route::get('/leaderboard', 'leaderboard');
         Route::post('/{type}/{id}/wallet', 'donateViaWallet')->middleware(['auth:sanctum']);
@@ -232,6 +235,7 @@ Route::controller(AnalyticsController::class)->middleware(['auth:sanctum', 'perm
     Route::controller(FundraiserController::class)->group(function () {
         Route::group(['prefix' => 'fundraisers'], function () {
             Route::get('/', 'index');
+            Route::get('/export', 'export');
             Route::post('/', 'store');
             Route::post('/{user}/reset-password', 'resetPassword');
         });

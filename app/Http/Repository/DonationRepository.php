@@ -11,7 +11,7 @@ class DonationRepository implements DonationRepositoryInterface
     /**
      * List donations ordered by highest base USD amount first (ranking).
      */
-    public function index(?string $donatableType = null, $request = null)
+    public function filteredQuery(?string $donatableType = null, $request = null)
     {
         $query = Donation::with(['donatable', 'user.profile'])
             ->when($donatableType, fn ($q) => $q->where('donatable_type', $donatableType));
@@ -38,8 +38,12 @@ class DonationRepository implements DonationRepositoryInterface
             ? strtolower((string) $request->input('sort_order', 'desc'))
             : 'desc';
 
-        return $query->orderBy($sortBy, $sortOrder)
-            ->orderBy('created_at', 'desc')
+        return $query->orderBy($sortBy, $sortOrder)->orderBy('created_at', 'desc');
+    }
+
+    public function index(?string $donatableType = null, $request = null)
+    {
+        return $this->filteredQuery($donatableType, $request)
             ->paginate($request?->per_page ?? 15);
     }
 

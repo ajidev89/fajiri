@@ -55,7 +55,7 @@ class CampaignRepository implements CampaignRepositoryInterface
         return round((($currentMonthCount - $lastMonthCount) / $lastMonthCount) * 100, 2);
     }
 
-    public function all($request)
+    public function filteredQuery($request)
     {
         $query = $this->campaign->query()
             ->with('category')
@@ -93,8 +93,12 @@ class CampaignRepository implements CampaignRepositoryInterface
             ? strtolower((string) $request->input('sort_order', 'desc'))
             : 'desc';
 
-        return $query->orderBy($sortBy, $sortOrder)
-            ->paginate($request->per_page ?? 10);
+        return $query->orderBy($sortBy, $sortOrder);
+    }
+
+    public function all($request)
+    {
+        return $this->filteredQuery($request)->paginate($request->per_page ?? 10);
     }
 
     public function urgentCampaigns()
