@@ -20,7 +20,9 @@ class FamilyMemberRepository implements FamilyMemberRepositoryInterface
 
     public function adminAll($request)
     {
-        $query = $this->familyMember->with(['children', 'parent', 'user']);
+        $query = $this->familyMember
+            ->with(['children', 'parent', 'user'])
+            ->where('relationship', '!=', Relationship::ME->value);
 
         if ($request->filled('search')) {
             $term = $request->input('search');
