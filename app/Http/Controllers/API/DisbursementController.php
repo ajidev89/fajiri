@@ -10,14 +10,15 @@ use App\Http\Requests\Disbursement\ValidateDisbursementRequest;
 use App\Http\Resources\Disbursement\DisbursementResource;
 use App\Models\Campaign;
 use App\Models\Disbursement;
+use App\Models\Need;
 use App\Models\Otp;
 use App\Services\CampaignFinancialsService;
 use App\Services\DisbursementComplianceService;
 use App\Services\DisbursementEngineService;
 use Exception;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
 
 class DisbursementController extends Controller
 {
@@ -51,10 +52,15 @@ class DisbursementController extends Controller
      */
     public function getCampaignFinancials(string $campaignId)
     {
-        $campaign = Campaign::findOrFail($campaignId);
-        $financials = $this->financialsService->getCampaignFinancials($campaign);
+        return $this->financialsResponse(Campaign::findOrFail($campaignId), 'Campaign financials retrieved successfully');
+    }
 
-        return $this->handleSuccessResponse('Campaign financials retrieved successfully', $financials);
+    /**
+     * Get Need Financials Summary for dashboard & modal
+     */
+    public function getNeedFinancials(string $needId)
+    {
+        return $this->financialsResponse(Need::findOrFail($needId), 'Need financials retrieved successfully');
     }
 
     /**
@@ -62,15 +68,12 @@ class DisbursementController extends Controller
      */
     public function validateDisbursement(ValidateDisbursementRequest $request, string $campaignId)
     {
-        $campaign = Campaign::findOrFail($campaignId);
-        $user = auth()->user();
+        return $this->validateResponse(Campaign::findOrFail($campaignId), $request);
+    }
 
-        $compliance = $this->complianceService->evaluateCompliance($campaign, $user, $request->validated());
-
-        return $this->handleSuccessResponse('Disbursement validation and compliance checks completed', [
-            'compliance'      => $compliance,
-            'fee_calculation' => $compliance['fee_calculation'],
-        ]);
+    public function validateNeedDisbursement(ValidateDisbursementRequest $request, string $needId)
+    {
+        return $this->validateResponse(Need::findOrFail($needId), $request);
     }
 
     /**
@@ -78,28 +81,16 @@ class DisbursementController extends Controller
      */
     public function sendOtp(Request $request, string $campaignId)
     {
-        $campaign = Campaign::findOrFail($campaignId);
-        $user = auth()->user();
+        Campaign::findOrFail($campaignId);
 
-        $code = (string) random_int(100000, 999999);
+        return $this->dispatchOtp();
+    }
 
-        // Store OTP
-        Otp::updateOrCreate(
-            ['identifier' => $user->email, 'channel' => 'email'],
-            [
-                'hash'       => Hash::make($code),
-                'expires_at' => now()->addMinutes(10),
-                'verified'   => false,
-            ]
-        );
+    public function sendNeedOtp(Request $request, string $needId)
+    {
+        Need::findOrFail($needId);
 
-        // In local/testing log OTP, or send email notification
-        \Illuminate\Support\Facades\Log::info("Disbursement 2FA OTP for {$user->email}: {$code}");
-
-        return $this->handleSuccessResponse('Verification code sent successfully to your registered email.', [
-            'email_masked' => substr($user->email, 0, 3) . '•••@' . (explode('@', $user->email)[1] ?? ''),
-            'expires_in'   => 600,
-        ]);
+        return $this->dispatchOtp();
     }
 
     /**
@@ -109,13 +100,7 @@ class DisbursementController extends Controller
     {
         $user = auth()->user();
         $data = $request->validated();
-
-        $campaignId = $data['disbursable_id'] ?? $request->route('campaignId');
-        if (!$campaignId && !empty($data['campaign_id'])) {
-            $campaignId = $data['campaign_id'];
-        }
-
-        $campaign = Campaign::findOrFail($campaignId);
+        $disbursable = $this->resolveDisbursable($request, $data);
 
         // Verify Step-up Authentication if provided
         if (!empty($data['otp'])) {
@@ -137,7 +122,7 @@ class DisbursementController extends Controller
         }
 
         try {
-            $disbursement = $this->engineService->createDisbursement($campaign, $user, $data);
+            $disbursement = $this->engineService->createDisbursement($disbursable, $user, $data);
 
             return $this->handleSuccessResponse('Disbursement initiated successfully', [
                 'data' => new DisbursementResource($disbursement),
@@ -154,13 +139,14 @@ class DisbursementController extends Controller
     {
         $campaign = Campaign::findOrFail($campaignId);
 
-        $disbursements = Disbursement::where('disbursable_type', Campaign::class)
-            ->where('disbursable_id', $campaign->id)
-            ->with(['requestedBy.profile', 'disbursedBy'])
-            ->latest()
-            ->get();
+        return $this->disbursementsFor($campaign);
+    }
 
-        return $this->handleSuccessCollectionResponse('Campaign disbursements retrieved', DisbursementResource::collection($disbursements));
+    public function getNeedDisbursements(string $needId)
+    {
+        $need = Need::findOrFail($needId);
+
+        return $this->disbursementsFor($need);
     }
 
     /**
@@ -197,5 +183,76 @@ class DisbursementController extends Controller
         } catch (Exception $e) {
             return $this->handleErrorResponse($e->getMessage(), 400);
         }
+    }
+
+    protected function financialsResponse(Campaign|Need $disbursable, string $message)
+    {
+        $financials = $this->financialsService->getFinancials($disbursable);
+
+        return $this->handleSuccessResponse($message, $financials);
+    }
+
+    protected function validateResponse(Campaign|Need $disbursable, ValidateDisbursementRequest $request)
+    {
+        $user = auth()->user();
+        $compliance = $this->complianceService->evaluateCompliance($disbursable, $user, $request->validated());
+
+        return $this->handleSuccessResponse('Disbursement validation and compliance checks completed', [
+            'compliance'      => $compliance,
+            'fee_calculation' => $compliance['fee_calculation'],
+        ]);
+    }
+
+    protected function dispatchOtp()
+    {
+        $user = auth()->user();
+        $code = (string) random_int(100000, 999999);
+
+        Otp::updateOrCreate(
+            ['identifier' => $user->email, 'channel' => 'email'],
+            [
+                'hash'       => Hash::make($code),
+                'expires_at' => now()->addMinutes(10),
+                'verified'   => false,
+            ]
+        );
+
+        \Illuminate\Support\Facades\Log::info("Disbursement 2FA OTP for {$user->email}: {$code}");
+
+        return $this->handleSuccessResponse('Verification code sent successfully to your registered email.', [
+            'email_masked' => substr($user->email, 0, 3) . '•••@' . (explode('@', $user->email)[1] ?? ''),
+            'expires_in'   => 600,
+        ]);
+    }
+
+    protected function disbursementsFor(Campaign|Need $disbursable)
+    {
+        $disbursements = Disbursement::where('disbursable_type', $disbursable::class)
+            ->where('disbursable_id', $disbursable->id)
+            ->with(['requestedBy.profile', 'disbursedBy'])
+            ->latest()
+            ->get();
+
+        $label = $disbursable instanceof Need ? 'Need' : 'Campaign';
+
+        return $this->handleSuccessCollectionResponse("{$label} disbursements retrieved", DisbursementResource::collection($disbursements));
+    }
+
+    protected function resolveDisbursable(Request $request, array $data): Model
+    {
+        $needId = $request->route('needId') ?? ($data['need_id'] ?? null);
+        $campaignId = $request->route('campaignId') ?? ($data['campaign_id'] ?? null);
+        $disbursableId = $data['disbursable_id'] ?? null;
+        $type = strtolower((string) ($data['disbursable_type'] ?? ''));
+
+        $isNeed = $needId
+            || $type === 'need'
+            || str_contains($type, 'need');
+
+        if ($isNeed) {
+            return Need::findOrFail($needId ?: $disbursableId);
+        }
+
+        return Campaign::findOrFail($campaignId ?: $disbursableId);
     }
 }

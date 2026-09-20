@@ -295,6 +295,14 @@ Route::controller(DisbursementController::class)->middleware(['auth:sanctum'])->
         Route::post('/', 'store');
     });
 
+    Route::group(['prefix' => 'needs/{needId}/disbursements'], function () {
+        Route::get('/financials', 'getNeedFinancials');
+        Route::post('/validate', 'validateNeedDisbursement');
+        Route::post('/send-otp', 'sendNeedOtp');
+        Route::get('/', 'getNeedDisbursements');
+        Route::post('/', 'store');
+    });
+
     Route::group(['prefix' => 'disbursements'], function () {
         Route::get('/', 'index');
         Route::get('/{id}', 'show');

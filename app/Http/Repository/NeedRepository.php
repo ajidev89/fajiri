@@ -2,19 +2,19 @@
 
 namespace App\Http\Repository;
 
+use App\Http\Repository\Contracts\NeedRepositoryInterface;
 use App\Models\Need;
 
-use App\Http\Repository\Contracts\NeedRepositoryInterface;
-
-class NeedRepository implements NeedRepositoryInterface {
-
-    public function __construct(public Need $need)
-    {
-    }
+class NeedRepository implements NeedRepositoryInterface
+{
+    public function __construct(public Need $need) {}
 
     public function index($request = null)
     {
         $query = $this->need->query()
+            ->withSum(['donations as donations_sum_converted_amount' => function ($query) {
+                $query->where('status', 'completed');
+            }], 'converted_amount')
             ->when($request && $request->added_by, function ($query) use ($request) {
                 $query->where('added_by', $request->added_by);
             })
@@ -55,6 +55,7 @@ class NeedRepository implements NeedRepositoryInterface {
     public function update(Need $need, array $data)
     {
         $need->update($data);
+
         return $need;
     }
 
@@ -63,4 +64,3 @@ class NeedRepository implements NeedRepositoryInterface {
         return $need->delete();
     }
 }
-    

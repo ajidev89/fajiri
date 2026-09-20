@@ -21,7 +21,9 @@ class DisbursementResource extends JsonResource
             'disbursable_id'             => $this->disbursable_id,
             'disbursable'                => $this->disbursable ? [
                 'id'       => $this->disbursable->id,
-                'title'    => $this->disbursable->title ?? $this->disbursable->name ?? 'Campaign',
+                'title'    => $this->disbursable->title ?? $this->disbursable->name ?? 'Disbursable',
+                'name'     => $this->disbursable->name ?? $this->disbursable->title ?? 'Disbursable',
+                'type'     => class_basename($this->disbursable_type) === 'Need' ? 'need' : 'campaign',
                 'currency' => $this->disbursable->currency ?? 'NGN',
             ] : null,
             'requested_by'               => $this->requestedBy ? [

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\Disbursement\RiskLevel;
 use App\Models\Campaign;
 use App\Models\Disbursement;
+use App\Models\Need;
 use App\Models\User;
 
 class DisbursementComplianceService
@@ -27,11 +28,14 @@ class DisbursementComplianceService
     /**
      * Run the 10 automated compliance and risk checks on a disbursement request
      */
-    public function evaluateCompliance(Campaign $campaign, User $requester, array $data): array
+    public function evaluateCompliance(Campaign|Need $disbursable, User $requester, array $data): array
     {
         $checks = [];
         $riskScore = 0;
         $flags = [];
+        $isNeed = $disbursable instanceof Need;
+        $sourceLabel = $isNeed ? 'Need' : 'Campaign';
+        $currency = $disbursable->currency ?? 'NGN';
 
         $amount = (float) ($data['amount'] ?? 0);
         $country = strtoupper($data['recipient_country'] ?? 'NG');
@@ -50,16 +54,16 @@ class DisbursementComplianceService
             $flags[] = 'Unverified beneficiary name';
         }
 
-        // 2. Campaign owner verified
-        $ownerKycPassed = $campaign->addedBy && ($campaign->addedBy->kyc?->status === 'verified' || $campaign->addedBy->email_verified_at !== null);
+        // 2. Source owner verified
+        $ownerKycPassed = $disbursable->addedBy && ($disbursable->addedBy->kyc?->status === 'verified' || $disbursable->addedBy->email_verified_at !== null);
         $checks['campaign_owner_verified'] = [
-            'name'        => 'Campaign owner verified',
+            'name'        => "{$sourceLabel} owner verified",
             'passed'      => (bool) $ownerKycPassed,
-            'description' => $ownerKycPassed ? 'Campaign creator identity verified' : 'Campaign creator has unverified KYC status',
+            'description' => $ownerKycPassed ? "{$sourceLabel} creator identity verified" : "{$sourceLabel} creator has unverified KYC status",
         ];
         if (!$ownerKycPassed) {
             $riskScore += 25;
-            $flags[] = 'Unverified campaign owner';
+            $flags[] = "Unverified {$sourceLabel} owner";
         }
 
         // 3. Recipient account verified
@@ -104,29 +108,35 @@ class DisbursementComplianceService
             $flags[] = 'AML keyword match';
         }
 
-        // 6. Campaign active and not suspended
-        $campaignActive = $campaign->status?->value === 'active' || strtolower((string)$campaign->status) === 'active';
+        // 6. Source active and not suspended
+        if ($isNeed) {
+            $sourceActive = true;
+        } else {
+            $sourceActive = $disbursable->status?->value === 'active' || strtolower((string) $disbursable->status) === 'active';
+        }
         $checks['campaign_active'] = [
-            'name'        => 'Campaign active',
-            'passed'      => $campaignActive,
-            'description' => $campaignActive ? 'Campaign is in good standing and eligible for disbursements' : 'Campaign is inactive or flagged',
+            'name'        => "{$sourceLabel} active",
+            'passed'      => $sourceActive,
+            'description' => $sourceActive
+                ? "{$sourceLabel} is in good standing and eligible for disbursements"
+                : "{$sourceLabel} is inactive or flagged",
         ];
-        if (!$campaignActive) {
+        if (!$sourceActive) {
             $riskScore += 40;
-            $flags[] = 'Inactive campaign status';
+            $flags[] = "Inactive {$sourceLabel} status";
         }
 
         // 7. Sufficient available balance
-        $financials = $this->financialsService->getCampaignFinancials($campaign);
+        $financials = $this->financialsService->getFinancials($disbursable);
         $feeCalculation = $this->financialsService->calculateFee($amount, $data['payout_method'] ?? 'local_bank_transfer', $data['fee_bearer'] ?? 'campaign');
         $totalRequired = $feeCalculation['total_deducted'];
         $sufficientBalance = $financials['available_balance'] >= $totalRequired && $amount > 0;
         $checks['sufficient_funds'] = [
             'name'        => 'Sufficient funds',
             'passed'      => $sufficientBalance,
-            'description' => $sufficientBalance 
-                ? "Requested amount ({$campaign->currency} " . number_format($totalRequired, 2) . ") is within available balance ({$campaign->currency} " . number_format($financials['available_balance'], 2) . ")" 
-                : "Insufficient campaign balance (Available: {$campaign->currency} " . number_format($financials['available_balance'], 2) . ", Required: {$campaign->currency} " . number_format($totalRequired, 2) . ")",
+            'description' => $sufficientBalance
+                ? "Requested amount ({$currency} " . number_format($totalRequired, 2) . ") is within available balance ({$currency} " . number_format($financials['available_balance'], 2) . ")"
+                : "Insufficient {$sourceLabel} balance (Available: {$currency} " . number_format($financials['available_balance'], 2) . ", Required: {$currency} " . number_format($totalRequired, 2) . ")",
         ];
         if (!$sufficientBalance) {
             $riskScore += 50;
@@ -138,12 +148,12 @@ class DisbursementComplianceService
         $checks['no_chargeback_hold'] = [
             'name'        => 'No chargeback or escrow hold',
             'passed'      => $noChargeback,
-            'description' => 'No active donor disputes or payment gateway holds against this campaign',
+            'description' => "No active donor disputes or payment gateway holds against this {$sourceLabel}",
         ];
 
         // 9. Velocity & Duplicate check
-        $recentDuplicate = Disbursement::where('disbursable_type', Campaign::class)
-            ->where('disbursable_id', $campaign->id)
+        $recentDuplicate = Disbursement::where('disbursable_type', $disbursable::class)
+            ->where('disbursable_id', $disbursable->id)
             ->where('amount', $amount)
             ->where('created_at', '>=', now()->subMinutes(15))
             ->exists();
@@ -157,8 +167,15 @@ class DisbursementComplianceService
             $flags[] = 'Recent duplicate disbursement request';
         }
 
-        // 10. Required supporting documents uploaded (for medical/education/emergency campaigns or amounts >= $2,500)
-        $requiresDocs = in_array(strtolower($campaign->type?->value ?? (string)$campaign->type), ['medical', 'emergency', 'education']) || $amount >= 2500;
+        // 10. Required supporting documents uploaded
+        $requiresDocs = $amount >= 2500;
+        if ($isNeed) {
+            $urgency = strtolower((string) ($disbursable->urgency?->value ?? $disbursable->urgency ?? ''));
+            $requiresDocs = $requiresDocs || $urgency === 'high';
+        } else {
+            $typeValue = strtolower($disbursable->type?->value ?? (string) $disbursable->type);
+            $requiresDocs = $requiresDocs || in_array($typeValue, ['medical', 'emergency', 'education', 'medical-aid'], true);
+        }
         $docsAttached = is_array($documents) && count($documents) > 0;
         $docsPassed = !$requiresDocs || $docsAttached;
         $checks['documents_verified'] = [

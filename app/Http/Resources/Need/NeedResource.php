@@ -2,12 +2,14 @@
 
 namespace App\Http\Resources\Need;
 
+use App\Http\Resources\User\UserResource;
+use App\Http\Traits\ConvertedAmountTrait;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class NeedResource extends JsonResource
 {
-    use \App\Http\Traits\ConvertedAmountTrait;
+    use ConvertedAmountTrait;
 
     /**
      * Transform the resource into an array.
@@ -17,6 +19,7 @@ class NeedResource extends JsonResource
     public function toArray(Request $request): array
     {
         $converted = $this->getConvertedAmount($this->amount, $this->currency, $request);
+        $convertedCollected = $this->getConvertedAmount($this->collected_amount, $this->currency, $request);
 
         return [
             'id' => $this->id,
@@ -24,13 +27,15 @@ class NeedResource extends JsonResource
             'age' => $this->age,
             'location' => $this->location,
             'amount' => $converted['amount'],
+            'collected_amount' => $convertedCollected['amount'],
             'currency' => $converted['currency'],
             'base_amount' => $converted['base_amount'],
+            'base_collected_amount' => $convertedCollected['base_amount'],
             'base_currency' => $converted['base_currency'],
             'description' => $this->description,
             'image' => $this->image,
             'urgency' => $this->urgency,
-            'added_by' => new \App\Http\Resources\User\UserResource($this->whenLoaded('addedBy')),
+            'added_by' => new UserResource($this->whenLoaded('addedBy')),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

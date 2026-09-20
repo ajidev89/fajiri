@@ -7,6 +7,7 @@ use App\Enums\Disbursement\RecipientType;
 use App\Enums\Disbursement\Status;
 use App\Models\Campaign;
 use App\Models\Disbursement;
+use App\Models\Need;
 use App\Models\User;
 use App\Services\Payout\FlutterwavePayoutProvider;
 use App\Services\Payout\InternalWalletPayoutProvider;
@@ -66,13 +67,13 @@ class DisbursementEngineService
     /**
      * Initiate and create a new disbursement request with compliance verification
      */
-    public function createDisbursement(Campaign $campaign, User $requester, array $data): Disbursement
+    public function createDisbursement(Campaign|Need $disbursable, User $requester, array $data): Disbursement
     {
         // 1. Run automated compliance & risk screening
-        $compliance = $this->complianceService->evaluateCompliance($campaign, $requester, $data);
+        $compliance = $this->complianceService->evaluateCompliance($disbursable, $requester, $data);
 
         $amount = (float) $data['amount'];
-        $currency = $campaign->currency ?? 'NGN';
+        $currency = $disbursable->currency ?? 'NGN';
         $payoutMethod = $data['payout_method'] ?? 'local_bank_transfer';
         $feeBearer = $data['fee_bearer'] ?? 'campaign';
         $targetCurrency = $data['target_currency'] ?? $currency;
@@ -91,12 +92,12 @@ class DisbursementEngineService
         $initialStatus = $compliance['requires_admin_review'] ? Status::PENDING_REVIEW : Status::PENDING;
 
         return DB::transaction(function () use (
-            $campaign, $requester, $data, $amount, $currency, $targetCurrency,
+            $disbursable, $requester, $data, $amount, $currency, $targetCurrency,
             $feeCalc, $exchangeRate, $estimatedRecipientAmount, $compliance, $initialStatus
         ) {
             $disbursement = Disbursement::create([
-                'disbursable_type'           => Campaign::class,
-                'disbursable_id'             => $campaign->id,
+                'disbursable_type'           => $disbursable::class,
+                'disbursable_id'             => $disbursable->id,
                 'requested_by'               => $requester->id,
                 'recipient_type'             => $data['recipient_type'] ?? RecipientType::CAMPAIGN_OWNER->value,
                 'recipient_country'          => $data['recipient_country'] ?? 'NG',

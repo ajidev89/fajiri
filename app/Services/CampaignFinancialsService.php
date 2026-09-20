@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\Disbursement\Status as DisbursementStatus;
 use App\Models\Campaign;
 use App\Models\Disbursement;
+use App\Models\Need;
 
 class CampaignFinancialsService
 {
@@ -20,13 +21,26 @@ class CampaignFinancialsService
      */
     public function getCampaignFinancials(Campaign $campaign): array
     {
-        $currency = $campaign->currency ?? 'NGN';
+        return $this->getFinancials($campaign);
+    }
 
-        // 1. Total Raised (completed donations converted to campaign currency)
+    /**
+     * Compute comprehensive financial metrics for a campaign or need
+     */
+    public function getFinancials(Campaign|Need $disbursable): array
+    {
+        $currency = $disbursable->currency ?? 'NGN';
+        $isNeed = $disbursable instanceof Need;
+        $title = $isNeed
+            ? ($disbursable->name ?? 'Need')
+            : ($disbursable->title ?? 'Campaign');
+        $disbursableType = $disbursable::class;
+
+        // 1. Total Raised (completed donations converted to source currency)
         $totalRaised = 0.0;
         $platformFees = 0.0;
 
-        $donations = $campaign->donations()->where('status', 'completed')->get();
+        $donations = $disbursable->donations()->where('status', 'completed')->get();
         foreach ($donations as $donation) {
             $donationAmount = (float) $donation->amount;
             $donationCurrency = $donation->currency ?? 'NGN';
@@ -42,14 +56,14 @@ class CampaignFinancialsService
         $availableFunds = max(0.0, $totalRaised - $platformFees);
 
         // 2. Completed Disbursements
-        $disbursed = (float) Disbursement::where('disbursable_type', Campaign::class)
-            ->where('disbursable_id', $campaign->id)
+        $disbursed = (float) Disbursement::where('disbursable_type', $disbursableType)
+            ->where('disbursable_id', $disbursable->id)
             ->where('status', DisbursementStatus::COMPLETED)
             ->sum('amount');
 
         // 3. Pending / Active in-flight Disbursements
-        $pending = (float) Disbursement::where('disbursable_type', Campaign::class)
-            ->where('disbursable_id', $campaign->id)
+        $pending = (float) Disbursement::where('disbursable_type', $disbursableType)
+            ->where('disbursable_id', $disbursable->id)
             ->whereIn('status', [
                 DisbursementStatus::PENDING,
                 DisbursementStatus::PENDING_REVIEW,
@@ -64,19 +78,26 @@ class CampaignFinancialsService
         $availableBalance = max(0.0, round($availableFunds - $disbursed - $pending, 2));
 
         // 5. Total number of disbursements
-        $disbursementsCount = Disbursement::where('disbursable_type', Campaign::class)
-            ->where('disbursable_id', $campaign->id)
+        $disbursementsCount = Disbursement::where('disbursable_type', $disbursableType)
+            ->where('disbursable_id', $disbursable->id)
             ->count();
 
         return [
-            'campaign_id'              => $campaign->id,
-            'campaign_title'           => $campaign->title,
+            'campaign_id'              => $isNeed ? null : $disbursable->id,
+            'campaign_title'           => $isNeed ? null : $title,
+            'need_id'                  => $isNeed ? $disbursable->id : null,
+            'need_title'               => $isNeed ? $title : null,
+            'source_id'                => $disbursable->id,
+            'source_title'             => $title,
+            'source_type'              => $isNeed ? 'need' : 'campaign',
             'currency'                 => $currency,
             'total_raised'             => round($totalRaised, 2),
             'platform_fees'            => round($platformFees, 2),
             'available_funds'          => round($availableFunds, 2),
             'amount_disbursed'         => round($disbursed, 2),
+            'disbursed'                => round($disbursed, 2),
             'pending_disbursement'     => round($pending, 2),
+            'pending'                  => round($pending, 2),
             'available_balance'        => $availableBalance,
             'disbursements_count'      => $disbursementsCount,
             'formatted' => [
@@ -116,7 +137,7 @@ class CampaignFinancialsService
         $feeAmount = round(($amount * $percentage) + $baseFixedFee, 2);
 
         if ($feeBearer === 'campaign') {
-            // Campaign bears fee: requested amount goes to recipient, fee added to deduction
+            // Source bears fee: requested amount goes to recipient, fee added to deduction
             $recipientReceives = $amount;
             $totalDeducted = $amount + $feeAmount;
         } else {

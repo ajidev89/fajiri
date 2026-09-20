@@ -14,6 +14,10 @@ class SubmitDisbursementRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'campaign_id'         => 'nullable|uuid',
+            'need_id'             => 'nullable|uuid',
+            'disbursable_id'      => 'nullable|uuid',
+            'disbursable_type'    => 'nullable|string',
             'recipient_type'      => 'nullable|string|in:campaign_owner,individual_beneficiary,organization,vendor_service_provider,multiple_beneficiaries',
             'beneficiary_name'    => 'required|string|max:255',
             'recipient_country'   => 'nullable|string|max:10',

@@ -2,30 +2,30 @@
 
 namespace App\Http\Repository;
 
-use App\Models\Donation;
+use App\Enums\Disbursement\Status;
+use App\Http\Repository\Contracts\AnalyticsRepositoryInterface;
 use App\Models\Campaign;
+use App\Models\Disbursement;
+use App\Models\Donation;
 use App\Models\Need;
 use App\Models\User;
-use App\Models\Disbursement;
-use App\Enums\Disbursement\Status;
-use Illuminate\Database\Eloquent\Model;
+use App\Services\CurrencyService;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
-use App\Http\Repository\Contracts\AnalyticsRepositoryInterface;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
-class AnalyticsRepository implements AnalyticsRepositoryInterface {
-
+class AnalyticsRepository implements AnalyticsRepositoryInterface
+{
     public function __construct(
-        protected Donation $donation, 
-        protected Campaign $campaign, 
-        protected Need $need, 
+        protected Donation $donation,
+        protected Campaign $campaign,
+        protected Need $need,
         protected User $user,
-        protected \App\Services\CurrencyService $currencyService
-    ){
-
-    }
+        protected CurrencyService $currencyService
+    ) {}
 
     public function index($request = null)
     {
@@ -36,7 +36,7 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
         $needQuery = $this->need->query();
 
         if ($added_by) {
-            $donationQuery->whereHasMorph('donatable', [\App\Models\Campaign::class, \App\Models\Need::class], function ($query) use ($added_by) {
+            $donationQuery->whereHasMorph('donatable', [Campaign::class, Need::class], function ($query) use ($added_by) {
                 $query->where('added_by', $added_by);
             });
             $campaignQuery->where('added_by', $added_by);
@@ -44,18 +44,18 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
         }
 
         return [
-            "total_donations" => $donationQuery->count(),
-            "total_donations_amount" => [
-                (object) ['currency' => '$', 'total_amount' => $this->sumDonatedUsd($request)]
+            'total_donations' => $donationQuery->count(),
+            'total_donations_amount' => [
+                (object) ['currency' => '$', 'total_amount' => $this->sumDonatedUsd($request)],
             ],
-            "active_campaigns" => $campaignQuery->where('status', 'active')->count(),
-            "active_campaigns_percentage_change" => $this->calculatePercentageChange($this->campaign, ['status' => 'active'], $request),
-            "active_needs" => $needQuery->count(),
-            "active_needs_percentage_change" => $this->calculatePercentageChange($this->need, [], $request),
-            "total_users" => $this->user->whereHas('role', function ($query) {
+            'active_campaigns' => $campaignQuery->where('status', 'active')->count(),
+            'active_campaigns_percentage_change' => $this->calculatePercentageChange($this->campaign, ['status' => 'active'], $request),
+            'active_needs' => $needQuery->count(),
+            'active_needs_percentage_change' => $this->calculatePercentageChange($this->need, [], $request),
+            'total_users' => $this->user->whereHas('role', function ($query) {
                 $query->where('name', 'user');
             })->count(),
-            "total_users_percentage_change" => $this->calculatePercentageChange(
+            'total_users_percentage_change' => $this->calculatePercentageChange(
                 $this->user->whereHas('role', function ($query) {
                     $query->where('name', 'user');
                 })
@@ -63,13 +63,14 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
         ];
     }
 
-    public function donatedCurrency($request = null){
+    public function donatedCurrency($request = null)
+    {
         $added_by = $request ? $request->added_by : null;
         $query = $this->donation->select('currency', DB::raw('SUM(amount) as total_amount'))
             ->where('status', 'completed');
 
         if ($added_by) {
-            $query->whereHasMorph('donatable', [\App\Models\Campaign::class, \App\Models\Need::class], function ($query) use ($added_by) {
+            $query->whereHasMorph('donatable', [Campaign::class, Need::class], function ($query) use ($added_by) {
                 $query->where('added_by', $added_by);
             });
         }
@@ -79,17 +80,9 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
 
     public function disbursementStats()
     {
-        // 1. Calculate Total Donated in NGN
-        $donationsByCurrency = $this->donatedCurrency();
-        $totalDonatedInNgn = 0;
-        foreach ($donationsByCurrency as $item) {
-            $totalDonatedInNgn += $this->currencyService->convert($item->total_amount, $item->currency, 'NGN');
-        }
-
-        // 2. Calculate Total Disbursed in NGN (using the converted_amount we just added)
-        $totalDisbursedInNgn = Disbursement::where('status', Status::COMPLETED)->sum('converted_amount');
-
-        $availableFunds = $totalDonatedInNgn - $totalDisbursedInNgn;
+        $totalDonatedUsd = $this->sumDonatedUsd();
+        $totalDisbursedUsd = $this->sumDisbursementUsd([Status::COMPLETED->value]);
+        $availableFundsUsd = max(0.0, round($totalDonatedUsd - $totalDisbursedUsd, 2));
 
         $stats = Disbursement::select('status', DB::raw('count(*) as count'), DB::raw('sum(amount) as total_amount'), 'currency')
             ->groupBy('status', 'currency')
@@ -102,15 +95,18 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
         ];
 
         foreach ($stats as $stat) {
-            $status = $stat->status->value;
+            $status = $stat->status instanceof Status ? $stat->status->value : $stat->status;
+
+            if (! isset($formatedStats[$status])) {
+                continue;
+            }
+
             $formatedStats[$status]['count'] += $stat->count;
-            $formatedStats[$status]['amounts']['USD'] += $this->currencyService->convert((float) $stat->total_amount, $stat->currency, 'USD');
+            $formatedStats[$status]['amounts']['USD'] += $this->usdFromAggregate($stat);
         }
 
-        $availableFundsUsd = $this->currencyService->convert($availableFunds, 'NGN', 'USD');
-
         return [
-            'available_funds_usd' => round($availableFundsUsd, 2),
+            'available_funds_usd' => $availableFundsUsd,
             'pending_disbursements' => $formatedStats['pending'],
             'approved_disbursements' => $formatedStats['completed'],
             'rejected_disbursements' => $formatedStats['rejected'],
@@ -120,8 +116,8 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
     private function calculatePercentageChange(Model|Builder $modelOrQuery, ?array $filter = [], $request = null): float|int
     {
         $added_by = $request ? $request->added_by : null;
-        $baseQuery = $modelOrQuery instanceof Builder 
-            ? clone $modelOrQuery 
+        $baseQuery = $modelOrQuery instanceof Builder
+            ? clone $modelOrQuery
             : $modelOrQuery->newQuery();
 
         if ($filter) {
@@ -131,8 +127,8 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
         if ($added_by) {
             // Check if the model has added_by or if it's Donation (needs morph check)
             $model = $modelOrQuery instanceof Builder ? $modelOrQuery->getModel() : $modelOrQuery;
-            if ($model instanceof \App\Models\Donation) {
-                $baseQuery->whereHasMorph('donatable', [\App\Models\Campaign::class, \App\Models\Need::class], function ($query) use ($added_by) {
+            if ($model instanceof Donation) {
+                $baseQuery->whereHasMorph('donatable', [Campaign::class, Need::class], function ($query) use ($added_by) {
                     $query->where('added_by', $added_by);
                 });
             } else {
@@ -153,7 +149,6 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
         return round((($currentMonthCount - $lastMonthCount) / $lastMonthCount) * 100, 2);
     }
 
-
     public function donationChartlyAnnualy($request = null)
     {
         $added_by = $request ? $request->added_by : null;
@@ -170,7 +165,7 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
             ->whereYear('created_at', now()->year);
 
         if ($added_by) {
-            $donationQuery->whereHasMorph('donatable', [\App\Models\Campaign::class, \App\Models\Need::class], function ($query) use ($added_by) {
+            $donationQuery->whereHasMorph('donatable', [Campaign::class, Need::class], function ($query) use ($added_by) {
                 $query->where('added_by', $added_by);
             });
         }
@@ -180,7 +175,7 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
         $formatted = [];
 
         for ($i = 1; $i <= 12; $i++) {
-            $monthName = \Carbon\Carbon::create()->month($i)->format('F');
+            $monthName = Carbon::create()->month($i)->format('F');
             $monthDonations = $donations->where('month_num', $i);
 
             $totalUsdAmount = 0;
@@ -201,13 +196,29 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
         return $formatted;
     }
 
+    private function sumDisbursementUsd(array $statuses): float
+    {
+        $rows = Disbursement::query()
+            ->select('currency', DB::raw('SUM(amount) as total_amount'))
+            ->whereIn('status', $statuses)
+            ->groupBy('currency')
+            ->get();
+
+        $total = 0.0;
+        foreach ($rows as $row) {
+            $total += $this->usdFromAggregate($row);
+        }
+
+        return round($total, 2);
+    }
+
     private function sumDonatedUsd($request = null): float
     {
         $query = $this->donation->query()->where('status', 'completed');
         $added_by = $request ? $request->added_by : null;
 
         if ($added_by) {
-            $query->whereHasMorph('donatable', [\App\Models\Campaign::class, \App\Models\Need::class], function ($q) use ($added_by) {
+            $query->whereHasMorph('donatable', [Campaign::class, Need::class], function ($q) use ($added_by) {
                 $q->where('added_by', $added_by);
             });
         }
@@ -242,8 +253,7 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
         return $this->currencyService->convert($amount, $currency, 'USD');
     }
 
-
-    //piechart for top performing campaigns
+    // piechart for top performing campaigns
     public function topPerformingCampaigns($request = null)
     {
         $added_by = $request ? $request->added_by : null;
@@ -273,8 +283,8 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
     public function leaderboard($request = null)
     {
         $query = $this->user->whereHas('role', function ($query) {
-                $query->where('slug', 'user');
-            });
+            $query->where('slug', 'user');
+        });
 
         if ($request && $request->filled('country_id') && $request->country_id !== 'all') {
             $query->where('country_id', $request->country_id);
@@ -296,23 +306,24 @@ class AnalyticsRepository implements AnalyticsRepositoryInterface {
             ->withCount([
                 'referrals',
                 'donations as campaign_donations_count' => function ($query) {
-                    $query->where('donatable_type', \App\Models\Campaign::class)
+                    $query->where('donatable_type', Campaign::class)
                         ->where('status', 'completed');
                 },
                 'donations as need_donations_count' => function ($query) {
-                    $query->where('donatable_type', \App\Models\Need::class)
+                    $query->where('donatable_type', Need::class)
                         ->where('status', 'completed');
                 },
-                'eventAttendees as event_attendance_count'
+                'eventAttendees as event_attendance_count',
             ])
             ->get()
             ->map(function ($user) {
-                $user->name = ($user->profile->first_name ?? '') . ' ' . ($user->profile->last_name ?? '');
+                $user->name = ($user->profile->first_name ?? '').' '.($user->profile->last_name ?? '');
                 $user->country_iso2 = $user->country->iso2 ?? null;
                 $user->total_engagement = $user->referrals_count +
                                         $user->campaign_donations_count +
                                         $user->need_donations_count +
                                         $user->event_attendance_count;
+
                 return $user;
             });
 
