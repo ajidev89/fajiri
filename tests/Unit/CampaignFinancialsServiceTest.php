@@ -2,11 +2,17 @@
 
 namespace Tests\Unit;
 
+use App\Enums\User\AccountType;
 use App\Models\Campaign;
+use App\Models\Country;
 use App\Models\Donation;
+use App\Models\Need;
+use App\Models\Role;
+use App\Models\User;
 use App\Services\CampaignFinancialsService;
 use App\Services\CurrencyService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class CampaignFinancialsServiceTest extends TestCase
@@ -18,59 +24,59 @@ class CampaignFinancialsServiceTest extends TestCase
         $currencyService = app(CurrencyService::class);
         $service = new CampaignFinancialsService($currencyService);
 
-        \App\Models\Country::create([
-            'id'         => 1,
-            'name'       => 'Nigeria',
-            'iso3'       => 'NGA',
-            'iso2'       => 'NG',
-            'currency'   => 'NGN',
+        Country::create([
+            'id' => 1,
+            'name' => 'Nigeria',
+            'iso3' => 'NGA',
+            'iso2' => 'NG',
+            'currency' => 'NGN',
             'phone_code' => '+234',
         ]);
 
-        $role = \App\Models\Role::create(['id' => 1, 'name' => 'User', 'slug' => 'user']);
+        $role = Role::create(['id' => 1, 'name' => 'User', 'slug' => 'user']);
 
-        $user = \App\Models\User::create([
-            'email'             => 'owner@example.com',
-            'phone'             => '+2348011223344',
-            'password'          => \Illuminate\Support\Facades\Hash::make('secret123'),
-            'role_id'           => 1,
-            'country_id'        => 1,
-            'account_type'      => \App\Enums\User\AccountType::IDENTIFIED_MEMBERSHIP,
+        $user = User::create([
+            'email' => 'owner@example.com',
+            'phone' => '+2348011223344',
+            'password' => Hash::make('secret123'),
+            'role_id' => 1,
+            'country_id' => 1,
+            'account_type' => AccountType::IDENTIFIED_MEMBERSHIP,
             'email_verified_at' => now(),
-            'member_id'         => 'FAJ-TEST-OWNER-F',
+            'member_id' => 'FAJ-TEST-OWNER-F',
         ]);
 
         $campaign = Campaign::create([
-            'added_by'    => $user->id,
-            'title'       => 'Medical Emergency Campaign',
-            'body'        => 'Helping patient with urgent treatment',
+            'added_by' => $user->id,
+            'title' => 'Medical Emergency Campaign',
+            'body' => 'Helping patient with urgent treatment',
             'goal_amount' => 50000.0,
-            'currency'    => 'USD',
-            'status'      => 'active',
-            'type'        => 'medical-aid',
+            'currency' => 'USD',
+            'status' => 'active',
+            'type' => 'medical-aid',
         ]);
 
         // Create 2 completed donations
         Donation::create([
-            'donatable_type'   => Campaign::class,
-            'donatable_id'     => $campaign->id,
-            'amount'           => 10000.0,
+            'donatable_type' => Campaign::class,
+            'donatable_id' => $campaign->id,
+            'amount' => 10000.0,
             'converted_amount' => 10000.0,
-            'rate'             => 1.0,
-            'currency'         => 'USD',
-            'fee'              => 250.0,
-            'status'           => 'completed',
+            'rate' => 1.0,
+            'currency' => 'USD',
+            'fee' => 250.0,
+            'status' => 'completed',
         ]);
 
         Donation::create([
-            'donatable_type'   => Campaign::class,
-            'donatable_id'     => $campaign->id,
-            'amount'           => 5000.0,
+            'donatable_type' => Campaign::class,
+            'donatable_id' => $campaign->id,
+            'amount' => 5000.0,
             'converted_amount' => 5000.0,
-            'rate'             => 1.0,
-            'currency'         => 'USD',
-            'fee'              => 125.0,
-            'status'           => 'completed',
+            'rate' => 1.0,
+            'currency' => 'USD',
+            'fee' => 125.0,
+            'status' => 'completed',
         ]);
 
         $financials = $service->getCampaignFinancials($campaign);
@@ -88,45 +94,47 @@ class CampaignFinancialsServiceTest extends TestCase
         $currencyService = app(CurrencyService::class);
         $service = new CampaignFinancialsService($currencyService);
 
-        \App\Models\Country::create([
-            'id'         => 1,
-            'name'       => 'Nigeria',
-            'iso3'       => 'NGA',
-            'iso2'       => 'NG',
-            'currency'   => 'NGN',
+        Country::create([
+            'id' => 1,
+            'name' => 'Nigeria',
+            'iso3' => 'NGA',
+            'iso2' => 'NG',
+            'currency' => 'NGN',
             'phone_code' => '+234',
         ]);
 
-        $need = \App\Models\Need::create([
-            'name'        => 'Medical Need',
-            'age'         => '8',
-            'location'    => 'Abuja',
-            'currency'    => 'USD',
-            'amount'      => 4000.0,
+        $need = Need::create([
+            'name' => 'Medical Need',
+            'age' => '8',
+            'location' => 'Abuja',
+            'currency' => 'USD',
+            'amount' => 4000.0,
             'description' => 'Surgery support',
-            'urgency'     => 'high',
+            'urgency' => 'high',
         ]);
 
         Donation::create([
-            'donatable_type'   => \App\Models\Need::class,
-            'donatable_id'     => $need->id,
-            'amount'           => 2000.0,
+            'donatable_type' => Need::class,
+            'donatable_id' => $need->id,
+            'amount' => 2000.0,
             'converted_amount' => 2000.0,
-            'rate'             => 1.0,
-            'currency'         => 'USD',
-            'fee'              => 50.0,
-            'status'           => 'completed',
+            'base_amount_usd' => 2000.0,
+            'rate' => 1.0,
+            'currency' => 'USD',
+            'fee' => 50.0,
+            'status' => 'completed',
         ]);
 
         Donation::create([
-            'donatable_type'   => \App\Models\Need::class,
-            'donatable_id'     => $need->id,
-            'amount'           => 9000.0,
+            'donatable_type' => Need::class,
+            'donatable_id' => $need->id,
+            'amount' => 9000.0,
             'converted_amount' => 9000.0,
-            'rate'             => 1.0,
-            'currency'         => 'USD',
-            'fee'              => 225.0,
-            'status'           => 'pending',
+            'base_amount_usd' => 9000.0,
+            'rate' => 1.0,
+            'currency' => 'USD',
+            'fee' => 225.0,
+            'status' => 'pending',
         ]);
 
         $financials = $service->getFinancials($need);

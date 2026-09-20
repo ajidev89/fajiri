@@ -19,7 +19,7 @@ class NeedResource extends JsonResource
     public function toArray(Request $request): array
     {
         $converted = $this->getConvertedAmount($this->amount, $this->currency, $request);
-        $convertedCollected = $this->getConvertedAmount($this->collected_amount, $this->currency, $request);
+        $convertedCollected = $this->getConvertedAmount($this->collectedAmountIn($this->currency), $this->currency, $request);
 
         return [
             'id' => $this->id,

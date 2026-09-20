@@ -44,13 +44,9 @@ class CampaignFinancialsService
             ? $disbursable->completedDonations()->get()
             : $disbursable->donations()->where('status', 'completed')->get();
         foreach ($donations as $donation) {
-            if ($isNeed) {
-                $convertedDonation = (float) ($donation->converted_amount ?? 0);
-            } else {
-                $donationAmount = (float) $donation->amount;
-                $donationCurrency = $donation->currency ?? 'NGN';
-                $convertedDonation = $this->currencyService->convert($donationAmount, $donationCurrency, $currency);
-            }
+            $donationAmount = (float) $donation->amount;
+            $donationCurrency = $donation->currency ?? 'NGN';
+            $convertedDonation = $this->currencyService->convert($donationAmount, $donationCurrency, $currency);
 
             $totalRaised += $convertedDonation;
 
@@ -89,30 +85,30 @@ class CampaignFinancialsService
             ->count();
 
         return [
-            'campaign_id'              => $isNeed ? null : $disbursable->id,
-            'campaign_title'           => $isNeed ? null : $title,
-            'need_id'                  => $isNeed ? $disbursable->id : null,
-            'need_title'               => $isNeed ? $title : null,
-            'source_id'                => $disbursable->id,
-            'source_title'             => $title,
-            'source_type'              => $isNeed ? 'need' : 'campaign',
-            'currency'                 => $currency,
-            'total_raised'             => round($totalRaised, 2),
-            'platform_fees'            => round($platformFees, 2),
-            'available_funds'          => round($availableFunds, 2),
-            'amount_disbursed'         => round($disbursed, 2),
-            'disbursed'                => round($disbursed, 2),
-            'pending_disbursement'     => round($pending, 2),
-            'pending'                  => round($pending, 2),
-            'available_balance'        => $availableBalance,
-            'disbursements_count'      => $disbursementsCount,
+            'campaign_id' => $isNeed ? null : $disbursable->id,
+            'campaign_title' => $isNeed ? null : $title,
+            'need_id' => $isNeed ? $disbursable->id : null,
+            'need_title' => $isNeed ? $title : null,
+            'source_id' => $disbursable->id,
+            'source_title' => $title,
+            'source_type' => $isNeed ? 'need' : 'campaign',
+            'currency' => $currency,
+            'total_raised' => round($totalRaised, 2),
+            'platform_fees' => round($platformFees, 2),
+            'available_funds' => round($availableFunds, 2),
+            'amount_disbursed' => round($disbursed, 2),
+            'disbursed' => round($disbursed, 2),
+            'pending_disbursement' => round($pending, 2),
+            'pending' => round($pending, 2),
+            'available_balance' => $availableBalance,
+            'disbursements_count' => $disbursementsCount,
             'formatted' => [
-                'total_raised'         => number_format($totalRaised, 2),
-                'platform_fees'        => number_format($platformFees, 2),
-                'available_funds'      => number_format($availableFunds, 2),
-                'amount_disbursed'     => number_format($disbursed, 2),
+                'total_raised' => number_format($totalRaised, 2),
+                'platform_fees' => number_format($platformFees, 2),
+                'available_funds' => number_format($availableFunds, 2),
+                'amount_disbursed' => number_format($disbursed, 2),
                 'pending_disbursement' => number_format($pending, 2),
-                'available_balance'    => number_format($availableBalance, 2),
+                'available_balance' => number_format($availableBalance, 2),
             ],
         ];
     }
@@ -125,19 +121,19 @@ class CampaignFinancialsService
         // Dynamic fee tier based on payout method
         $percentage = match ($payoutMethod) {
             'international_bank_transfer', 'swift' => 0.015,
-            'sepa', 'ach'                          => 0.008,
-            'card'                                 => 0.02,
-            'mobile_money'                         => 0.01,
-            'platform_wallet'                      => 0.00,
-            default                                => 0.005, // Local bank transfer
+            'sepa', 'ach' => 0.008,
+            'card' => 0.02,
+            'mobile_money' => 0.01,
+            'platform_wallet' => 0.00,
+            default => 0.005, // Local bank transfer
         };
 
         $baseFixedFee = match ($payoutMethod) {
             'international_bank_transfer', 'swift' => 25.00,
-            'sepa'                                 => 1.50,
-            'ach'                                  => 1.00,
-            'platform_wallet'                      => 0.00,
-            default                                => 0.50,
+            'sepa' => 1.50,
+            'ach' => 1.00,
+            'platform_wallet' => 0.00,
+            default => 0.50,
         };
 
         $feeAmount = round(($amount * $percentage) + $baseFixedFee, 2);
@@ -153,11 +149,11 @@ class CampaignFinancialsService
         }
 
         return [
-            'requested_amount'   => $amount,
-            'fee_amount'         => $feeAmount,
-            'fee_bearer'         => $feeBearer,
+            'requested_amount' => $amount,
+            'fee_amount' => $feeAmount,
+            'fee_bearer' => $feeBearer,
             'recipient_receives' => $recipientReceives,
-            'total_deducted'     => $totalDeducted,
+            'total_deducted' => $totalDeducted,
         ];
     }
 }
