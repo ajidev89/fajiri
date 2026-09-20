@@ -99,11 +99,45 @@ class AuthGenerateTokenTest extends TestCase
             ->assertJsonPath('data.type', 'bearer');
     }
 
+    public function test_a_new_login_does_not_revoke_existing_sessions(): void
+    {
+        $user = $this->createMember('sessions@example.com');
+
+        $firstToken = $user->createToken('phone')->plainTextToken;
+        $secondToken = $user->createToken('web')->plainTextToken;
+
+        $this->withToken($firstToken)->getJson('/v1/user')->assertOk();
+        $this->withToken($secondToken)->getJson('/v1/user')->assertOk();
+
+        $this->withToken($firstToken)
+            ->postJson('/v1/auth/logout')
+            ->assertOk();
+
+        $this->assertFalse($user->tokens()->where('name', 'phone')->exists());
+        $this->assertTrue($user->tokens()->where('name', 'web')->exists());
+        $this->assertSame(1, $user->tokens()->count());
+        $this->withToken($secondToken)->getJson('/v1/user')->assertOk();
+    }
+
+    public function test_password_login_keeps_existing_tokens(): void
+    {
+        $user = $this->createMember('keep-tokens@example.com');
+        $existing = $user->createToken('existing-device')->plainTextToken;
+
+        $this->postJson('/v1/auth/login', [
+            'email' => $user->email,
+            'password' => 'password123',
+        ])->assertOk();
+
+        $this->assertSame(1, $user->tokens()->count());
+        $this->withToken($existing)->getJson('/v1/user')->assertOk();
+    }
+
     protected function createMember(string $email): User
     {
         return User::create([
             'email' => $email,
-            'password' => Hash::make('password123'),
+            'password' => 'password123',
             'role_id' => $this->userRole->id,
             'country_id' => 1,
             'account_type' => AccountType::IDENTIFIED_MEMBERSHIP,

@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthRepository implements AuthRepositoryInterface
 {
@@ -138,8 +139,6 @@ class AuthRepository implements AuthRepositoryInterface
                 return $this->handleErrorResponse("Your account is {$user->status}. Please contact support.", 401);
             }
 
-            $this->user()->tokens()->delete();
-
             $code = random_int(100000, 999999);
 
             $otpIdentifier = $user->$field ?? $identifier;
@@ -247,8 +246,18 @@ class AuthRepository implements AuthRepositoryInterface
 
     public function logout()
     {
+        $user = auth('sanctum')->user() ?? $this->user();
+        $currentToken = $user?->currentAccessToken();
 
-        $this->user()->tokens()->delete();
+        if ($currentToken instanceof PersonalAccessToken) {
+            $currentToken->delete();
+        } elseif ($user && $bearer = request()->bearerToken()) {
+            $tokenId = strstr($bearer, '|', true);
+
+            if ($tokenId) {
+                $user->tokens()->where('id', $tokenId)->delete();
+            }
+        }
 
         return $this->handleSuccessResponse('Successfully logged out');
     }
