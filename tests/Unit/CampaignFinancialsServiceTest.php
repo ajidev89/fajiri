@@ -80,6 +80,51 @@ class CampaignFinancialsServiceTest extends TestCase
         $this->assertEquals(14625.0, $financials['available_funds']);
         $this->assertEquals(14625.0, $financials['available_balance']);
         $this->assertEquals(0, $financials['disbursements_count']);
+        $this->assertEquals('campaign', $financials['source_type']);
+    }
+
+    public function test_need_financials_calculation_with_donations(): void
+    {
+        $currencyService = app(CurrencyService::class);
+        $service = new CampaignFinancialsService($currencyService);
+
+        \App\Models\Country::create([
+            'id'         => 1,
+            'name'       => 'Nigeria',
+            'iso3'       => 'NGA',
+            'iso2'       => 'NG',
+            'currency'   => 'NGN',
+            'phone_code' => '+234',
+        ]);
+
+        $need = \App\Models\Need::create([
+            'name'        => 'Medical Need',
+            'age'         => '8',
+            'location'    => 'Abuja',
+            'currency'    => 'USD',
+            'amount'      => 4000.0,
+            'description' => 'Surgery support',
+            'urgency'     => 'high',
+        ]);
+
+        Donation::create([
+            'donatable_type'   => \App\Models\Need::class,
+            'donatable_id'     => $need->id,
+            'amount'           => 2000.0,
+            'converted_amount' => 2000.0,
+            'rate'             => 1.0,
+            'currency'         => 'USD',
+            'fee'              => 50.0,
+            'status'           => 'completed',
+        ]);
+
+        $financials = $service->getFinancials($need);
+
+        $this->assertEquals(2000.0, $financials['total_raised']);
+        $this->assertEquals(50.0, $financials['platform_fees']);
+        $this->assertEquals(1950.0, $financials['available_balance']);
+        $this->assertEquals('need', $financials['source_type']);
+        $this->assertEquals($need->id, $financials['need_id']);
     }
 
     public function test_fee_calculation_engine(): void

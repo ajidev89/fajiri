@@ -6,6 +6,7 @@ use App\Enums\Disbursement\Status;
 use App\Models\Campaign;
 use App\Models\Country;
 use App\Models\Donation;
+use App\Models\Need;
 use App\Models\Otp;
 use App\Models\Permission;
 use App\Models\Role;
@@ -159,5 +160,84 @@ class DisbursementWorkflowTest extends TestCase
         Sanctum::actingAs($this->admin);
         $approveRes = $this->postJson("/v1/admin/disbursements/{$disbursementId}/approve");
         $approveRes->assertStatus(200);
+    }
+
+    public function test_need_disbursement_financials_validate_and_submit(): void
+    {
+        $need = Need::create([
+            'added_by'    => $this->user->id,
+            'name'        => 'School Fees Support',
+            'age'         => '12',
+            'location'    => 'Lagos',
+            'currency'    => 'USD',
+            'amount'      => 10000.0,
+            'description' => 'Help with tuition',
+            'urgency'     => 'medium',
+        ]);
+
+        Donation::create([
+            'donatable_type'   => Need::class,
+            'donatable_id'     => $need->id,
+            'amount'           => 8000.0,
+            'converted_amount' => 8000.0,
+            'rate'             => 1.0,
+            'currency'         => 'USD',
+            'fee'              => 200.0,
+            'status'           => 'completed',
+        ]);
+
+        Sanctum::actingAs($this->user);
+
+        $financials = $this->getJson("/v1/needs/{$need->id}/disbursements/financials");
+        $financials->assertStatus(200);
+        $financials->assertJsonPath('data.total_raised', 8000);
+        $financials->assertJsonPath('data.source_type', 'need');
+        $financials->assertJsonPath('data.available_balance', 7800);
+
+        $validate = $this->postJson("/v1/needs/{$need->id}/disbursements/validate", [
+            'beneficiary_name'    => 'Ada Okonkwo',
+            'recipient_type'      => 'individual_beneficiary',
+            'recipient_country'   => 'NG',
+            'amount'              => 1500.0,
+            'payout_method'       => 'local_bank_transfer',
+            'account_number'      => '0123456789',
+            'bank_name'           => 'Access Bank',
+            'purpose'             => 'Tuition & Educational Fees',
+            'purpose_description' => 'School fees payout',
+        ]);
+
+        $validate->assertStatus(200);
+        $validate->assertJsonPath('data.compliance.passed', true);
+
+        Otp::updateOrCreate(
+            ['identifier' => $this->user->email, 'channel' => 'email'],
+            [
+                'hash'       => Hash::make('654321'),
+                'expires_at' => now()->addMinutes(10),
+                'verified'   => false,
+            ]
+        );
+
+        $submit = $this->postJson("/v1/needs/{$need->id}/disbursements", [
+            'beneficiary_name'    => 'Ada Okonkwo',
+            'recipient_type'      => 'individual_beneficiary',
+            'recipient_country'   => 'NG',
+            'amount'              => 1500.0,
+            'payout_method'       => 'local_bank_transfer',
+            'account_number'      => '0123456789',
+            'bank_name'           => 'Access Bank',
+            'purpose'             => 'Tuition & Educational Fees',
+            'purpose_description' => 'School fees payout',
+            'otp'                 => '654321',
+        ]);
+
+        $submit->assertStatus(201);
+        $submit->assertJsonPath('data.data.beneficiary_name', 'Ada Okonkwo');
+        $submit->assertJsonPath('data.data.disbursable.type', 'need');
+        $this->assertDatabaseHas('disbursements', [
+            'disbursable_type' => Need::class,
+            'disbursable_id'   => $need->id,
+            'beneficiary_name' => 'Ada Okonkwo',
+        ]);
     }
 }
