@@ -6,17 +6,15 @@ use App\Enums\User\Status;
 use App\Http\Services\FirebaseNotification;
 use App\Mail\MembershipUnpaidReminderMail;
 use App\Models\Notification;
-use App\Models\Plan;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class RemindUnpaidMemberships extends Command
 {
-    private const REMINDER_INTERVAL_DAYS = 3;
+    private const REMINDER_INTERVAL_DAYS = 7;
 
     /**
      * The name and signature of the console command.
@@ -30,7 +28,7 @@ class RemindUnpaidMemberships extends Command
      *
      * @var string
      */
-    protected $description = 'Remind members whose paid membership has lapsed and is still unpaid.';
+    protected $description = 'Remind people who have never paid for a membership to subscribe, at most once a week.';
 
     /**
      * Execute the console command.
@@ -39,18 +37,16 @@ class RemindUnpaidMemberships extends Command
     {
         $reminded = 0;
 
-        $this->unpaidMembers()->chunkById(200, function ($users) use ($firebase, &$reminded) {
+        $this->neverPaidMembers()->chunkById(200, function ($users) use ($firebase, &$reminded) {
             $notified = collect();
 
             foreach ($users as $user) {
-                $plan = $this->lapsedPlan($user);
-
-                if ($plan === null || ! filled($user->email)) {
+                if (! filled($user->email)) {
                     continue;
                 }
 
-                $this->createReminder($user, $plan);
-                Mail::to($user->email)->queue(new MembershipUnpaidReminderMail($user, $plan));
+                $this->createReminder($user);
+                Mail::to($user->email)->queue(new MembershipUnpaidReminderMail($user));
                 $notified->push($user);
                 $reminded++;
             }
@@ -61,21 +57,21 @@ class RemindUnpaidMemberships extends Command
 
             try {
                 $firebase->pushNotificationBatch($notified->all(), [
-                    'title' => 'Membership payment due',
-                    'description' => 'Your membership is unpaid. Please renew to keep it active.',
-                    'type' => 'membership_unpaid_reminder',
+                    'title' => 'Subscribe to a membership',
+                    'description' => 'You have not paid for a membership yet. Subscribe to a plan to get started.',
+                    'type' => 'membership_subscribe_reminder',
                 ]);
             } catch (\Throwable $e) {
-                Log::error('Failed to send unpaid membership push reminders: '.$e->getMessage());
+                Log::error('Failed to send membership subscribe push reminders: '.$e->getMessage());
             }
         });
 
-        $this->info("Sent {$reminded} unpaid membership reminder(s).");
+        $this->info("Sent {$reminded} subscribe reminder(s).");
 
         return self::SUCCESS;
     }
 
-    private function unpaidMembers(): Builder
+    private function neverPaidMembers(): Builder
     {
         return User::query()
             ->where('status', Status::ACTIVE->value)
@@ -86,53 +82,22 @@ class RemindUnpaidMemberships extends Command
                     });
             })
             ->whereDoesntHave('plans', function (Builder $query) {
-                $query->where('user_plans.status', 'active')
-                    ->where(function (Builder $coverage) {
-                        $coverage->whereNull('user_plans.expires_at')
-                            ->orWhere('user_plans.expires_at', '>', now());
-                    });
-            })
-            ->whereHas('plans', function (Builder $query) {
-                $query->where('plans.price', '>', 0)
-                    ->where('user_plans.expires_at', '<=', now());
+                $query->where('plans.price', '>', 0);
             })
             ->whereDoesntHave('notifications', function (Builder $query) {
-                $query->where('type', 'membership_unpaid_reminder')
+                $query->where('type', 'membership_subscribe_reminder')
                     ->where('created_at', '>', now()->subDays(self::REMINDER_INTERVAL_DAYS));
             })
-            ->with(['profile', 'plans']);
+            ->with('profile');
     }
 
-    private function lapsedPlan(User $user): ?Plan
+    private function createReminder(User $user): void
     {
-        return $user->plans
-            ->filter(function (Plan $plan) {
-                $expiresAt = $plan->pivot->expires_at;
-
-                return (float) $plan->price > 0
-                    && $expiresAt !== null
-                    && Carbon::parse($expiresAt)->lte(now());
-            })
-            ->sortByDesc(fn (Plan $plan) => Carbon::parse($plan->pivot->expires_at)->timestamp)
-            ->first();
-    }
-
-    private function createReminder(User $user, Plan $plan): void
-    {
-        $endedOn = Carbon::parse($plan->pivot->expires_at)->format('F j, Y');
-
         Notification::create([
             'user_id' => $user->id,
-            'title' => 'Membership payment due',
-            'message' => "Your {$plan->name} membership is unpaid. It ended on {$endedOn}. Please renew to keep it active.",
-            'type' => 'membership_unpaid_reminder',
-            'data' => [
-                'plan_id' => $plan->id,
-                'plan_name' => $plan->name,
-                'amount' => $plan->price,
-                'currency' => $plan->currency,
-                'expires_at' => Carbon::parse($plan->pivot->expires_at)->toIso8601String(),
-            ],
+            'title' => 'Subscribe to a membership',
+            'message' => 'You have not paid for a membership yet. Subscribe to a plan to get started.',
+            'type' => 'membership_subscribe_reminder',
         ]);
     }
 }

@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Membership payment due</title>
+    <title>Subscribe to your membership</title>
     <style>
         body {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -30,33 +30,6 @@
         .content {
             padding: 40px;
         }
-        .details-box {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 24px 0;
-        }
-        .detail-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 12px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid #edf2f7;
-        }
-        .detail-row:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-            padding-bottom: 0;
-        }
-        .label {
-            color: #64748b;
-            font-size: 14px;
-        }
-        .value {
-            font-weight: 600;
-            color: #1e293b;
-        }
         .footer {
             padding: 30px;
             text-align: center;
@@ -83,26 +56,9 @@
         </div>
         <div class="content">
             <p>Hi {{ $user->profile->first_name ?? 'there' }},</p>
-            <p>Your <strong>{{ $plan->name }}</strong> membership is unpaid. Renew it to keep your membership active.</p>
+            <p>You have not paid for a membership yet. Subscribe to a plan to get started and keep your place in the community.</p>
 
-            <div class="details-box">
-                <div class="detail-row">
-                    <span class="label">Plan</span>
-                    <span class="value">{{ $plan->name }}</span>
-                </div>
-                <div class="detail-row">
-                    <span class="label">Amount due</span>
-                    <span class="value">{{ $plan->currency }} {{ number_format((float) $plan->price, 2) }}</span>
-                </div>
-                @if ($endedOn)
-                    <div class="detail-row">
-                        <span class="label">Ended</span>
-                        <span class="value">{{ $endedOn }}</span>
-                    </div>
-                @endif
-            </div>
-
-            <a href="{{ config('app.frontend_url', config('app.url')) }}/plans" class="btn">Renew membership</a>
+            <a href="{{ config('app.frontend_url', config('app.url')) }}/plans" class="btn">Subscribe</a>
         </div>
         <div class="footer">
             &copy; {{ date('Y') }} Fajiri. All rights reserved.

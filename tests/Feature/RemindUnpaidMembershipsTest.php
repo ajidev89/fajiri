@@ -46,72 +46,77 @@ class RemindUnpaidMembershipsTest extends TestCase
         $this->userRole = Role::where('slug', 'user')->first();
     }
 
-    public function test_it_reminds_members_whose_paid_membership_has_lapsed(): void
+    public function test_it_reminds_people_who_have_never_paid_to_subscribe(): void
     {
-        $this->travelTo('2026-09-24 09:00:00');
-
-        $unpaid = $this->createMember('unpaid@example.com');
-        $this->attachPlan($unpaid, $this->createPlan('Bronze', 5000), now()->subDay());
+        $neverPaid = $this->createMember('never-paid@example.com');
 
         $current = $this->createMember('current@example.com');
         $this->attachPlan($current, $this->createPlan('Gold', 25000), now()->addDays(10));
 
+        $lapsed = $this->createMember('lapsed@example.com');
+        $this->attachPlan($lapsed, $this->createPlan('Bronze', 5000), now()->subDay());
+
         $optedOut = $this->createMember('quiet@example.com');
         $optedOut->preference()->update(['membership_status_updates' => false]);
-        $this->attachPlan($optedOut, $this->createPlan('Silver', 10000), now()->subDays(2));
 
         Mail::fake();
         $this->mockFirebase();
 
         $this->artisan('memberships:remind-unpaid')
-            ->expectsOutputToContain('Sent 1 unpaid membership reminder(s).')
+            ->expectsOutputToContain('Sent 1 subscribe reminder(s).')
             ->assertSuccessful();
 
         $this->assertDatabaseHas('notifications', [
-            'user_id' => $unpaid->id,
-            'type' => 'membership_unpaid_reminder',
-            'title' => 'Membership payment due',
+            'user_id' => $neverPaid->id,
+            'type' => 'membership_subscribe_reminder',
+            'title' => 'Subscribe to a membership',
         ]);
         $this->assertDatabaseMissing('notifications', [
             'user_id' => $current->id,
-            'type' => 'membership_unpaid_reminder',
+            'type' => 'membership_subscribe_reminder',
+        ]);
+        $this->assertDatabaseMissing('notifications', [
+            'user_id' => $lapsed->id,
+            'type' => 'membership_subscribe_reminder',
         ]);
         $this->assertDatabaseMissing('notifications', [
             'user_id' => $optedOut->id,
-            'type' => 'membership_unpaid_reminder',
+            'type' => 'membership_subscribe_reminder',
         ]);
 
-        Mail::assertQueued(MembershipUnpaidReminderMail::class, function (MembershipUnpaidReminderMail $mail) use ($unpaid) {
-            return $mail->hasTo($unpaid->email)
-                && $mail->plan->name === 'Bronze';
+        Mail::assertQueued(MembershipUnpaidReminderMail::class, function (MembershipUnpaidReminderMail $mail) use ($neverPaid) {
+            return $mail->hasTo($neverPaid->email);
         });
-        Mail::assertNotQueued(MembershipUnpaidReminderMail::class, function (MembershipUnpaidReminderMail $mail) use ($current) {
-            return $mail->hasTo($current->email);
+        Mail::assertNotQueued(MembershipUnpaidReminderMail::class, function (MembershipUnpaidReminderMail $mail) use ($current, $lapsed) {
+            return $mail->hasTo($current->email) || $mail->hasTo($lapsed->email);
         });
     }
 
-    public function test_it_does_not_repeat_a_reminder_within_three_days(): void
+    public function test_it_repeats_the_subscribe_reminder_weekly(): void
     {
         $this->travelTo('2026-09-24 09:00:00');
 
-        $unpaid = $this->createMember('repeat@example.com');
-        $this->attachPlan($unpaid, $this->createPlan('Bronze', 5000), now()->subDay());
+        $neverPaid = $this->createMember('repeat@example.com');
 
         Mail::fake();
         $firebase = $this->mockFirebase(2);
 
         $this->artisan('memberships:remind-unpaid')->assertSuccessful();
         $this->artisan('memberships:remind-unpaid')
-            ->expectsOutputToContain('Sent 0 unpaid membership reminder(s).')
+            ->expectsOutputToContain('Sent 0 subscribe reminder(s).')
             ->assertSuccessful();
 
-        $this->travel(3)->days();
-
+        $this->travel(6)->days();
         $this->artisan('memberships:remind-unpaid')
-            ->expectsOutputToContain('Sent 1 unpaid membership reminder(s).')
+            ->expectsOutputToContain('Sent 0 subscribe reminder(s).')
             ->assertSuccessful();
 
-        $this->assertSame(2, Notification::query()->where('user_id', $unpaid->id)->count());
+        $this->travel(1)->days();
+        $this->artisan('memberships:remind-unpaid')
+            ->expectsOutputToContain('Sent 1 subscribe reminder(s).')
+            ->assertSuccessful();
+
+        $this->assertSame(2, Notification::query()->where('user_id', $neverPaid->id)->count());
         $firebase->shouldHaveReceived('pushNotificationBatch')->twice();
     }
 
