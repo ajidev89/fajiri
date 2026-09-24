@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\User\AccountType;
 use App\Http\Services\FirebaseNotification;
 use App\Jobs\SendGlobalAnnouncementJob;
+use App\Mail\AnnouncementMail;
 use App\Models\Announcement;
 use App\Models\Country;
 use App\Models\Notification;
@@ -15,6 +16,7 @@ use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Mockery;
 use Tests\TestCase;
 
@@ -55,6 +57,8 @@ class AnnouncementNotificationTest extends TestCase
         $member = $this->createMember('member@example.com', 'fcm-token-123');
         $memberWithoutToken = $this->createMember('notoken@example.com');
 
+        Mail::fake();
+
         $firebase = Mockery::mock(FirebaseNotification::class);
         $firebase->shouldReceive('pushNotificationBatch')->once();
         $this->app->instance(FirebaseNotification::class, $firebase);
@@ -85,6 +89,15 @@ class AnnouncementNotificationTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.0.title', 'Community Update')
             ->assertJsonPath('data.0.type', 'announcement');
+
+        Mail::assertQueued(AnnouncementMail::class, function (AnnouncementMail $mail) use ($member) {
+            return $mail->hasTo($member->email)
+                && $mail->announcement->title === 'Community Update';
+        });
+
+        Mail::assertQueued(AnnouncementMail::class, function (AnnouncementMail $mail) use ($memberWithoutToken) {
+            return $mail->hasTo($memberWithoutToken->email);
+        });
     }
 
     public function test_admin_can_list_announcements(): void
@@ -111,6 +124,8 @@ class AnnouncementNotificationTest extends TestCase
             AccountType::CORPORATE_MEMBERSHIP
         );
 
+        Mail::fake();
+
         $firebase = Mockery::mock(FirebaseNotification::class);
         $firebase->shouldReceive('pushNotificationBatch')->once();
         $this->app->instance(FirebaseNotification::class, $firebase);
@@ -129,6 +144,14 @@ class AnnouncementNotificationTest extends TestCase
         $this->assertFalse(
             Notification::where('user_id', $other->id)->where('type', 'announcement')->exists()
         );
+
+        Mail::assertQueued(AnnouncementMail::class, function (AnnouncementMail $mail) use ($targeted) {
+            return $mail->hasTo($targeted->email);
+        });
+
+        Mail::assertNotQueued(AnnouncementMail::class, function (AnnouncementMail $mail) use ($other) {
+            return $mail->hasTo($other->email);
+        });
     }
 
     protected function createMember(

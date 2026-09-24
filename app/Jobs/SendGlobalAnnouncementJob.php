@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Enums\User\AccountType;
 use App\Http\Services\FirebaseNotification;
+use App\Mail\AnnouncementMail;
 use App\Models\Announcement;
 use App\Models\Notification;
 use App\Models\User;
@@ -15,6 +16,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class SendGlobalAnnouncementJob implements ShouldQueue
@@ -33,9 +35,10 @@ class SendGlobalAnnouncementJob implements ShouldQueue
 
     public function handle(FirebaseNotification $firebase): void
     {
-        $this->targetedUsers()->chunkById(500, function ($users) use ($firebase) {
-            // Always record the in-app notification, even if the device push fails.
+        $this->targetedUsers()->with('profile')->chunkById(500, function ($users) use ($firebase) {
+            // Always record the in-app notification, even if the device push or email fails.
             $this->createInAppNotifications($users);
+            $this->queueAnnouncementEmails($users);
 
             try {
                 $firebase->pushNotificationBatch($users->all(), [
@@ -53,6 +56,24 @@ class SendGlobalAnnouncementJob implements ShouldQueue
                 ]);
             }
         });
+    }
+
+    private function queueAnnouncementEmails(Collection $users): void
+    {
+        foreach ($users as $user) {
+            if (! filled($user->email)) {
+                continue;
+            }
+
+            try {
+                Mail::to($user->email)->queue(new AnnouncementMail($this->announcement, $user));
+            } catch (\Throwable $e) {
+                Log::error('Failed to queue announcement email: '.$e->getMessage(), [
+                    'announcement_id' => $this->announcement->id,
+                    'user_id' => $user->id,
+                ]);
+            }
+        }
     }
 
     private function targetedUsers(): Builder
