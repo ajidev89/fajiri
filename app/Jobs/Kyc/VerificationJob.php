@@ -25,6 +25,6 @@ class VerificationJob implements ShouldQueue
      */
     public function handle(): void
     {
-        Mail::to($this->user->email)->send(new VerificationStatusMail($this->status));
+        Mail::to($this->user->email)->send(new VerificationStatusMail($this->status, $this->user));
     }
 }

@@ -1,29 +1,27 @@
-<x-mail::message>
-<div style="text-align: center; margin-bottom: 20px;">
-    <img src="{{ asset('logo.png') }}" alt="Fajiri Logo" style="max-height: 50px;">
-</div>
+@extends('emails.layout')
 
-# Contribution Renewal Update
+@section('title', 'Contribution Renewal Update')
 
-Hi {{ $user->name ?? 'there' }},
+@section('content')
+    <p>Hi {{ $user->profile->first_name ?? 'there' }},</p>
+    <h1>Contribution renewal</h1>
 
-@if($status === 'attempting')
-We are currently attempting to automatically renew your **{{ $plan->name }}** contribution.
-@elseif($status === 'success')
-Good news! Your **{{ $plan->name }}** contribution has been successfully renewed. Your new expiration date is {{ \Carbon\Carbon::parse($user->plans()->where('plan_id', $plan->id)->wherePivot('status', 'active')->first()->pivot->expires_at)->format('F j, Y') }}.
-@elseif($status === 'failed')
-Unfortunately, we were unable to renew your **{{ $plan->name }}** contribution.
-@if($errorMessage)
-**Reason:** {{ $errorMessage }}
-@endif
+    @if ($status === 'attempting')
+        <p>We are currently attempting to automatically renew your <strong>{{ $plan->name }}</strong> contribution.</p>
+    @elseif ($status === 'success')
+        <p>Good news! Your <strong>{{ $plan->name }}</strong> contribution has been successfully renewed. Your new expiration date is {{ \Carbon\Carbon::parse($user->plans()->where('plan_id', $plan->id)->wherePivot('status', 'active')->first()->pivot->expires_at)->format('F j, Y') }}.</p>
+    @elseif ($status === 'failed')
+        <p>Unfortunately, we were unable to renew your <strong>{{ $plan->name }}</strong> contribution.</p>
+        @if ($errorMessage)
+            <div class="details-box">
+                <div class="detail-row">
+                    <span class="label">Reason</span>
+                    <span class="value">{{ $errorMessage }}</span>
+                </div>
+            </div>
+        @endif
+        <p>Please ensure you have sufficient funds in your wallet to continue enjoying our services.</p>
+    @endif
 
-Please ensure you have sufficient funds in your wallet to continue enjoying our services.
-@endif
-
-<x-mail::button :url="config('app.url') . '/plans'">
-View My Plans
-</x-mail::button>
-
-Thanks,<br>
-{{ config('app.name') }}
-</x-mail::message>
+    <a href="{{ config('app.frontend_url', 'https://app.fajiri.org') }}/plans" class="btn">View my plans</a>
+@endsection

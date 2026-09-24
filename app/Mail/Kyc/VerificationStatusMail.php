@@ -2,9 +2,10 @@
 
 namespace App\Mail\Kyc;
 
+use App\Models\User;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -16,17 +17,17 @@ class VerificationStatusMail extends Mailable
     /**
      * Create a new message instance.
      */
-    public function __construct(public $status)
-    {
-        //
-    }
+    public function __construct(
+        public string $status,
+        public ?User $user = null,
+    ) {}
 
     /**
      * Get the message envelope.
      */
     public function envelope(): Envelope
     {
-        $subject = ($this->status == "resubmission") ? "Your Verification needs {$this->status}" : "Your Verification has been {$this->status}";
+        $subject = ($this->status == 'resubmission') ? "Your Verification needs {$this->status}" : "Your Verification has been {$this->status}";
 
         return new Envelope(
             subject: $subject
@@ -39,15 +40,14 @@ class VerificationStatusMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'mails.verification',
-            with: ["status" => $this->status]
+            view: 'emails.kyc-status',
         );
     }
 
     /**
      * Get the attachments for the message.
      *
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
+     * @return array<int, Attachment>
      */
     public function attachments(): array
     {
