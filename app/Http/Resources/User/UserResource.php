@@ -36,7 +36,7 @@ class UserResource extends JsonResource
             "referrals_count"   => $this->referrals()->count(),
             "total_donations"   => (float) $this->donations()->where('status', 'completed')->sum('amount'),
             "donations_count"   => $this->donations()->where('status', 'completed')->count(),
-            "is_subscribed"     => (bool) true,
+            "is_subscribed"     => (bool) $this->currentPlan() ? true : false,
             'unread_notification' => $this->unreadNotifications()->count(),
             "plan"              => $this->currentPlan() ? new \App\Http\Resources\UserPlanResource($this->currentPlan()) : null,
             "created_at"        => $this->created_at,
