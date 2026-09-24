@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\User;
 use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -176,6 +177,122 @@ class StripeService
         }
 
         return $response->json();
+    }
+
+    public function createCustomer(User $user): string
+    {
+        $customer = $this->ensureClient()->customers->create([
+            'email' => $user->email,
+            'metadata' => [
+                'user_id' => (string) $user->id,
+            ],
+        ]);
+
+        return $customer->id;
+    }
+
+    /**
+     * Start a Stripe Financial Connections session for a US bank account.
+     *
+     * @return array{provider: string, session_id: string, client_secret: string}
+     */
+    public function createFinancialConnectionsSession(string $customerId): array
+    {
+        $session = $this->ensureClient()->financialConnections->sessions->create([
+            'account_holder' => [
+                'type' => 'customer',
+                'customer' => $customerId,
+            ],
+            'permissions' => ['ownership', 'payment_method'],
+            'prefetch' => ['ownership'],
+            'filters' => ['countries' => ['US']],
+        ]);
+
+        return [
+            'provider' => 'stripe',
+            'session_id' => $session->id,
+            'client_secret' => $session->client_secret,
+        ];
+    }
+
+    /**
+     * Read the linked US account and the holder name Stripe collected.
+     *
+     * @return array{account_name: string, bank_name: ?string, last4: ?string, provider: string, financial_connections_account: string}
+     */
+    public function resolveFinancialConnectionsSession(string $sessionId, string $customerId): array
+    {
+        $session = $this->ensureClient()->financialConnections->sessions->retrieve($sessionId);
+        $holderId = $session->account_holder->customer ?? null;
+
+        if ((string) $holderId !== $customerId) {
+            throw new Exception('This bank link does not belong to the current user.');
+        }
+
+        $accounts = $session->accounts->data ?? [];
+        if (count($accounts) === 0) {
+            throw new Exception('No bank account has been linked yet.');
+        }
+
+        $accountId = is_object($accounts[0]) ? $accounts[0]->id : $accounts[0];
+        $account = $this->client->financialConnections->accounts->retrieve($accountId, [
+            'expand' => ['ownership'],
+        ]);
+
+        $owners = $account->ownership->owners->data ?? [];
+        $accountName = $owners[0]->name ?? null;
+
+        if (! $accountName) {
+            throw new Exception('Stripe has not returned the account holder name yet. Try again in a moment.');
+        }
+
+        return [
+            'account_name' => $accountName,
+            'bank_name' => $account->institution_name,
+            'last4' => $account->last4,
+            'provider' => 'stripe',
+            'financial_connections_account' => $account->id,
+        ];
+    }
+
+    /**
+     * Validate a Canadian bank account. Stripe returns the bank name, not the holder name.
+     *
+     * @return array{account_name: null, bank_name: ?string, account_number: string, last4: ?string, routing_number: ?string, provider: string, bank_account_token: string}
+     */
+    public function verifyCanadianBankAccount(string $accountNumber, string $routingNumber): array
+    {
+        $token = $this->ensureClient()->tokens->create([
+            'bank_account' => [
+                'country' => 'CA',
+                'currency' => 'cad',
+                'account_holder_name' => 'Account holder',
+                'account_holder_type' => 'individual',
+                'routing_number' => $routingNumber,
+                'account_number' => $accountNumber,
+            ],
+        ]);
+
+        $bankAccount = $token->bank_account;
+
+        return [
+            'account_name' => null,
+            'bank_name' => $bankAccount->bank_name ?? null,
+            'account_number' => $accountNumber,
+            'last4' => $bankAccount->last4 ?? null,
+            'routing_number' => $bankAccount->routing_number ?? $routingNumber,
+            'provider' => 'stripe',
+            'bank_account_token' => $token->id,
+        ];
+    }
+
+    protected function ensureClient(): StripeClient
+    {
+        if (! $this->client) {
+            throw new Exception('Stripe is not configured');
+        }
+
+        return $this->client;
     }
 
     // Existing methods from placeholder (kept for compatibility if needed elsewhere)

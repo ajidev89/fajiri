@@ -36,6 +36,7 @@ class User extends Authenticatable
         'member_id',
         'username',
         'email',
+        'stripe_customer_id',
         'email_verified_at',
         'phone',
         'phone_verified_at',

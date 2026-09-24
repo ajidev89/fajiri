@@ -275,17 +275,17 @@ class DonationController extends Controller
                 ->whereRaw('LOWER(email) = ?', [strtolower((string) $email)])
                 ->first();
 
-            $targetCurrency = $this->getDonatableCurrency($donatable, $type);
-            $donorCurrency = $this->resolveDonorCurrency($user, $targetCurrency);
+            $campaignCurrency = strtoupper($this->getDonatableCurrency($donatable, $type));
+            $donorCurrency = $this->resolveDonorCurrency($user, $campaignCurrency);
             $name = $this->resolveDonorName($request->name, $user, $email);
 
-            $amount = (float) $request->amount;
-            $rate = $this->currencyService->getExchangeRate($donorCurrency, $targetCurrency);
-            $convertedAmount = round($amount * $rate, 2);
+            $campaignAmount = (float) $request->amount;
+            $rate = $this->currencyService->getExchangeRate($campaignCurrency, $donorCurrency);
+            $chargeAmount = round($campaignAmount * $rate, 2);
 
-            $baseAmountUsd = $donorCurrency === 'USD'
-                ? $amount
-                : round($this->currencyService->convert($amount, $donorCurrency, 'USD'), 2);
+            $baseAmountUsd = $campaignCurrency === 'USD'
+                ? $campaignAmount
+                : round($this->currencyService->convert($campaignAmount, $campaignCurrency, 'USD'), 2);
 
             $referencePrefix = match ($gateway) {
                 Medium::STRIPE->value => 'STR_',
@@ -300,12 +300,12 @@ class DonationController extends Controller
                 'donatable_id' => $donatable->id,
                 'donatable_type' => get_class($donatable),
                 'user_id' => $user?->id,
-                'amount' => $amount,
+                'amount' => $chargeAmount,
                 'currency' => $donorCurrency,
                 'medium' => Medium::from($gateway),
                 'name' => $name,
                 'email' => $email,
-                'converted_amount' => $convertedAmount,
+                'converted_amount' => $campaignAmount,
                 'base_amount_usd' => $baseAmountUsd,
                 'rate' => $rate,
                 'status' => 'pending',
@@ -313,7 +313,7 @@ class DonationController extends Controller
             ]);
 
             $result = $this->paymentGateway->initializeDonation($gateway, [
-                'amount' => $amount,
+                'amount' => $chargeAmount,
                 'currency' => $donorCurrency,
                 'email' => $email,
                 'name' => $name,
@@ -335,12 +335,16 @@ class DonationController extends Controller
         }
     }
 
-    protected function resolveDonorCurrency(?User $user, string $targetCurrency): string
+    protected function resolveDonorCurrency(?User $user, string $campaignCurrency): string
     {
+        if ($user === null) {
+            return $campaignCurrency;
+        }
+
         return strtoupper((string) (
-            $user?->wallet?->currency
-            ?? $user?->country?->currency
-            ?? $targetCurrency
+            $user->wallet?->currency
+            ?? $user->country?->currency
+            ?? $campaignCurrency
         ));
     }
 

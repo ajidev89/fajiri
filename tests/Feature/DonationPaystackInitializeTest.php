@@ -133,6 +133,59 @@ class DonationPaystackInitializeTest extends TestCase
             'email' => $user->email,
             'medium' => 'paystack',
             'status' => 'pending',
+            'currency' => 'NGN',
+            'amount' => 37500,
+            'converted_amount' => 25,
+            'rate' => 1500,
+        ]);
+    }
+
+    public function test_authenticated_donor_is_charged_in_their_currency(): void
+    {
+        $campaign = $this->createCampaign('USD');
+        $user = $this->createMember('donor-ngn@example.com');
+
+        $this->actingAs($user)
+            ->postJson("/v1/donations/campaign/{$campaign->id}/initialize", [
+                'amount' => 40,
+                'gateway' => 'paystack',
+            ])
+            ->assertOk()
+            ->assertJsonPath('status', true);
+
+        $this->assertDatabaseHas('donations', [
+            'donatable_id' => $campaign->id,
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'currency' => 'NGN',
+            'amount' => 60000,
+            'converted_amount' => 40,
+            'rate' => 1500,
+        ]);
+    }
+
+    public function test_email_matched_donor_is_charged_in_their_currency(): void
+    {
+        $campaign = $this->createCampaign('USD');
+        $member = $this->createMember('member-usd@example.com');
+
+        $this->postJson("/v1/donations/campaign/{$campaign->id}/initialize", [
+            'amount' => 15,
+            'email' => 'Member-usd@example.com',
+            'name' => 'Guest Name',
+            'gateway' => 'paystack',
+        ])
+            ->assertOk()
+            ->assertJsonPath('status', true);
+
+        $this->assertDatabaseHas('donations', [
+            'donatable_id' => $campaign->id,
+            'user_id' => $member->id,
+            'email' => 'Member-usd@example.com',
+            'currency' => 'NGN',
+            'amount' => 22500,
+            'converted_amount' => 15,
+            'rate' => 1500,
         ]);
     }
 
