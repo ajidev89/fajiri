@@ -1,9 +1,11 @@
 <?php
 
 use App\Http\Controllers\API\Admin\AdminAnnouncementController;
+use App\Http\Controllers\API\Admin\AdminFaqController;
 use App\Http\Controllers\API\Admin\AdminUserController;
 use App\Http\Controllers\API\Admin\RolePermissionController;
 use App\Http\Controllers\API\AdminDisbursementController;
+use App\Http\Controllers\API\AmbassadorController;
 use App\Http\Controllers\API\AnalyticsController;
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\CampaignController;
@@ -15,6 +17,7 @@ use App\Http\Controllers\API\DisbursementController;
 use App\Http\Controllers\API\DonationController;
 use App\Http\Controllers\API\EventController;
 use App\Http\Controllers\API\FamilyMemberController;
+use App\Http\Controllers\API\FaqController;
 use App\Http\Controllers\API\FundraiserController;
 use App\Http\Controllers\API\InitiativeController;
 use App\Http\Controllers\API\InsuranceController;
@@ -29,6 +32,7 @@ use App\Http\Controllers\API\PollController;
 use App\Http\Controllers\API\PostController;
 use App\Http\Controllers\API\PreferenceController;
 use App\Http\Controllers\API\PublicMemberController;
+use App\Http\Controllers\API\TestimonyController;
 use App\Http\Controllers\API\UserController;
 use App\Http\Controllers\API\UsersController;
 use App\Http\Controllers\API\WebhookController;
@@ -36,6 +40,8 @@ use App\Http\Controllers\API\WithdrawalController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/contact', [ContactController::class, 'submit']);
+Route::get('/faqs/types', [FaqController::class, 'types']);
+Route::get('/faqs', [FaqController::class, 'index']);
 Route::get('/member/{member_id}', [PublicMemberController::class, 'show']);
 Route::controller(AuthController::class)->group(function () {
     Route::group(['prefix' => 'auth'], function () {
@@ -276,6 +282,26 @@ Route::controller(EventController::class)->group(function () {
     });
 });
 
+Route::controller(TestimonyController::class)->group(function () {
+    Route::group(['prefix' => 'testimonies'], function () {
+        Route::get('/', 'index');
+        Route::get('/{slug}', 'show');
+        Route::post('/', 'store')->middleware(['auth:sanctum', 'permission:system_settings']);
+        Route::put('/{id}', 'update')->middleware(['auth:sanctum', 'permission:system_settings']);
+        Route::delete('/{id}', 'destroy')->middleware(['auth:sanctum', 'permission:system_settings']);
+    });
+});
+
+Route::controller(AmbassadorController::class)->group(function () {
+    Route::group(['prefix' => 'ambassadors'], function () {
+        Route::get('/', 'index');
+        Route::get('/{slug}', 'show');
+        Route::post('/', 'store')->middleware(['auth:sanctum', 'permission:system_settings']);
+        Route::put('/{id}', 'update')->middleware(['auth:sanctum', 'permission:system_settings']);
+        Route::delete('/{id}', 'destroy')->middleware(['auth:sanctum', 'permission:system_settings']);
+    });
+});
+
 Route::controller(PartnerController::class)->group(function () {
     Route::group(['prefix' => 'partners'], function () {
         Route::get('/', 'index');
@@ -346,6 +372,11 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth:sanctum']], function (
     Route::post('/announcements', [AdminAnnouncementController::class, 'store']);
 
     Route::group(['middleware' => ['permission:system_settings']], function () {
+        Route::get('/faqs', [AdminFaqController::class, 'index']);
+        Route::post('/faqs', [AdminFaqController::class, 'store']);
+        Route::put('/faqs/{faq}', [AdminFaqController::class, 'update']);
+        Route::delete('/faqs/{faq}', [AdminFaqController::class, 'destroy']);
+
         Route::get('/roles', [RolePermissionController::class, 'indexRoles']);
         Route::post('/roles', [RolePermissionController::class, 'storeRole']);
         Route::get('/roles/{role}', [RolePermissionController::class, 'showRole']);
