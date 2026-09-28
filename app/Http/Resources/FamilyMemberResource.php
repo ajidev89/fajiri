@@ -18,8 +18,8 @@ class FamilyMemberResource extends JsonResource
             'id' => $this->id,
             'user_id' => $this->user_id,
             'added_by' => $this->whenLoaded('user', function () {
-                return $this->user->profile 
-                    ? $this->user->profile->first_name . ' ' . $this->user->profile->last_name 
+                return $this->user->profile
+                    ? $this->user->profile->first_name.' '.$this->user->profile->last_name
                     : $this->user->username;
             }),
             'parent_id' => $this->parent_id,
