@@ -14,6 +14,7 @@ use App\Models\Otp;
 use App\Models\Profile;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\ReferralRewardService;
 use Exception;
 use Google_Client;
 use Illuminate\Auth\Events\PasswordReset;
@@ -80,6 +81,8 @@ class AuthRepository implements AuthRepositoryInterface
             if ($email && $email['value'] === $request->email['value']) {
                 $user->markEmailAsVerified();
             }
+
+            app(ReferralRewardService::class)->recordPending($user);
 
             $user->profile()->create([
                 'first_name' => $request->first_name,

@@ -4,23 +4,33 @@ namespace App\Http\Repository;
 
 use App\Http\Repository\Contracts\PlanRepositoryInterface;
 use App\Http\Traits\AuthUserTrait;
+use App\Mail\SubscriptionSuccessMail;
+use App\Models\Notification;
 use App\Models\Plan;
+use App\Models\User;
+use App\Services\PaymentGateway;
+use App\Services\PaystackService;
+use App\Services\ReferralRewardService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 class PlanRepository implements PlanRepositoryInterface
 {
     use AuthUserTrait;
 
     protected $paymentGateway;
+
     protected $paystackService;
 
     public function __construct(
-        \App\Services\PaymentGateway $paymentGateway,
-        \App\Services\PaystackService $paystackService
+        PaymentGateway $paymentGateway,
+        PaystackService $paystackService
     ) {
         $this->paymentGateway = $paymentGateway;
         $this->paystackService = $paystackService;
     }
+
     public function all(array $filters = [])
     {
         $user = $this->user();
@@ -33,23 +43,23 @@ class PlanRepository implements PlanRepositoryInterface
             $query->where('status', true);
         }
 
-        if (!empty($filters['account_type'])) {
+        if (! empty($filters['account_type'])) {
             $query->where('account_type', $filters['account_type']);
         }
 
-        if (!empty($filters['sub_account_type'])) {
+        if (! empty($filters['sub_account_type'])) {
             $query->where('sub_account_type', $filters['sub_account_type']);
         }
 
-        if (!empty($filters['currency'])) {
+        if (! empty($filters['currency'])) {
             $query->where('currency', $filters['currency']);
         }
 
-        if (!empty($filters['level'])) {
+        if (! empty($filters['level'])) {
             $query->where('level', $filters['level']);
         }
 
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $term = $filters['search'];
             $query->where(function ($q) use ($term) {
                 $q->where('name', 'like', "%{$term}%")
@@ -64,7 +74,7 @@ class PlanRepository implements PlanRepositoryInterface
             ? strtolower((string) ($filters['sort_order'] ?? 'desc'))
             : 'desc';
 
-        if (!empty($filters['page'])) {
+        if (! empty($filters['page'])) {
             return $query->orderBy($sortBy, $sortOrder)->paginate($filters['per_page'] ?? 15);
         }
 
@@ -74,31 +84,32 @@ class PlanRepository implements PlanRepositoryInterface
     public function findById($id)
     {
         $plan = Plan::findOrFail($id);
-        
-        if (!$plan->stripe_price_id || !$plan->paystack_plan_code) {
+
+        if (! $plan->stripe_price_id || ! $plan->paystack_plan_code) {
             $this->syncWithGateways($plan);
             $plan->refresh();
         }
-        
+
         return $plan;
     }
 
     public function store(array $data)
     {
-        $data['slug'] = \Illuminate\Support\Str::slug($data['name']);
+        $data['slug'] = Str::slug($data['name']);
         $plan = Plan::create($data);
-        
+
         $this->syncWithGateways($plan);
 
         return $plan;
     }
+
     public function syncWithGateways(Plan $plan)
     {
         try {
-            
+
             // 1. Sync with Paystack (for NGN)
             // Paystack requires the plan amount to be at least 100 NGN (10000 kobo)
-            if (!$plan->paystack_plan_code) {
+            if (! $plan->paystack_plan_code) {
                 $paystackAmount = $plan->price;
                 if (strtoupper($plan->currency ?? 'NGN') !== 'NGN') {
                     $paystackAmount = $this->paymentGateway->getCurrencyService()->convert(
@@ -113,9 +124,9 @@ class PlanRepository implements PlanRepositoryInterface
                         'name' => $plan->name,
                         'interval' => $this->mapDurationToInterval($plan->duration),
                         'amount' => (int) round($paystackAmount * 100), // Paystack amount is in kobo
-                        'currency' => 'NGN'
+                        'currency' => 'NGN',
                     ]);
-                    
+
                     if ($paystackPlan) {
                         $plan->paystack_plan_code = $paystackPlan['plan_code'];
                     }
@@ -123,10 +134,10 @@ class PlanRepository implements PlanRepositoryInterface
             }
 
             // 2. Sync with Stripe (for non-NGN)
-            if (!$plan->stripe_price_id && $plan->price > 0) {
-                if (!$plan->stripe_product_id) {
+            if (! $plan->stripe_price_id && $plan->price > 0) {
+                if (! $plan->stripe_product_id) {
                     // Ensure a name is always sent to Stripe. If the local plan name is missing, use a placeholder.
-                    $productName = $plan->name ?: 'Plan ' . $plan->id;
+                    $productName = $plan->name ?: 'Plan '.$plan->id;
                     $stripeProduct = $this->paymentGateway->getStripeService()->createProduct([
                         'name' => $productName,
                         'description' => $plan->description ?: '',
@@ -142,7 +153,7 @@ class PlanRepository implements PlanRepositoryInterface
                 // Convert price to USD for Stripe if it's in NGN or other local currency
                 $stripeCurrency = 'USD';
                 $stripeAmount = $plan->price;
-                
+
                 if (strtoupper($plan->currency ?? 'NGN') !== 'USD') {
                     $stripeAmount = $this->paymentGateway->getCurrencyService()->convert(
                         (float) $plan->price,
@@ -171,30 +182,45 @@ class PlanRepository implements PlanRepositoryInterface
 
             $plan->save();
         } catch (\Exception $e) {
-            \Log::error('Gateway Sync Error: ' . $e->getMessage());
+            \Log::error('Gateway Sync Error: '.$e->getMessage());
             throw $e;
         }
     }
 
     protected function mapDurationToInterval($days)
     {
-        if ($days >= 365) return 'annually';
-        if ($days >= 30) return 'monthly';
-        if ($days >= 7) return 'weekly';
+        if ($days >= 365) {
+            return 'annually';
+        }
+        if ($days >= 30) {
+            return 'monthly';
+        }
+        if ($days >= 7) {
+            return 'weekly';
+        }
+
         return 'daily';
     }
 
     protected function mapDurationToStripeInterval($days)
     {
-        if ($days >= 365) return 'year';
-        if ($days >= 30) return 'month';
-        if ($days >= 7) return 'week';
+        if ($days >= 365) {
+            return 'year';
+        }
+        if ($days >= 30) {
+            return 'month';
+        }
+        if ($days >= 7) {
+            return 'week';
+        }
+
         return 'day';
     }
 
     public function initializeSubscription($user, $planId, array $options = [])
     {
         $plan = $this->findById($planId);
+
         return $this->paymentGateway->initializeSubscription($user, $plan, $options);
     }
 
@@ -202,7 +228,7 @@ class PlanRepository implements PlanRepositoryInterface
     {
         $plan = $this->findById($id);
         $plan->update($data);
-        
+
         $this->syncWithGateways($plan);
 
         return $plan;
@@ -223,13 +249,13 @@ class PlanRepository implements PlanRepositoryInterface
     {
         return DB::transaction(function () use ($user, $planId, $duration, $autoRenew) {
             $plan = Plan::findOrFail($planId);
-            
+
             // Handle Payment if plan is not free
             if ($plan->price > 0) {
                 $wallet = $user->wallet()->lockForUpdate()->firstOrCreate(['user_id' => $user->id]);
-                
+
                 if ($wallet->balance < $plan->price) {
-                    throw new \Exception("Insufficient wallet balance to subscribe to this plan.");
+                    throw new \Exception('Insufficient wallet balance to subscribe to this plan.');
                 }
 
                 $wallet->decrement('balance', $plan->price);
@@ -239,7 +265,7 @@ class PlanRepository implements PlanRepositoryInterface
                     'amount' => $plan->price,
                     'type' => 'withdrawal',
                     'description' => "Subscription to {$plan->name} plan",
-                    'reference' => 'SUB_' . str($plan->name)->slug() . '_' . uniqid(),
+                    'reference' => 'SUB_'.str($plan->name)->slug().'_'.uniqid(),
                     'status' => 'completed',
                 ]);
             }
@@ -254,7 +280,7 @@ class PlanRepository implements PlanRepositoryInterface
             $expiresAt = $duration ? $startedAt->copy()->addDays($duration) : $startedAt->copy()->addDays($plan->duration);
 
             $user->plans()->attach($plan->id, [
-                'id' => \Illuminate\Support\Str::uuid(),
+                'id' => Str::uuid(),
                 'started_at' => $startedAt,
                 'expires_at' => $expiresAt,
                 'status' => 'active',
@@ -262,7 +288,7 @@ class PlanRepository implements PlanRepositoryInterface
             ]);
 
             // Create notification
-            \App\Models\Notification::create([
+            Notification::create([
                 'user_id' => $user->id,
                 'title' => 'Plan Subscribed',
                 'message' => "You have successfully subscribed to the '{$plan->name}' plan.",
@@ -271,15 +297,17 @@ class PlanRepository implements PlanRepositoryInterface
                     'plan_id' => $plan->id,
                     'plan_name' => $plan->name,
                     'amount' => $plan->price,
-                    'currency' => $plan->currency
-                ]
+                    'currency' => $plan->currency,
+                ],
             ]);
+
+            app(ReferralRewardService::class)->releaseIfEligible($user);
 
             // Send Email
             try {
-                \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\SubscriptionSuccessMail($user, $plan, $plan->price, $plan->currency));
+                Mail::to($user->email)->send(new SubscriptionSuccessMail($user, $plan, $plan->price, $plan->currency));
             } catch (\Exception $e) {
-                \Log::error('Failed to send subscription email: ' . $e->getMessage());
+                \Log::error('Failed to send subscription email: '.$e->getMessage());
             }
 
             return $user->currentPlan();
@@ -290,18 +318,18 @@ class PlanRepository implements PlanRepositoryInterface
     {
         return DB::transaction(function () use ($userPlanId) {
             $userPlanPivot = DB::table('user_plans')->where('id', $userPlanId)->first();
-            
-            if (!$userPlanPivot) {
-                throw new \Exception("User plan not found.");
+
+            if (! $userPlanPivot) {
+                throw new \Exception('User plan not found.');
             }
 
-            $user = \App\Models\User::find($userPlanPivot->user_id);
+            $user = User::find($userPlanPivot->user_id);
             $plan = Plan::find($userPlanPivot->plan_id);
 
             // Handle Payment if plan is not free
             if ($plan->price > 0) {
                 $wallet = $user->wallet()->lockForUpdate()->firstOrCreate(['user_id' => $user->id]);
-                
+
                 if ($wallet->balance < $plan->price) {
                     throw new \Exception("Insufficient wallet balance to renew {$plan->name} plan.");
                 }
@@ -313,7 +341,7 @@ class PlanRepository implements PlanRepositoryInterface
                     'amount' => $plan->price,
                     'type' => 'withdrawal',
                     'description' => "Renewal of {$plan->name} plan",
-                    'reference' => 'RENEW_' . str($plan->name)->slug() . '_' . uniqid(),
+                    'reference' => 'RENEW_'.str($plan->name)->slug().'_'.uniqid(),
                     'status' => 'completed',
                 ]);
             }
@@ -326,7 +354,7 @@ class PlanRepository implements PlanRepositoryInterface
             $expiresAt = $startedAt->copy()->addDays($plan->duration);
 
             $user->plans()->attach($plan->id, [
-                'id' => \Illuminate\Support\Str::uuid(),
+                'id' => Str::uuid(),
                 'started_at' => $startedAt,
                 'expires_at' => $expiresAt,
                 'status' => 'active',
@@ -334,7 +362,7 @@ class PlanRepository implements PlanRepositoryInterface
             ]);
 
             // Create notification
-            \App\Models\Notification::create([
+            Notification::create([
                 'user_id' => $user->id,
                 'title' => 'Plan Renewed',
                 'message' => "Your subscription to the '{$plan->name}' plan has been successfully renewed.",
@@ -343,15 +371,15 @@ class PlanRepository implements PlanRepositoryInterface
                     'plan_id' => $plan->id,
                     'plan_name' => $plan->name,
                     'amount' => $plan->price,
-                    'currency' => $plan->currency
-                ]
+                    'currency' => $plan->currency,
+                ],
             ]);
 
             // Send Email
             try {
-                \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\SubscriptionSuccessMail($user, $plan, $plan->price, $plan->currency));
+                Mail::to($user->email)->send(new SubscriptionSuccessMail($user, $plan, $plan->price, $plan->currency));
             } catch (\Exception $e) {
-                \Log::error('Failed to send subscription renewal email: ' . $e->getMessage());
+                \Log::error('Failed to send subscription renewal email: '.$e->getMessage());
             }
 
             return $user->currentPlan();
@@ -364,6 +392,7 @@ class PlanRepository implements PlanRepositoryInterface
         foreach ($plans as $plan) {
             $this->syncWithGateways($plan);
         }
+
         return $plans;
     }
 }

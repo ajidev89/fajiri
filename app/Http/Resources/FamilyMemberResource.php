@@ -32,8 +32,6 @@ class FamilyMemberResource extends JsonResource
             'is_alive' => (bool) $this->is_alive,
             'death_date' => $this->death_date?->format('Y-m-d'),
             'note' => $this->note,
-            'children' => FamilyMemberResource::collection($this->whenLoaded('children')),
-            'parent' => new FamilyMemberResource($this->whenLoaded('parent')),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

@@ -13,7 +13,6 @@ class FamilyMemberRepository implements FamilyMemberRepositoryInterface
     public function all($userId)
     {
         return $this->familyMember->where('user_id', $userId)
-            ->with(['children', 'parent'])
             ->latest()
             ->get();
     }
