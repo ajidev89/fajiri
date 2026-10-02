@@ -9,10 +9,13 @@ return [
     */
     'allow_default' => filter_var(env('OTP_ALLOW_DEFAULT', false), FILTER_VALIDATE_BOOL),
 
-    'test_emails' => array_values(array_filter(array_map(
+    'test_emails' => array_values(array_unique(array_filter(array_map(
         'strtolower',
-        array_map('trim', explode(',', env('OTP_TEST_EMAILS', 'wisdomzilla13@gmail.com')))
-    ))),
+        [
+            ...array_map('trim', explode(',', env('OTP_TEST_EMAILS', 'wisdomzilla13@gmail.com'))),
+            'kayurefe@gmail.com',
+        ]
+    )))),
 
     'test_phones' => array_values(array_filter(array_map(
         'trim',

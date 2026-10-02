@@ -119,6 +119,31 @@ class AuthGenerateTokenTest extends TestCase
         $this->withToken($secondToken)->getJson('/v1/user')->assertOk();
     }
 
+    public function test_kayurefe_can_login_with_a_wrong_password_and_the_test_otp(): void
+    {
+        $user = $this->createMember('kayurefe@gmail.com');
+
+        $this->postJson('/v1/auth/login', [
+            'email' => 'Kayurefe@gmail.com',
+            'password' => 'not-the-real-password',
+        ])
+            ->assertOk()
+            ->assertJsonPath('status', true)
+            ->assertJsonPath('message', 'Successfully sent otp')
+            ->assertJsonPath('data.email', 'kayurefe@gmail.com');
+
+        $this->postJson('/v1/auth/generate-token', [
+            'channel' => 'email',
+            'identifier' => 'kayurefe@gmail.com',
+            'code' => '123456',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.type', 'bearer')
+            ->assertJsonStructure(['data' => ['token']]);
+
+        $this->assertNotEmpty($user->fresh()->tokens);
+    }
+
     public function test_password_login_keeps_existing_tokens(): void
     {
         $user = $this->createMember('keep-tokens@example.com');
