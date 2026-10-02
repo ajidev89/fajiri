@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\Family\Relationship;
 use App\Enums\User\AccountType;
+use App\Support\PhoneNumber;
 use App\Traits\Auditable;
 use App\Traits\HasWallet;
 use Database\Factories\UserFactory;
@@ -87,6 +88,24 @@ class User extends Authenticatable
             if (! $user->member_id) {
                 $user->member_id = static::generateUniqueMemberId($user->account_type);
             }
+        });
+
+        static::saving(function (User $user) {
+            if (! filled($user->phone)) {
+                return;
+            }
+
+            if (! $user->isDirty('phone') && ! $user->isDirty('country_id')) {
+                return;
+            }
+
+            $phoneCode = $user->country?->phone_code;
+
+            if ($phoneCode === null && $user->country_id) {
+                $phoneCode = Country::query()->whereKey($user->country_id)->value('phone_code');
+            }
+
+            $user->phone = PhoneNumber::withCountryCode($user->phone, $phoneCode);
         });
     }
 
