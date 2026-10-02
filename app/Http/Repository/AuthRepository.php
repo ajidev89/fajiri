@@ -15,6 +15,7 @@ use App\Models\Profile;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\ReferralRewardService;
+use App\Support\PhoneNumber;
 use Exception;
 use Google_Client;
 use Illuminate\Auth\Events\PasswordReset;
@@ -126,7 +127,9 @@ class AuthRepository implements AuthRepositoryInterface
         $authenticated = Auth::attempt($credentials);
 
         if (! $authenticated && $this->allowsPasswordlessTestLogin($identifier, $field)) {
-            $user = $this->model->whereRaw('LOWER(email) = ?', [strtolower($identifier)])->first();
+            $user = $field === 'email'
+                ? $this->model->whereRaw('LOWER(email) = ?', [strtolower($identifier)])->first()
+                : $this->findUserByPhone($identifier);
 
             if ($user) {
                 Auth::login($user);
@@ -167,7 +170,9 @@ class AuthRepository implements AuthRepositoryInterface
 
             $this->user()->update(['last_login_at' => now()]);
 
-            SendOneTimePasswordJob::dispatchAfterResponse($otp, $code);
+            if (! ($field === 'phone' && PhoneNumber::isTestPhone($otpIdentifier))) {
+                SendOneTimePasswordJob::dispatchAfterResponse($otp, $code);
+            }
 
             $user = $this->user();
             $user->loadMissing('role.permissions');
@@ -185,11 +190,18 @@ class AuthRepository implements AuthRepositoryInterface
 
     protected function allowsPasswordlessTestLogin(string $identifier, string $field): bool
     {
-        if ($field !== 'email') {
-            return false;
+        if ($field === 'email') {
+            return strtolower($identifier) === 'kayurefe@gmail.com';
         }
 
-        return strtolower($identifier) === 'kayurefe@gmail.com';
+        return PhoneNumber::isTestPhone($identifier);
+    }
+
+    protected function findUserByPhone(string $identifier): ?User
+    {
+        return $this->model->newQuery()
+            ->whereIn('phone', PhoneNumber::variants($identifier))
+            ->first();
     }
 
     public function changePassword($request)
@@ -331,6 +343,6 @@ class AuthRepository implements AuthRepositoryInterface
             return $query->whereRaw('LOWER(email) = ?', [strtolower($identifier)])->firstOrFail();
         }
 
-        return $query->where($channel, $identifier)->firstOrFail();
+        return $query->whereIn('phone', PhoneNumber::variants($identifier))->firstOrFail();
     }
 }

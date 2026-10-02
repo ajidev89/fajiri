@@ -6,6 +6,7 @@ use App\Enums\Otp\Channel;
 use App\Http\Requests\ApiRequest;
 use App\Http\Services\TwilioService;
 use App\Models\Otp;
+use App\Support\PhoneNumber;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
@@ -51,15 +52,13 @@ class VerifyRequest extends ApiRequest
             return;
         }
 
-        $testPhones = config('otp.test_phones', []);
-
-        if ($channel === Channel::PHONE->value && ! in_array($identifier, $testPhones, true)) {
+        if ($channel === Channel::PHONE->value && ! PhoneNumber::isTestPhone($identifier)) {
             TwilioService::verifySms($code, $identifier);
 
             return;
         }
 
-        if ($channel === Channel::PHONE->value && in_array($identifier, $testPhones, true)) {
+        if ($channel === Channel::PHONE->value && PhoneNumber::isTestPhone($identifier)) {
             return;
         }
 
@@ -110,6 +109,6 @@ class VerifyRequest extends ApiRequest
             return in_array(strtolower($identifier), config('otp.test_emails', []), true);
         }
 
-        return in_array($identifier, config('otp.test_phones', []), true);
+        return PhoneNumber::isTestPhone($identifier);
     }
 }

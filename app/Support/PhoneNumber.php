@@ -40,4 +40,32 @@ class PhoneNumber
 
         return '+'.$codeDigits.$national;
     }
+
+    public static function isTestPhone(string $phone): bool
+    {
+        $candidates = self::variants($phone);
+
+        foreach (config('otp.test_phones', []) as $testPhone) {
+            if (array_intersect($candidates, self::variants((string) $testPhone)) !== []) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function variants(string $phone): array
+    {
+        $trimmed = trim($phone);
+        $digits = ltrim(preg_replace('/\D+/', '', $trimmed) ?? '', '0');
+
+        return array_values(array_unique(array_filter([
+            $trimmed,
+            $digits !== '' ? $digits : null,
+            $digits !== '' ? '+'.$digits : null,
+        ])));
+    }
 }

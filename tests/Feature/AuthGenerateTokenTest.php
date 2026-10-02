@@ -144,6 +144,34 @@ class AuthGenerateTokenTest extends TestCase
         $this->assertNotEmpty($user->fresh()->tokens);
     }
 
+    public function test_test_phone_can_login_with_a_wrong_password_and_the_test_otp(): void
+    {
+        config(['otp.test_phones' => ['+2349063328998']]);
+
+        $user = $this->createMember('phone-test@example.com');
+        $user->update(['phone' => '+2349063328998']);
+
+        $this->postJson('/v1/auth/login', [
+            'phone' => '2349063328998',
+            'password' => 'not-the-real-password',
+        ])
+            ->assertOk()
+            ->assertJsonPath('status', true)
+            ->assertJsonPath('message', 'Successfully sent otp')
+            ->assertJsonPath('data.phone', '+2349063328998');
+
+        $this->postJson('/v1/auth/generate-token', [
+            'channel' => 'phone',
+            'identifier' => '2349063328998',
+            'code' => '123456',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.type', 'bearer')
+            ->assertJsonStructure(['data' => ['token']]);
+
+        $this->assertNotEmpty($user->fresh()->tokens);
+    }
+
     public function test_password_login_keeps_existing_tokens(): void
     {
         $user = $this->createMember('keep-tokens@example.com');
