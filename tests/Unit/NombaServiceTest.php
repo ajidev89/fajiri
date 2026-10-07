@@ -79,4 +79,28 @@ class NombaServiceTest extends TestCase
         $this->assertSame('https://checkout.nomba.com/sandbox/abc', $result['checkoutLink']);
         $this->assertSame('NMB_ref', $result['orderReference']);
     }
+
+    public function test_it_reports_nomba_error_description_when_the_ip_is_rejected(): void
+    {
+        Cache::flush();
+
+        config([
+            'nomba.mode' => 'live',
+            'nomba.baseUrl' => 'https://api.nomba.com',
+            'nomba.clientId' => 'live-client',
+            'nomba.clientSecret' => 'live-secret',
+            'nomba.accountId' => 'acc-123',
+        ]);
+
+        Http::fake([
+            'https://api.nomba.com/v1/auth/token/issue' => Http::response([
+                'code' => '403',
+                'description' => 'IP address not whitelisted',
+            ], 403),
+        ]);
+
+        $this->expectExceptionMessage('Nomba authentication failed (403): IP address not whitelisted');
+
+        app(NombaService::class)->getAccessToken();
+    }
 }

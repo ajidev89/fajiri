@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use Exception;
+use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
@@ -34,9 +36,10 @@ class NombaService
      */
     public function getAccessToken(): string
     {
-        return Cache::remember('nomba:access_token:'.$this->mode, now()->addMinutes(25), function () {
-            $response = Http::withHeaders($this->headers())
-                ->acceptJson()
+        $this->assertConfigured();
+
+        return Cache::remember('nomba:access_token:'.$this->mode.':'.$this->accountId, now()->addMinutes(25), function () {
+            $response = $this->request()
                 ->asJson()
                 ->post("{$this->baseUrl}/v1/auth/token/issue", [
                     'grant_type' => 'client_credentials',
@@ -44,17 +47,8 @@ class NombaService
                     'client_secret' => $this->clientSecret,
                 ]);
 
-            if ($response->failed()) {
-                Log::error('Nomba auth failed', [
-                    'url' => "{$this->baseUrl}/v1/auth/token/issue",
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                ]);
-
-                throw new Exception('Nomba authentication failed: '.$response->body());
-            }
-
-            $token = $response->json('data.access_token');
+            $body = $this->decoded($response, 'authentication');
+            $token = $body['data']['access_token'] ?? null;
 
             if (! $token) {
                 throw new Exception('Nomba authentication failed: access token missing from response');
@@ -81,18 +75,12 @@ class NombaService
             ],
         ];
 
-        $response = Http::withToken($token)
-            ->withHeaders($this->headers())
-            ->acceptJson()
+        $response = $this->request()
+            ->withToken($token)
             ->asJson()
             ->post($this->checkoutUrl('/order'), $payload);
 
-        if ($response->failed()) {
-            Log::error('Nomba checkout order failed', ['body' => $response->body()]);
-            throw new Exception('Nomba order creation failed: '.$response->body());
-        }
-
-        return $response->json('data') ?? [];
+        return $this->decoded($response, 'order creation')['data'] ?? [];
     }
 
     /**
@@ -102,17 +90,11 @@ class NombaService
     {
         $token = $this->getAccessToken();
 
-        $response = Http::withToken($token)
-            ->withHeaders($this->headers())
-            ->acceptJson()
+        $response = $this->request()
+            ->withToken($token)
             ->get($this->checkoutUrl('/order/reference/'.$reference));
 
-        if ($response->failed()) {
-            Log::error('Nomba verify failed', ['body' => $response->body()]);
-            throw new Exception('Nomba verification failed: '.$response->body());
-        }
-
-        return $response->json('data') ?? [];
+        return $this->decoded($response, 'verification')['data'] ?? [];
     }
 
     /**
@@ -127,6 +109,51 @@ class NombaService
         $computedSignature = hash_hmac('sha256', $payload, $this->clientSecret);
 
         return hash_equals($computedSignature, $signature);
+    }
+
+    protected function assertConfigured(): void
+    {
+        if (! filled($this->clientId) || ! filled($this->clientSecret) || ! filled($this->accountId)) {
+            throw new Exception('Nomba is not configured. Set NOMBA_CLIENT_ID, NOMBA_CLIENT_SECRET, and NOMBA_ACCOUNT_ID. NOMBA_ACCOUNT_ID must be the parent account id, and NOMBA_MODE=live only works with live keys on https://api.nomba.com.');
+        }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function decoded(Response $response, string $action): array
+    {
+        $body = $response->json() ?? [];
+        $code = (string) ($body['code'] ?? '');
+        $description = (string) ($body['description'] ?? $response->body());
+
+        if ($response->failed() || $code !== '00') {
+            Log::error('Nomba '.$action.' failed', [
+                'url' => $this->baseUrl,
+                'mode' => $this->mode,
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            throw new Exception("Nomba {$action} failed ({$response->status()}): {$description}");
+        }
+
+        return $body;
+    }
+
+    protected function request(): PendingRequest
+    {
+        $options = [];
+
+        if (defined('CURLOPT_IPRESOLVE') && defined('CURL_IPRESOLVE_V4')) {
+            $options['curl'] = [
+                CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
+            ];
+        }
+
+        return Http::withOptions($options)
+            ->withHeaders($this->headers())
+            ->acceptJson();
     }
 
     /**
