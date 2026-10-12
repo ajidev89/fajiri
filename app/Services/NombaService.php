@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class NombaService
 {
@@ -65,14 +66,22 @@ class NombaService
     {
         $token = $this->getAccessToken();
 
+        $order = [
+            'orderReference' => $this->orderReference($data['reference'] ?? null),
+            'amount' => number_format((float) $data['amount'], 2, '.', ''),
+            'currency' => strtoupper($data['currency'] ?? 'NGN'),
+            'callbackUrl' => $data['callback_url'] ?? config('app.url').'/payments/verify/nomba',
+            'customerEmail' => $data['email'],
+        ];
+
+        $metadata = $this->orderMetadata($data['metadata'] ?? []);
+
+        if ($metadata !== []) {
+            $order['orderMetaData'] = $metadata;
+        }
+
         $payload = [
-            'order' => [
-                'orderReference' => $data['reference'] ?? 'nomba_'.uniqid().'_'.time(),
-                'amount' => number_format((float) $data['amount'], 2, '.', ''),
-                'currency' => strtoupper($data['currency'] ?? 'NGN'),
-                'callbackUrl' => $data['callback_url'] ?? config('app.url').'/payments/verify/nomba',
-                'customerEmail' => $data['email'],
-            ],
+            'order' => $order,
         ];
 
         $response = $this->request()
@@ -164,6 +173,34 @@ class NombaService
         return array_filter([
             'accountId' => $this->accountId,
         ]);
+    }
+
+    protected function orderReference(?string $reference): string
+    {
+        if ($reference !== null && strlen($reference) <= 50) {
+            return $reference;
+        }
+
+        return 'nomba_'.Str::lower((string) Str::ulid());
+    }
+
+    /**
+     * @param  array<string, mixed>  $metadata
+     * @return array<string, string>
+     */
+    protected function orderMetadata(array $metadata): array
+    {
+        $clean = [];
+
+        foreach ($metadata as $key => $value) {
+            if ($value === null || $value === '') {
+                continue;
+            }
+
+            $clean[(string) $key] = (string) $value;
+        }
+
+        return $clean;
     }
 
     protected function checkoutUrl(string $path): string

@@ -14,6 +14,7 @@ use App\Services\PaystackService;
 use App\Services\StripeService;
 use Exception;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 class PaymentRepository implements PaymentRepositoryInterface
 {
@@ -82,7 +83,11 @@ class PaymentRepository implements PaymentRepositoryInterface
                         'name' => $user->name ?? $user->profile?->first_name,
                         'callback_url' => $data['callback_url'] ?? config('app.url').'/payments/verify/nomba',
                         'description' => 'Wallet Funding',
-                        'reference' => 'nomba_wf_'.$user->id.'_'.time(),
+                        'reference' => 'nwf_'.Str::lower((string) Str::ulid()),
+                        'metadata' => [
+                            'user_id' => (string) $user->id,
+                            'type' => 'wallet_funding',
+                        ],
                     ]);
 
                     return $this->handleSuccessResponse('Nomba checkout created', [

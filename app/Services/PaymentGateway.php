@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Plan;
 use App\Models\User;
 use Exception;
+use Illuminate\Support\Str;
 
 class PaymentGateway
 {
@@ -162,7 +163,12 @@ class PaymentGateway
                     'name' => $user->name ?? $user->profile?->first_name,
                     'callback_url' => $options['success_url'] ?? config('app.url').'/payments/verify/nomba',
                     'description' => "Subscription to {$plan->name} plan",
-                    'reference' => 'nomba_sub_'.$user->id.'_'.$plan->id.'_'.time(),
+                    'reference' => 'nsub_'.Str::lower((string) Str::ulid()),
+                    'metadata' => [
+                        'user_id' => (string) $user->id,
+                        'plan_id' => (string) $plan->id,
+                        'type' => 'subscription',
+                    ],
                 ]);
 
                 return [

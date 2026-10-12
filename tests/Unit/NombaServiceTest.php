@@ -80,6 +80,56 @@ class NombaServiceTest extends TestCase
         $this->assertSame('NMB_ref', $result['orderReference']);
     }
 
+    public function test_it_shortens_order_references_longer_than_fifty_characters(): void
+    {
+        Cache::flush();
+
+        config([
+            'nomba.mode' => 'test',
+            'nomba.baseUrl' => 'https://sandbox.nomba.com',
+            'nomba.clientId' => 'test-client',
+            'nomba.clientSecret' => 'test-secret',
+            'nomba.accountId' => 'acc-123',
+        ]);
+
+        Http::fake([
+            'https://sandbox.nomba.com/v1/auth/token/issue' => Http::response([
+                'code' => '00',
+                'data' => ['access_token' => 'nomba-access-token'],
+            ], 200),
+            'https://sandbox.nomba.com/sandbox/checkout/order' => Http::response([
+                'code' => '00',
+                'data' => [
+                    'checkoutLink' => 'https://checkout.nomba.com/sandbox/abc',
+                    'orderReference' => 'nomba_short',
+                ],
+            ], 200),
+        ]);
+
+        $longReference = 'nomba_sub_019f7a87-1f71-721f-a12e-28c9fdddbace_019f7a87-1f71-721f-a12e-28c9fdddbace_'.time();
+
+        app(NombaService::class)->createCheckoutOrder([
+            'amount' => 5000,
+            'currency' => 'NGN',
+            'email' => 'guest@example.com',
+            'reference' => $longReference,
+            'metadata' => [
+                'user_id' => '019f7a87-1f71-721f-a12e-28c9fdddbace',
+                'plan_id' => '019f7a87-1f71-721f-a12e-28c9fdddbace',
+                'type' => 'subscription',
+            ],
+        ]);
+
+        Http::assertSent(function ($request) {
+            $reference = $request['order']['orderReference'] ?? null;
+
+            return $request->url() === 'https://sandbox.nomba.com/sandbox/checkout/order'
+                && is_string($reference)
+                && strlen($reference) <= 50
+                && $request['order']['orderMetaData']['type'] === 'subscription';
+        });
+    }
+
     public function test_it_reports_nomba_error_description_when_the_ip_is_rejected(): void
     {
         Cache::flush();
