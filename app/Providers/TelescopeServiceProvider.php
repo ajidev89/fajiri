@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Enums\User\Status;
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 use Laravel\Telescope\IncomingEntry;
@@ -50,16 +51,31 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
     }
 
     /**
+     * Require an authorized user in every environment, including local.
+     */
+    protected function authorization()
+    {
+        $this->gate();
+
+        Telescope::auth(function ($request) {
+            $user = $request->user();
+
+            return $user instanceof User && $user->can('viewTelescope');
+        });
+    }
+
+    /**
      * Register the Telescope gate.
      *
-     * This gate determines who can access Telescope in non-local environments.
+     * This gate determines who can access Telescope.
      */
     protected function gate(): void
     {
         Gate::define('viewTelescope', function (User $user) {
-            return in_array($user->email, [
-                //
-            ]);
+            $user->loadMissing('role');
+
+            return $user->status === Status::ACTIVE->value
+                && in_array($user->role?->slug, ['super-admin', 'admin'], true);
         });
     }
 }
