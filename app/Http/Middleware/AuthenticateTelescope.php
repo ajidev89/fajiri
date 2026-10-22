@@ -48,7 +48,7 @@ class AuthenticateTelescope
             return null;
         }
 
-        if (! Auth::guard('web')->attempt([
+        if (! Auth::guard('web')->once([
             'email' => $email,
             'password' => (string) $request->getPassword(),
         ])) {

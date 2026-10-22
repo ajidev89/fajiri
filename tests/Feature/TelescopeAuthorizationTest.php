@@ -10,7 +10,9 @@ use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use ReflectionClass;
 use Tests\TestCase;
 
 class TelescopeAuthorizationTest extends TestCase
@@ -84,6 +86,22 @@ class TelescopeAuthorizationTest extends TestCase
         $this->withBasicAuth($admin->email, 'password')
             ->get('/telescope')
             ->assertOk();
+    }
+
+    public function test_admins_can_load_telescope_requests_without_a_csrf_token(): void
+    {
+        $admin = $this->userForRole('admin');
+
+        $this->get('/up');
+
+        $except = (new ReflectionClass(ValidateCsrfToken::class))->getStaticPropertyValue('neverVerify');
+
+        $this->assertContains('telescope/*', $except);
+
+        $this->withBasicAuth($admin->email, 'password')
+            ->post('/telescope/telescope-api/requests?tag=&before=&take=50&family_hash=')
+            ->assertOk()
+            ->assertJsonStructure(['entries']);
     }
 
     public function test_super_admins_can_open_telescope_with_a_sanctum_token(): void

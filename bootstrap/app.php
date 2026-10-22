@@ -1,5 +1,9 @@
 <?php
 
+use App\Http\Middleware\AdminMiddleware;
+use App\Http\Middleware\CurrencyMiddleware;
+use App\Http\Middleware\PermissionMiddleware;
+use App\Http\Middleware\SuperAdminMiddleware;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -21,71 +25,73 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->redirectGuestsTo(fn () => null);
-        $middleware->append(\App\Http\Middleware\CurrencyMiddleware::class);
+        $middleware->validateCsrfTokens(except: [
+            'telescope/*',
+        ]);
+        $middleware->append(CurrencyMiddleware::class);
         $middleware->alias([
-            'admin' => \App\Http\Middleware\AdminMiddleware::class,
-            'super-admin' => \App\Http\Middleware\SuperAdminMiddleware::class,
-            'permission' => \App\Http\Middleware\PermissionMiddleware::class,
+            'admin' => AdminMiddleware::class,
+            'super-admin' => SuperAdminMiddleware::class,
+            'permission' => PermissionMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(fn ($request, $e) => true);
         $exceptions->render(function (Throwable $exception, $request) {
-                
-                if ($exception instanceof ValidationException) {
-                    return response()->json([
-                        "status" => false, 
-                        'message' => $exception->getMessage(),
-                        'errors' => $exception->errors(),
-                    ], 422);
-                }
 
-                // Model Not Found Exception
-                if ($exception instanceof ModelNotFoundException) {
-                    return response()->json([
-                        'error' => 'Resource not found',
-                        'message' => $exception->getMessage(),
-                    ], 404);
-                }
+            if ($exception instanceof ValidationException) {
+                return response()->json([
+                    'status' => false,
+                    'message' => $exception->getMessage(),
+                    'errors' => $exception->errors(),
+                ], 422);
+            }
 
-                // Authorization Exception
-                if ($exception instanceof AuthorizationException) {
-                    return response()->json([
-                        'error' => 'Unauthorized',
-                        'message' => $exception->getMessage(),
-                    ], 403);
-                }
+            // Model Not Found Exception
+            if ($exception instanceof ModelNotFoundException) {
+                return response()->json([
+                    'error' => 'Resource not found',
+                    'message' => $exception->getMessage(),
+                ], 404);
+            }
 
-                // Authentication Exception
-                if ($exception instanceof AuthenticationException) {
-                    return response()->json([
-                        'error' => 'Unauthenticated',
-                        'message' => "You are not logged in. Please log in to continue.",
-                    ], 401);
-                }
+            // Authorization Exception
+            if ($exception instanceof AuthorizationException) {
+                return response()->json([
+                    'error' => 'Unauthorized',
+                    'message' => $exception->getMessage(),
+                ], 403);
+            }
 
-                // Method Not Allowed Exception
-                if ($exception instanceof MethodNotAllowedHttpException) {
-                    return response()->json([
-                        'error' => 'Method Not Allowed',
-                        'message' => $exception->getMessage(),
-                    ], 405);
-                }
+            // Authentication Exception
+            if ($exception instanceof AuthenticationException) {
+                return response()->json([
+                    'error' => 'Unauthenticated',
+                    'message' => 'You are not logged in. Please log in to continue.',
+                ], 401);
+            }
 
-                // General HTTP Exception
-                if ($exception instanceof HttpException) {
-                    return response()->json(['error' => $exception->getMessage()], $exception->getStatusCode());
-                }
+            // Method Not Allowed Exception
+            if ($exception instanceof MethodNotAllowedHttpException) {
+                return response()->json([
+                    'error' => 'Method Not Allowed',
+                    'message' => $exception->getMessage(),
+                ], 405);
+            }
 
-                // Database Query Exception
-                if ($exception instanceof QueryException) {
-                    return response()->json(['error' => $exception->getMessage()], 500);
-                }
+            // General HTTP Exception
+            if ($exception instanceof HttpException) {
+                return response()->json(['error' => $exception->getMessage()], $exception->getStatusCode());
+            }
 
-                // Log the exception
-                // event_log($exception->getMessage(), 'error', "{$exception->getFile()}:{$exception->getLine()}");
-                return response()->json(['error' => "{$exception->getFile()}:{$exception->getLine()}", 'message' =>  $exception->getMessage()], 500);
+            // Database Query Exception
+            if ($exception instanceof QueryException) {
+                return response()->json(['error' => $exception->getMessage()], 500);
+            }
 
+            // Log the exception
+            // event_log($exception->getMessage(), 'error', "{$exception->getFile()}:{$exception->getLine()}");
+            return response()->json(['error' => "{$exception->getFile()}:{$exception->getLine()}", 'message' => $exception->getMessage()], 500);
 
         });
     })->create();
