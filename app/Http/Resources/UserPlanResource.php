@@ -19,6 +19,8 @@ class UserPlanResource extends JsonResource
             'name' => $this->name,
             'price' => $this->price,
             'currency' => $this->currency,
+            'amount' => $this->pivot->amount,
+            'payment_currency' => $this->pivot->currency,
             'started_at' => $this->pivot->started_at,
             'expires_at' => $this->pivot->expires_at,
             'status' => $this->pivot->status,

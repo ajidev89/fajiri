@@ -2,20 +2,27 @@
 
 namespace App\Jobs\Paystack;
 
+use App\Enums\Attendee\Status;
+use App\Http\Traits\PlanActivationTrait;
+use App\Mail\DepositSuccessMail;
+use App\Mail\SubscriptionSuccessMail;
+use App\Models\Campaign;
 use App\Models\Donation;
+use App\Models\EventAttendee;
+use App\Models\Notification;
 use App\Models\Transaction;
 use App\Models\User;
-use App\Models\Plan;
-use App\Http\Traits\PlanActivationTrait;
+use App\Services\SubscriptionAttemptService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Mail;
 
 class PaystackJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels, PlanActivationTrait;
+    use Dispatchable, InteractsWithQueue, PlanActivationTrait, Queueable, SerializesModels;
 
     /**
      * Create a new job instance.
@@ -28,18 +35,13 @@ class PaystackJob implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(): void
+    public function handle(SubscriptionAttemptService $attempts): void
     {
         $eventType = $this->event['event'] ?? '';
 
         switch ($eventType) {
             case 'charge.success':
-                $this->handleChargeSuccess();
-                break;
-            case 'subscription.create':
-                if (isset($this->event['data']['plan'])) {
-                    $this->handleSubscriptionActive($this->event['data']);
-                }
+                $this->handleChargeSuccess($attempts);
                 break;
             case 'subscription.disable':
                 $this->handleSubscriptionCancelled($this->event['data']);
@@ -47,13 +49,13 @@ class PaystackJob implements ShouldQueue
         }
     }
 
-    protected function handleChargeSuccess()
+    protected function handleChargeSuccess(SubscriptionAttemptService $attempts): void
     {
         $data = $this->event['data'];
-        
-        // If it has a plan, it's likely a subscription payment
-        if (isset($data['plan']) && !empty($data['plan'])) {
-            $this->handleSubscriptionActive($data);
+
+        if (isset($data['plan']) && ! empty($data['plan'])) {
+            $this->confirmSubscriptionCharge($data, $attempts);
+
             return;
         }
 
@@ -69,26 +71,38 @@ class PaystackJob implements ShouldQueue
         }
     }
 
-    protected function handleSubscriptionActive($data)
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    protected function confirmSubscriptionCharge(array $data, SubscriptionAttemptService $attempts): void
     {
-        $userId = $data['metadata']['user_id'] ?? null;
-        $planId = $data['metadata']['plan_id'] ?? null;
-        $subscriptionCode = $data['subscription_code'] ?? null;
+        $reference = $data['reference'] ?? null;
 
-        if ($userId && $planId) {
-            $user = User::find($userId);
-            $plan = Plan::find($planId);
+        if (! is_string($reference) || $reference === '') {
+            return;
+        }
 
-            if ($user && $plan) {
-                $this->activateUserPlan($user, $plan, 'paystack', $subscriptionCode);
+        $confirmed = $attempts->confirm(
+            'paystack',
+            $reference,
+            ((float) ($data['amount'] ?? 0)) / 100,
+            isset($data['currency']) ? (string) $data['currency'] : 'NGN',
+            isset($data['subscription_code']) ? (string) $data['subscription_code'] : null,
+        );
 
-                // Send Email
-                try {
-                    \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\SubscriptionSuccessMail($user, $plan, $plan->price, $plan->currency));
-                } catch (\Exception $e) {
-                    \Log::error('Failed to send paystack subscription email: ' . $e->getMessage());
-                }
-            }
+        if ($confirmed === null) {
+            return;
+        }
+
+        try {
+            Mail::to($confirmed['user']->email)->send(new SubscriptionSuccessMail(
+                $confirmed['user'],
+                $confirmed['plan'],
+                $confirmed['amount'],
+                $confirmed['currency'],
+            ));
+        } catch (\Exception $e) {
+            \Log::error('Failed to send paystack subscription email: '.$e->getMessage());
         }
     }
 
@@ -105,32 +119,32 @@ class PaystackJob implements ShouldQueue
         // Check if already processed to avoid double crediting
         $transactionExists = Transaction::where('reference', $reference)->exists();
 
-        if (!$transactionExists) {
+        if (! $transactionExists) {
             $userId = $data['metadata']['user_id'];
             $amount = $data['amount'] / 100;
 
             $user = User::find($userId);
             if ($user) {
-                $user->deposit($amount, "Wallet funding via Paystack", $reference);
+                $user->deposit($amount, 'Wallet funding via Paystack', $reference);
 
                 // Create notification
-                \App\Models\Notification::create([
+                Notification::create([
                     'user_id' => $user->id,
                     'title' => 'Wallet Funded',
-                    'message' => "Your wallet has been credited with {$user->wallet->currency} " . number_format($amount, 2) . " via Paystack.",
+                    'message' => "Your wallet has been credited with {$user->wallet->currency} ".number_format($amount, 2).' via Paystack.',
                     'type' => 'wallet_funding',
                     'data' => [
                         'amount' => $amount,
                         'reference' => $reference,
-                        'currency' => $user->wallet->currency
-                    ]
+                        'currency' => $user->wallet->currency,
+                    ],
                 ]);
 
                 // Send Email
                 try {
-                    \Illuminate\Support\Facades\Mail::to($user->email)->send(new \App\Mail\DepositSuccessMail($user, $amount, $user->wallet->currency, $reference));
+                    Mail::to($user->email)->send(new DepositSuccessMail($user, $amount, $user->wallet->currency, $reference));
                 } catch (\Exception $e) {
-                    \Log::error('Failed to send paystack deposit email: ' . $e->getMessage());
+                    \Log::error('Failed to send paystack deposit email: '.$e->getMessage());
                 }
             }
         }
@@ -144,22 +158,22 @@ class PaystackJob implements ShouldQueue
 
             // Notify donor if they are a registered user
             if ($donation->user_id) {
-                $title = $donation->donatable_type === \App\Models\Campaign::class 
-                    ? $donation->donatable->title 
+                $title = $donation->donatable_type === Campaign::class
+                    ? $donation->donatable->title
                     : $donation->donatable->name;
-                    
-                \App\Models\Notification::create([
+
+                Notification::create([
                     'user_id' => $donation->user_id,
                     'title' => 'Donation Successful',
-                    'message' => "Your donation of {$donation->currency} " . number_format($donation->amount, 2) . " to '{$title}' was successful.",
+                    'message' => "Your donation of {$donation->currency} ".number_format($donation->amount, 2)." to '{$title}' was successful.",
                     'type' => $type,
                     'data' => [
                         'donation_id' => $donation->id,
                         'donatable_id' => $donation->donatable_id,
                         'donatable_type' => $donation->donatable_type,
                         'amount' => $donation->amount,
-                        'currency' => $donation->currency
-                    ]
+                        'currency' => $donation->currency,
+                    ],
                 ]);
             }
         }
@@ -167,21 +181,21 @@ class PaystackJob implements ShouldQueue
 
     protected function processEventAttendance($data, $reference)
     {
-        $attendee = \App\Models\EventAttendee::where('code', $reference)->first();
-        if ($attendee && $attendee->status === \App\Enums\Attendee\Status::INACTIVE->value) {
-            $attendee->update(['status' => \App\Enums\Attendee\Status::ACTIVE->value]);
-            
+        $attendee = EventAttendee::where('code', $reference)->first();
+        if ($attendee && $attendee->status === Status::INACTIVE->value) {
+            $attendee->update(['status' => Status::ACTIVE->value]);
+
             // Notify user if registered
             if ($attendee->user_id) {
-                \App\Models\Notification::create([
+                Notification::create([
                     'user_id' => $attendee->user_id,
                     'title' => 'Event Registration Successful',
                     'message' => "Your payment for the event '{$attendee->event->title}' was successful. Your code is: {$attendee->code}",
                     'type' => 'event_registration',
                     'data' => [
                         'event_id' => $attendee->event_id,
-                        'attendee_code' => $attendee->code
-                    ]
+                        'attendee_code' => $attendee->code,
+                    ],
                 ]);
             }
         }

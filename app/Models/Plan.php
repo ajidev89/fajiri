@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Enums\User\AccountType;
+use App\Enums\User\SubAccountType;
+use Database\Factories\PlanFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -9,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Plan extends Model
 {
-    /** @use HasFactory<\Database\Factories\PlanFactory> */
+    /** @use HasFactory<PlanFactory> */
     use HasFactory, HasUuids;
 
     protected $fillable = [
@@ -33,14 +36,14 @@ class Plan extends Model
         'features' => 'array',
         'status' => 'boolean',
         'price' => 'decimal:2',
-        'account_type' => \App\Enums\User\AccountType::class,
-        'sub_account_type' => \App\Enums\User\SubAccountType::class,
+        'account_type' => AccountType::class,
+        'sub_account_type' => SubAccountType::class,
     ];
 
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'user_plans')
-            ->withPivot(['id', 'started_at', 'expires_at', 'status'])
+            ->withPivot(['id', 'started_at', 'expires_at', 'status', 'auto_renew', 'amount', 'currency', 'provider'])
             ->withTimestamps();
     }
 

@@ -15,7 +15,8 @@ class PaymentGateway
         protected PayPalService $payPalService,
         protected FlutterwaveService $flutterwaveService,
         protected NombaService $nombaService,
-        protected CurrencyService $currencyService
+        protected CurrencyService $currencyService,
+        protected SubscriptionAttemptService $subscriptionAttempts,
     ) {}
 
     public function getCurrencyService(): CurrencyService
@@ -78,12 +79,23 @@ class PaymentGateway
                     throw new Exception('Stripe price ID not set for this plan.');
                 }
 
-                return $this->stripeService->createCheckoutSession(
+                $session = $this->stripeService->createCheckoutSession(
                     $user,
                     $plan,
                     $options['success_url'] ?? config('app.url').'/payments/verify/stripe',
                     $options['cancel_url'] ?? config('app.url').'/plans'
                 );
+
+                $this->subscriptionAttempts->record(
+                    $user,
+                    $plan,
+                    'stripe',
+                    (string) $session->id,
+                    (float) $plan->price,
+                    (string) ($plan->currency ?? 'USD'),
+                );
+
+                return $session;
 
             case 'paypal':
                 $paypalCurrency = $currency === 'NGN' ? 'USD' : $currency;
@@ -96,20 +108,24 @@ class PaymentGateway
                     );
                 }
 
+                $reference = 'ppal_'.Str::lower((string) Str::ulid());
                 $order = $this->payPalService->createOrder([
                     'amount' => (float) $paypalAmount,
                     'currency' => $paypalCurrency,
                     'description' => "Subscription to {$plan->name} plan",
-                    'reference' => 'sub_'.$plan->id.'_'.$user->id.'_'.time(),
+                    'reference' => $reference,
                     'return_url' => $options['success_url'] ?? config('app.url').'/payments/verify/paypal',
                     'cancel_url' => $options['cancel_url'] ?? config('app.url').'/plans',
                 ]);
+
+                $this->subscriptionAttempts->record($user, $plan, 'paypal', $reference, (float) $paypalAmount, $paypalCurrency);
 
                 $approveUrl = collect($order['links'] ?? [])->firstWhere('rel', 'approve')['href'] ?? null;
 
                 return [
                     'authorization_url' => $approveUrl,
                     'order_id' => $order['id'] ?? null,
+                    'reference' => $reference,
                     'raw' => $order,
                 ];
 
@@ -124,6 +140,7 @@ class PaymentGateway
                     );
                 }
 
+                $reference = 'fsub_'.Str::lower((string) Str::ulid());
                 $result = $this->flutterwaveService->initializeTransaction([
                     'amount' => (float) $flwAmount,
                     'currency' => $currency,
@@ -133,16 +150,27 @@ class PaymentGateway
                     'redirect_url' => $options['success_url'] ?? config('app.url').'/payments/verify/flutterwave',
                     'title' => "Subscription to {$plan->name}",
                     'description' => "Contribution for {$plan->name} plan",
+                    'reference' => $reference,
                     'meta' => [
                         'user_id' => $user->id,
                         'plan_id' => $plan->id,
                         'type' => 'subscription',
+                        'reference' => $reference,
                     ],
                 ]);
 
+                $this->subscriptionAttempts->record(
+                    $user,
+                    $plan,
+                    'flutterwave',
+                    (string) ($result['tx_ref'] ?? $reference),
+                    (float) $flwAmount,
+                    $currency,
+                );
+
                 return [
                     'authorization_url' => $result['link'] ?? null,
-                    'reference' => $result['tx_ref'] ?? null,
+                    'reference' => $result['tx_ref'] ?? $reference,
                     'data' => $result,
                 ];
 
@@ -156,6 +184,7 @@ class PaymentGateway
                     );
                 }
 
+                $reference = 'nsub_'.Str::lower((string) Str::ulid());
                 $result = $this->nombaService->createCheckoutOrder([
                     'amount' => (float) $nombaAmount,
                     'currency' => 'NGN',
@@ -163,7 +192,7 @@ class PaymentGateway
                     'name' => $user->name ?? $user->profile?->first_name,
                     'callback_url' => $options['success_url'] ?? config('app.url').'/payments/verify/nomba',
                     'description' => "Subscription to {$plan->name} plan",
-                    'reference' => 'nsub_'.Str::lower((string) Str::ulid()),
+                    'reference' => $reference,
                     'metadata' => [
                         'user_id' => (string) $user->id,
                         'plan_id' => (string) $plan->id,
@@ -171,9 +200,12 @@ class PaymentGateway
                     ],
                 ]);
 
+                $orderReference = (string) ($result['orderReference'] ?? $reference);
+                $this->subscriptionAttempts->record($user, $plan, 'nomba', $orderReference, (float) $nombaAmount, 'NGN');
+
                 return [
                     'authorization_url' => $result['checkoutLink'] ?? $result['checkoutUrl'] ?? $result['link'] ?? null,
-                    'order_reference' => $result['orderReference'] ?? null,
+                    'order_reference' => $orderReference,
                     'data' => $result,
                 ];
 
@@ -192,17 +224,25 @@ class PaymentGateway
                     );
                 }
 
-                return $this->paystackService->initializeSubscription([
+                $reference = 'psub_'.Str::lower((string) Str::ulid());
+                $chargedAmount = round($paystackAmount, 2);
+                $result = $this->paystackService->initializeSubscription([
                     'email' => $user->email,
-                    'amount' => (int) round($paystackAmount * 100),
+                    'amount' => (int) round($chargedAmount * 100),
                     'plan' => $plan->paystack_plan_code,
+                    'reference' => $reference,
                     'callback_url' => $options['success_url'] ?? config('app.url').'/payments/verify/paystack',
                     'metadata' => [
                         'user_id' => $user->id,
                         'plan_id' => $plan->id,
                         'type' => 'subscription',
+                        'reference' => $reference,
                     ],
                 ]);
+
+                $this->subscriptionAttempts->record($user, $plan, 'paystack', $reference, $chargedAmount, 'NGN');
+
+                return $result;
         }
     }
 

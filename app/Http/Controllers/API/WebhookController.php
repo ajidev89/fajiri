@@ -8,15 +8,14 @@ use App\Jobs\Paystack\PaystackJob;
 use App\Mail\DepositSuccessMail;
 use App\Mail\SubscriptionSuccessMail;
 use App\Models\Notification;
-use App\Models\Plan;
 use App\Models\User;
 use App\Services\FlutterwaveService;
 use App\Services\NombaService;
 use App\Services\PayPalService;
 use App\Services\PaystackService;
 use App\Services\StripeService;
+use App\Services\SubscriptionAttemptService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
@@ -29,7 +28,8 @@ class WebhookController extends Controller
         protected PaystackService $paystackService,
         protected PayPalService $payPalService,
         protected FlutterwaveService $flutterwaveService,
-        protected NombaService $nombaService
+        protected NombaService $nombaService,
+        protected SubscriptionAttemptService $subscriptionAttempts,
     ) {}
 
     public function handleStripe(Request $request)
@@ -87,6 +87,12 @@ class WebhookController extends Controller
             $customId = $resource['purchase_units'][0]['custom_id'] ?? $resource['custom_id'] ?? null;
             $amount = $resource['purchase_units'][0]['amount']['value'] ?? $resource['amount']['value'] ?? 0;
             $currency = $resource['purchase_units'][0]['amount']['currency_code'] ?? $resource['amount']['currency_code'] ?? 'USD';
+
+            if (is_string($customId) && str_starts_with($customId, 'ppal_')) {
+                $this->subscriptionAttempts->confirm('paypal', $customId, $amount, (string) $currency);
+
+                return response()->json(['message' => 'PayPal webhook processed']);
+            }
 
             if ($customId) {
                 $user = User::find($customId);
@@ -152,6 +158,12 @@ class WebhookController extends Controller
                         $currency = strtoupper($txData['currency'] ?? $data['currency'] ?? 'NGN');
                         $reference = $txData['reference'] ?? $txData['tx_ref'] ?? $txRef ?? (string) $transactionId;
 
+                        if (is_string($reference) && str_starts_with($reference, 'fsub_')) {
+                            $this->subscriptionAttempts->confirm('flutterwave', $reference, $amount, $currency);
+
+                            return response()->json(['message' => 'Flutterwave webhook processed']);
+                        }
+
                         if ($email && $amount > 0) {
                             $user = User::where('email', $email)->first();
                             if ($user) {
@@ -201,7 +213,7 @@ class WebhookController extends Controller
             $type = $metadata['type'] ?? $this->nombaReferenceType($reference);
 
             if ($type === 'subscription') {
-                $this->activateNombaSubscription($data, $metadata, $reference);
+                $this->confirmNombaSubscription($data, $reference);
             } else {
                 $this->creditNombaWallet($data, $metadata, $reference);
             }
@@ -247,30 +259,25 @@ class WebhookController extends Controller
      * @param  array<string, mixed>  $data
      * @param  array<string, mixed>  $metadata
      */
-    protected function activateNombaSubscription(array $data, array $metadata, ?string $reference): void
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    protected function confirmNombaSubscription(array $data, ?string $reference): void
     {
-        $user = $this->nombaUser($data, $metadata);
-        $plan = Plan::find($metadata['plan_id'] ?? null);
-
-        if (! $user || ! $plan || ! $reference) {
+        if ($reference === null) {
             Log::error('Nomba subscription webhook could not be matched', [
                 'reference' => $reference,
-                'metadata' => $metadata,
             ]);
 
             return;
         }
 
-        $alreadyActivated = DB::table('user_plans')
-            ->where('provider', 'nomba')
-            ->where('provider_subscription_id', $reference)
-            ->exists();
-
-        if ($alreadyActivated) {
-            return;
-        }
-
-        $this->activateUserPlan($user, $plan, 'nomba', $reference);
+        $this->subscriptionAttempts->confirm(
+            'nomba',
+            $reference,
+            $data['amount'] ?? 0,
+            isset($data['currency']) ? (string) $data['currency'] : null,
+        );
     }
 
     /**
@@ -331,16 +338,12 @@ class WebhookController extends Controller
         $userId = $session['metadata']['user_id'] ?? null;
         $type = $session['metadata']['type'] ?? null;
 
-        if (! $userId) {
-            return;
-        }
-
-        $user = User::find($userId);
-        if (! $user) {
-            return;
-        }
-
         if ($type === 'wallet_funding') {
+            $user = User::find($userId);
+            if (! $user) {
+                return;
+            }
+
             $amount = $session['metadata']['amount'] ?? ($session['amount_total'] / 100);
             $reference = $session['id'];
             $currency = strtoupper($session['metadata']['currency'] ?? $session['currency']);
@@ -365,20 +368,34 @@ class WebhookController extends Controller
                 \Log::error('Failed to send stripe deposit email: '.$e->getMessage());
             }
         } else {
-            $planId = $session['metadata']['plan_id'] ?? null;
+            $reference = $session['id'] ?? null;
             $subscriptionId = $session['subscription'] ?? null;
 
-            if ($planId) {
-                $plan = Plan::find($planId);
-                if ($plan) {
-                    $this->activateUserPlan($user, $plan, 'stripe', $subscriptionId);
+            if (! is_string($reference) || $reference === '') {
+                return;
+            }
 
-                    try {
-                        Mail::to($user->email)->send(new SubscriptionSuccessMail($user, $plan, $plan->price, $plan->currency));
-                    } catch (\Exception $e) {
-                        \Log::error('Failed to send stripe subscription email: '.$e->getMessage());
-                    }
-                }
+            $confirmed = $this->subscriptionAttempts->confirm(
+                'stripe',
+                $reference,
+                ((float) ($session['amount_total'] ?? 0)) / 100,
+                isset($session['currency']) ? (string) $session['currency'] : null,
+                is_string($subscriptionId) ? $subscriptionId : null,
+            );
+
+            if ($confirmed === null) {
+                return;
+            }
+
+            try {
+                Mail::to($confirmed['user']->email)->send(new SubscriptionSuccessMail(
+                    $confirmed['user'],
+                    $confirmed['plan'],
+                    $confirmed['amount'],
+                    $confirmed['currency'],
+                ));
+            } catch (\Exception $e) {
+                \Log::error('Failed to send stripe subscription email: '.$e->getMessage());
             }
         }
     }

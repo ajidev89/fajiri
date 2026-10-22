@@ -306,7 +306,7 @@ class User extends Authenticatable
     public function plans(): BelongsToMany
     {
         return $this->belongsToMany(Plan::class, 'user_plans')
-            ->withPivot(['id', 'started_at', 'expires_at', 'status', 'auto_renew'])
+            ->withPivot(['id', 'started_at', 'expires_at', 'status', 'auto_renew', 'amount', 'currency', 'provider'])
             ->withTimestamps();
     }
 
