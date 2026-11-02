@@ -158,6 +158,10 @@ class AuthRepository implements AuthRepositoryInterface
 
             $otpIdentifier = $user->$field ?? $identifier;
 
+            if (Otp::canIssue($otpIdentifier, $field) !== null) {
+                return $this->handleErrorResponse(Otp::RESEND_BLOCKED, 429);
+            }
+
             $otp = $this->otp->create([
                 'identifier' => $otpIdentifier,
                 'channel' => $field,

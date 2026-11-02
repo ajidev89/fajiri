@@ -4,6 +4,7 @@ namespace App\Http\Requests\Need;
 
 use App\Enums\Need\Urgency;
 use App\Http\Requests\ApiRequest;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Validation\Rule;
 
 class CreateRequest extends ApiRequest
@@ -19,10 +20,10 @@ class CreateRequest extends ApiRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
-    { 
+    {
         $rules = [
             'name' => 'required|string|max:255',
             'description' => 'required|string',
@@ -34,9 +35,9 @@ class CreateRequest extends ApiRequest
         ];
 
         if ($this->isMethod('put') || $this->isMethod('patch')) {
-            $rules['image'] = 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048';
+            $rules['image'] = 'nullable|image|mimes:jpeg,png,jpg,gif|max:10240';
         } else {
-            $rules['image'] = 'required|image|mimes:jpeg,png,jpg,gif|max:2048';
+            $rules['image'] = 'required|image|mimes:jpeg,png,jpg,gif|max:10240';
         }
 
         return $rules;

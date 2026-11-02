@@ -45,7 +45,7 @@ Route::get('/faqs', [FaqController::class, 'index']);
 Route::get('/member/{member_id}', [PublicMemberController::class, 'show']);
 Route::controller(AuthController::class)->group(function () {
     Route::group(['prefix' => 'auth'], function () {
-        Route::post('/login', 'login');
+        Route::post('/login', 'login')->middleware('throttle:login');
         Route::post('/register', 'register');
         Route::post('/change-password', 'changePassword');
         Route::post('/generate-token', 'generateToken');

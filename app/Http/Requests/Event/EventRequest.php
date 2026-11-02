@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Event;
 
 use App\Http\Requests\ApiRequest;
+use Illuminate\Contracts\Validation\ValidationRule;
 
 class EventRequest extends ApiRequest
 {
@@ -17,7 +18,7 @@ class EventRequest extends ApiRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -30,7 +31,7 @@ class EventRequest extends ApiRequest
             'location' => 'nullable|string|max:255',
             'start_date' => $isPost ? 'required|date' : 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:10240',
             'status' => 'nullable|string|in:upcoming,ongoing,completed,cancelled',
             'is_featured' => 'nullable|boolean',
         ];

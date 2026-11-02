@@ -19,6 +19,7 @@ use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 class DisbursementController extends Controller
 {
@@ -35,6 +36,7 @@ class DisbursementController extends Controller
     public function index(Request $request)
     {
         $disbursements = $this->disbursementRepository->all($request);
+
         return DisbursementResource::collection($disbursements);
     }
 
@@ -44,6 +46,7 @@ class DisbursementController extends Controller
     public function show(string $id)
     {
         $disbursement = Disbursement::with(['disbursable', 'requestedBy.profile', 'requestedBy.kyc', 'disbursedBy'])->findOrFail($id);
+
         return new DisbursementResource($disbursement);
     }
 
@@ -103,20 +106,20 @@ class DisbursementController extends Controller
         $disbursable = $this->resolveDisbursable($request, $data);
 
         // Verify Step-up Authentication if provided
-        if (!empty($data['otp'])) {
+        if (! empty($data['otp'])) {
             $otpRecord = Otp::where('identifier', $user->email)
                 ->where('channel', 'email')
                 ->where('expires_at', '>=', now())
                 ->first();
 
-            if (!$otpRecord || !$otpRecord->verify($data['otp'])) {
+            if (! $otpRecord || ! $otpRecord->verify($data['otp'])) {
                 return $this->handleErrorResponse('Invalid or expired verification OTP code.', 422);
             }
 
             // Invalidate used OTP
             $otpRecord->delete();
-        } elseif (!empty($data['password'])) {
-            if (!Hash::check($data['password'], $user->password)) {
+        } elseif (! empty($data['password'])) {
+            if (! Hash::check($data['password'], $user->password)) {
                 return $this->handleErrorResponse('Incorrect account password provided.', 422);
             }
         }
@@ -198,7 +201,7 @@ class DisbursementController extends Controller
         $compliance = $this->complianceService->evaluateCompliance($disbursable, $user, $request->validated());
 
         return $this->handleSuccessResponse('Disbursement validation and compliance checks completed', [
-            'compliance'      => $compliance,
+            'compliance' => $compliance,
             'fee_calculation' => $compliance['fee_calculation'],
         ]);
     }
@@ -206,22 +209,29 @@ class DisbursementController extends Controller
     protected function dispatchOtp()
     {
         $user = auth()->user();
+
+        if (Otp::canIssue($user->email, 'email') !== null) {
+            return $this->handleErrorResponse(Otp::RESEND_BLOCKED, 429);
+        }
+
         $code = (string) random_int(100000, 999999);
 
-        Otp::updateOrCreate(
+        $otp = Otp::updateOrCreate(
             ['identifier' => $user->email, 'channel' => 'email'],
             [
-                'hash'       => Hash::make($code),
+                'hash' => Hash::make($code),
                 'expires_at' => now()->addMinutes(10),
-                'verified'   => false,
+                'verified' => false,
             ]
         );
 
-        \Illuminate\Support\Facades\Log::info("Disbursement 2FA OTP for {$user->email}: {$code}");
+        $otp->forceFill(['created_at' => now()])->save();
+
+        Log::info("Disbursement 2FA OTP for {$user->email}: {$code}");
 
         return $this->handleSuccessResponse('Verification code sent successfully to your registered email.', [
-            'email_masked' => substr($user->email, 0, 3) . '•••@' . (explode('@', $user->email)[1] ?? ''),
-            'expires_in'   => 600,
+            'email_masked' => substr($user->email, 0, 3).'•••@'.(explode('@', $user->email)[1] ?? ''),
+            'expires_in' => 600,
         ]);
     }
 

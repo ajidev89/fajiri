@@ -30,7 +30,7 @@ class FamilyMemberRequest extends FormRequest
             'full_name' => 'required|string|max:255',
             'dob' => 'required|date',
             'gender' => 'required|string|in:male,female',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:10240',
             'relationship' => $this->isMethod('post')
                 ? ['required', new Enum(Relationship::class), Rule::notIn([Relationship::ME->value])]
                 : ['required', new Enum(Relationship::class)],

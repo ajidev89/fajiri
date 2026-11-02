@@ -21,7 +21,7 @@ class TestimonyRequest extends ApiRequest
             'name' => ['required', 'string', 'max:255'],
             'age' => ['required', 'integer', 'min:1', 'max:120'],
             'story' => ['required', 'string'],
-            'photo' => [$this->isMethod('post') ? 'required' : 'nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
+            'photo' => [$this->isMethod('post') ? 'required' : 'nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:10240'],
             'sort_order' => ['sometimes', 'integer', 'min:0'],
         ];
     }

@@ -39,7 +39,7 @@ class CampaignRequest extends ApiRequest
             'body' => 'required|string',
             'currency' => 'required|string|exists:countries,currency',
             'images' => 'nullable|array',
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,svg|max:10240',
             'category_id' => 'nullable|integer|exists:categories,id',
             'type' => ['required', new Enum(Type::class)],
             'campaign_type' => ['required', new Enum(CampaignType::class)],

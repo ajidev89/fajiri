@@ -49,16 +49,21 @@ class VerifyRequest extends ApiRequest
         $channel = (string) $this->input('channel');
 
         if ($this->acceptsDefaultOtp($identifier, $code, $channel)) {
+            Otp::markVerified($identifier, $channel);
+
             return;
         }
 
         if ($channel === Channel::PHONE->value && ! PhoneNumber::isTestPhone($identifier)) {
             TwilioService::verifySms($code, $identifier);
+            Otp::markVerified($identifier, $channel);
 
             return;
         }
 
         if ($channel === Channel::PHONE->value && PhoneNumber::isTestPhone($identifier)) {
+            Otp::markVerified($identifier, $channel);
+
             return;
         }
 

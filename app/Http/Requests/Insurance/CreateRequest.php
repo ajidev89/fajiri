@@ -2,8 +2,9 @@
 
 namespace App\Http\Requests\Insurance;
 
-use App\Http\Requests\ApiRequest;
 use App\Enums\Insurance\Type;
+use App\Http\Requests\ApiRequest;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Validation\Rules\Enum;
 
 class CreateRequest extends ApiRequest
@@ -19,24 +20,24 @@ class CreateRequest extends ApiRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-            "name" => "required",
-            "slug" => "required|unique:insurances,slug," . $this->id,
-            "website" => "required",
-            "logo" => "required|image|mimes:jpeg,png,jpg,gif|max:2048",
-            "phone" => "nullable",
-            "email" => "nullable|email",
-            "address" => "required",
-            "type" => ['required', new Enum(Type::class)],
-            "description" => "sometimes",
-            "city" => "required",
-            "state" => "required",
-            "country_id" => "required|exists:countries,id",
-            "status" => "sometimes|in:active,inactive",
+            'name' => 'required',
+            'slug' => 'required|unique:insurances,slug,'.$this->id,
+            'website' => 'required',
+            'logo' => 'required|image|mimes:jpeg,png,jpg,gif|max:10240',
+            'phone' => 'nullable',
+            'email' => 'nullable|email',
+            'address' => 'required',
+            'type' => ['required', new Enum(Type::class)],
+            'description' => 'sometimes',
+            'city' => 'required',
+            'state' => 'required',
+            'country_id' => 'required|exists:countries,id',
+            'status' => 'sometimes|in:active,inactive',
         ];
     }
 }

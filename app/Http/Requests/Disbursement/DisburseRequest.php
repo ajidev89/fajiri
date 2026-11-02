@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Disbursement;
 
 use App\Http\Requests\ApiRequest;
+use Illuminate\Contracts\Validation\ValidationRule;
 
 class DisburseRequest extends ApiRequest
 {
@@ -17,12 +18,12 @@ class DisburseRequest extends ApiRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-            'proof_of_payment' => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            'proof_of_payment' => 'required|image|mimes:jpeg,png,jpg|max:10240',
         ];
     }
 }

@@ -16,6 +16,12 @@ class OtpRepository implements OtpRepositoryInterface
 
     public function create($request)
     {
+        $identifier = (string) $request->identifier;
+        $channel = (string) $request->channel;
+
+        if (Otp::canIssue($identifier, $channel) !== null) {
+            return $this->handleErrorResponse(Otp::RESEND_BLOCKED, 429);
+        }
 
         $code = random_int(100000, 999999);
 
@@ -30,15 +36,15 @@ class OtpRepository implements OtpRepositoryInterface
         return $this->handleSuccessResponse('Successfully sent otp', []);
     }
 
-
     public function verify($request)
     {
         $request->fulfill();
+
         return $this->handleSuccessResponse('Successfully verified otp', [
-            "token" => generateToken([
+            'token' => generateToken([
                 'value' => $request->identifier,
-                'channel' => $request->channel
-            ])
+                'channel' => $request->channel,
+            ]),
         ]);
     }
 }

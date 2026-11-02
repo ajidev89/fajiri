@@ -11,8 +11,7 @@ class PartnerController extends Controller
 {
     public function __construct(
         protected PartnerRepositoryInterface $partnerRepository
-    ) {
-    }
+    ) {}
 
     public function index(Request $request)
     {
@@ -30,16 +29,16 @@ class PartnerController extends Controller
             'name' => 'required|string|max:255',
             'about' => 'required|string',
             'website' => 'nullable|url',
-            'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:10240',
             'focus_areas' => 'nullable|array',
-            'impact' => 'nullable|array'
+            'impact' => 'nullable|array',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'status' => false,
                 'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -52,16 +51,16 @@ class PartnerController extends Controller
             'name' => 'sometimes|string|max:255',
             'about' => 'sometimes|string',
             'website' => 'nullable|url',
-            'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:10240',
             'focus_areas' => 'nullable|array',
-            'impact' => 'nullable|array'
+            'impact' => 'nullable|array',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'status' => false,
                 'message' => 'Validation error',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 

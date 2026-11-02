@@ -172,6 +172,106 @@ class AuthGenerateTokenTest extends TestCase
         $this->assertNotEmpty($user->fresh()->tokens);
     }
 
+    public function test_login_does_not_send_another_otp_within_a_minute(): void
+    {
+        $user = $this->createMember('cooldown@example.com');
+
+        $this->postJson('/v1/auth/login', [
+            'email' => $user->email,
+            'password' => 'password123',
+        ])->assertOk();
+
+        $this->postJson('/v1/auth/login', [
+            'email' => $user->email,
+            'password' => 'password123',
+        ])->assertTooManyRequests();
+
+        $this->assertSame(1, Otp::query()->count());
+    }
+
+    public function test_login_can_send_another_otp_after_the_first_is_used(): void
+    {
+        $user = $this->createMember('used-otp@example.com');
+
+        $this->postJson('/v1/auth/login', [
+            'email' => $user->email,
+            'password' => 'password123',
+        ])->assertOk();
+
+        Otp::query()->first()->update(['hash' => Hash::make('654321')]);
+
+        try {
+            $response = $this->postJson('/v1/auth/generate-token', [
+                'channel' => 'email',
+                'identifier' => $user->email,
+                'code' => '654321',
+            ]);
+        } catch (\Throwable $e) {
+            fwrite(STDERR, $e->getTraceAsString());
+            throw $e;
+        }
+
+        $response->assertOk();
+
+        $this->postJson('/v1/auth/login', [
+            'email' => $user->email,
+            'password' => 'password123',
+        ])->assertOk();
+
+        $this->assertSame(1, Otp::query()->count());
+    }
+
+    public function test_login_can_send_another_otp_after_one_minute(): void
+    {
+        $user = $this->createMember('wait-otp@example.com');
+
+        $this->postJson('/v1/auth/login', [
+            'email' => $user->email,
+            'password' => 'password123',
+        ])->assertOk();
+
+        $this->travel(61)->seconds();
+
+        $this->postJson('/v1/auth/login', [
+            'email' => $user->email,
+            'password' => 'password123',
+        ])->assertOk();
+
+        $this->assertSame(2, Otp::query()->where('verified', false)->count());
+    }
+
+    public function test_otp_send_is_blocked_until_the_previous_code_is_a_minute_old(): void
+    {
+        $this->postJson('/v1/otp/send', [
+            'channel' => 'email',
+            'identifier' => 'otp-send@example.com',
+        ])->assertOk();
+
+        $this->postJson('/v1/otp/send', [
+            'channel' => 'email',
+            'identifier' => 'otp-send@example.com',
+        ])->assertTooManyRequests();
+
+        $this->assertSame(1, Otp::query()->count());
+    }
+
+    public function test_login_is_throttled_after_five_attempts(): void
+    {
+        $user = $this->createMember('throttle@example.com');
+
+        for ($attempt = 0; $attempt < 5; $attempt++) {
+            $this->postJson('/v1/auth/login', [
+                'email' => $user->email,
+                'password' => 'wrong-password',
+            ])->assertUnauthorized();
+        }
+
+        $this->postJson('/v1/auth/login', [
+            'email' => $user->email,
+            'password' => 'wrong-password',
+        ])->assertTooManyRequests();
+    }
+
     public function test_password_login_keeps_existing_tokens(): void
     {
         $user = $this->createMember('keep-tokens@example.com');

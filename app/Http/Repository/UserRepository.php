@@ -2,42 +2,47 @@
 
 namespace App\Http\Repository;
 
+use App\Enums\User\Status;
 use App\Http\Repository\Contracts\UserRepositoryInterface;
 use App\Http\Resources\Transaction\TransactionResource;
 use App\Http\Resources\User\UserResource;
 use App\Http\Resources\UserPlanResource;
 use App\Http\Services\CloudinaryService;
-use App\Http\Traits\ResponseTrait;
 use App\Http\Traits\AuthUserTrait;
+use App\Http\Traits\ResponseTrait;
 use App\Models\User;
-use App\Enums\User\Status;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
-class UserRepository implements UserRepositoryInterface {
-
-    use ResponseTrait, AuthUserTrait;
+class UserRepository implements UserRepositoryInterface
+{
+    use AuthUserTrait, ResponseTrait;
 
     public function __construct(private User $user) {}
 
-    public function index() {
-        return $this->handleSuccessResponse("Successfully fetched user", new UserResource($this->user()));
+    public function index()
+    {
+        return $this->handleSuccessResponse('Successfully fetched user', new UserResource($this->user()));
     }
 
-    public function changePassword($request) {
+    public function changePassword($request)
+    {
         try {
             $user = $this->user();
             $user->update([
-                'password' => \Illuminate\Support\Facades\Hash::make($request->password)
+                'password' => Hash::make($request->password),
             ]);
 
-            return $this->handleSuccessResponse("Password successfully updated");
+            return $this->handleSuccessResponse('Password successfully updated');
         } catch (\Exception $e) {
             return $this->handleErrorResponse($e->getMessage(), 400);
         }
     }
 
-    public function transactions($request) {
+    public function transactions($request)
+    {
         $wallet = $this->user()->wallet;
         $transactions = $wallet->transactions()->latest()->when($request->type, function ($query) use ($request) {
             return $query->where('type', $request->type);
@@ -48,47 +53,50 @@ class UserRepository implements UserRepositoryInterface {
         })->when($request->end_date, function ($query) use ($request) {
             return $query->where('created_at', '<=', $request->end_date);
         })->paginate(10);
-        return $this->handleSuccessCollectionResponse("Transactions successfully fetched", TransactionResource::collection($transactions));
+
+        return $this->handleSuccessCollectionResponse('Transactions successfully fetched', TransactionResource::collection($transactions));
     }
 
-    public function transfer($request) {
+    public function transfer($request)
+    {
         return DB::transaction(function () use ($request) {
             $user = $this->user();
 
             // 1. Verify PIN
-            if (!Hash::check($request->pin, $user->pin)) {
-                return $this->handleErrorResponse("Invalid transaction PIN", 400);
+            if (! Hash::check($request->pin, $user->pin)) {
+                return $this->handleErrorResponse('Invalid transaction PIN', 400);
             }
 
             // 2. Find Recipient
             $recipient = $this->user->where('member_id', $request->username)->first();
-            if (!$recipient) {
-                return $this->handleErrorResponse("Recipient not found", 404);
+            if (! $recipient) {
+                return $this->handleErrorResponse('Recipient not found', 404);
             }
 
             // 3. Prevent self-transfer
             if ($recipient->id === $user->id) {
-                return $this->handleErrorResponse("You cannot transfer money to yourself", 400);
+                return $this->handleErrorResponse('You cannot transfer money to yourself', 400);
             }
 
             try {
                 // Perform Transfer
                 // Deposit to recipient first
-                $recipient->deposit((float)$request->amount, "Transfer from {$user->member_id}");
+                $recipient->deposit((float) $request->amount, "Transfer from {$user->member_id}");
 
                 // Withdraw from sender (HasWallet trait handles balance check)
-                $withdrawal = $user->withdraw((float)$request->amount, "Transfer to {$recipient->member_id}");
+                $withdrawal = $user->withdraw((float) $request->amount, "Transfer to {$recipient->member_id}");
 
-                return $this->handleSuccessResponse("Transfer successful", new TransactionResource($withdrawal));
+                return $this->handleSuccessResponse('Transfer successful', new TransactionResource($withdrawal));
             } catch (\Exception $e) {
                 return $this->handleErrorResponse($e->getMessage(), 400);
             }
         });
     }
 
-    public function updateAvatar($request) {
+    public function updateAvatar($request)
+    {
         $request->validate([
-            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:10240',
         ]);
 
         try {
@@ -97,110 +105,120 @@ class UserRepository implements UserRepositoryInterface {
 
             if ($request->hasFile('avatar')) {
                 // Delete old avatar if it exists
-                if ($profile->avatar && \Illuminate\Support\Facades\Storage::disk('public')->exists($profile->avatar)) {
-                    \Illuminate\Support\Facades\Storage::disk('public')->delete($profile->avatar);
+                if ($profile->avatar && Storage::disk('public')->exists($profile->avatar)) {
+                    Storage::disk('public')->delete($profile->avatar);
                 }
 
                 $upload = app(CloudinaryService::class)->uploadImage($request->file('avatar'));
                 $path = $upload['url'];
                 $profile->update(['avatar' => $path]);
 
-                return $this->handleSuccessResponse("Avatar successfully updated", ['avatar_url' => $path]);
+                return $this->handleSuccessResponse('Avatar successfully updated', ['avatar_url' => $path]);
             }
 
-            return $this->handleErrorResponse("Avatar file not found", 400);
+            return $this->handleErrorResponse('Avatar file not found', 400);
         } catch (\Exception $e) {
             return $this->handleErrorResponse($e->getMessage(), 400);
         }
     }
 
-    public function updatePin($request) {
+    public function updatePin($request)
+    {
         try {
             $user = $this->user();
-            if($user->pin) {
-                if(!Hash::check($request->current_pin, $user->pin)) {
-                    return $this->handleErrorResponse("Incorrect current pin", 400);
+            if ($user->pin) {
+                if (! Hash::check($request->current_pin, $user->pin)) {
+                    return $this->handleErrorResponse('Incorrect current pin', 400);
                 }
             }
             $user->update([
-                'pin' => Hash::make($request->pin)
+                'pin' => Hash::make($request->pin),
             ]);
 
-            return $this->handleSuccessResponse("Pin successfully updated");
+            return $this->handleSuccessResponse('Pin successfully updated');
         } catch (\Exception $e) {
             return $this->handleErrorResponse($e->getMessage(), 400);
         }
     }
 
-    public function updateProfile($request) {
+    public function updateProfile($request)
+    {
         try {
             $user = $this->user();
             $profile = $user->profile;
 
             $validated = $request->validated();
 
-            if ($userData = \Illuminate\Support\Arr::only($validated, ['phone', 'account_type', 'sub_account_type'])) {
+            if ($userData = Arr::only($validated, ['phone', 'account_type', 'sub_account_type'])) {
                 $user->update($userData);
             }
 
-            if ($profileData = \Illuminate\Support\Arr::only($validated, ['first_name', 'last_name', 'middle_name', 'dob', 'gender', 'address', 'occupation'])) {
+            if ($profileData = Arr::only($validated, ['first_name', 'last_name', 'middle_name', 'dob', 'gender', 'address', 'occupation'])) {
                 $profile->update($profileData);
             }
 
-            return $this->handleSuccessResponse("Profile successfully updated", new UserResource($user->refresh()));
+            return $this->handleSuccessResponse('Profile successfully updated', new UserResource($user->refresh()));
         } catch (\Exception $e) {
             return $this->handleErrorResponse($e->getMessage(), 400);
         }
     }
 
-    public function withdrawAccount() {
+    public function withdrawAccount()
+    {
         try {
-            $withdrawalAccount = $this->user()->withdrawalAccounts()->where("default", true)->first();
-            if(!$withdrawalAccount) {
-                return $this->handleErrorResponse("No default withdrawal account found", 404);
+            $withdrawalAccount = $this->user()->withdrawalAccounts()->where('default', true)->first();
+            if (! $withdrawalAccount) {
+                return $this->handleErrorResponse('No default withdrawal account found', 404);
             }
 
-            return $this->handleSuccessResponse("Withdrawal successful", $withdrawalAccount);
+            return $this->handleSuccessResponse('Withdrawal successful', $withdrawalAccount);
         } catch (\Exception $e) {
             return $this->handleErrorResponse($e->getMessage(), 400);
         }
     }
 
-    public function referrals() {
+    public function referrals()
+    {
         $user = $this->user();
-        return $this->handleSuccessResponse("Referral details fetched successfully", [
+
+        return $this->handleSuccessResponse('Referral details fetched successfully', [
             'referral_code' => $user->referral_code,
-            'referrals_count' => $user->referrals()->count()
+            'referrals_count' => $user->referrals()->count(),
         ]);
     }
 
-    public function subscriptions($request) {
+    public function subscriptions($request)
+    {
         $subscriptions = $this->user()->plans()->latest('user_plans.started_at')->paginate(10);
-        return $this->handleSuccessCollectionResponse("Subscriptions successfully fetched", UserPlanResource::collection($subscriptions));
+
+        return $this->handleSuccessCollectionResponse('Subscriptions successfully fetched', UserPlanResource::collection($subscriptions));
     }
 
-    public function deactivate() {
+    public function deactivate()
+    {
         try {
             $user = $this->user();
             $user->update([
-                'status' => Status::DEACTIVATED->value
+                'status' => Status::DEACTIVATED->value,
             ]);
             $user->tokens()->delete();
             $user->audit('status_change', 'User account has been deactivated by the user.');
-            return $this->handleSuccessResponse("Account successfully deactivated");
+
+            return $this->handleSuccessResponse('Account successfully deactivated');
         } catch (\Exception $e) {
             return $this->handleErrorResponse($e->getMessage(), 400);
         }
     }
 
-    public function updateNotificationToken($request) {
+    public function updateNotificationToken($request)
+    {
         try {
             $user = $this->user();
             $user->update([
-                'notification_token' => $request->token
+                'notification_token' => $request->token,
             ]);
 
-            return $this->handleSuccessResponse("Notification token updated successfully", new UserResource($user));
+            return $this->handleSuccessResponse('Notification token updated successfully', new UserResource($user));
         } catch (\Exception $e) {
             return $this->handleErrorResponse($e->getMessage(), 400);
         }

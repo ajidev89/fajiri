@@ -21,7 +21,7 @@ class AmbassadorRequest extends ApiRequest
             'name' => ['required', 'string', 'max:255'],
             'title' => ['required', 'string', 'max:255'],
             'biography' => ['required', 'string'],
-            'photo' => [$this->isMethod('post') ? 'required' : 'nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:2048'],
+            'photo' => [$this->isMethod('post') ? 'required' : 'nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:10240'],
             'sort_order' => ['sometimes', 'integer', 'min:0'],
         ];
     }
