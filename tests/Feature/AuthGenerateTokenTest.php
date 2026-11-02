@@ -10,6 +10,7 @@ use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
@@ -191,6 +192,8 @@ class AuthGenerateTokenTest extends TestCase
 
     public function test_login_can_send_another_otp_after_the_first_is_used(): void
     {
+        Bus::fake();
+
         $user = $this->createMember('used-otp@example.com');
 
         $this->postJson('/v1/auth/login', [
@@ -200,18 +203,11 @@ class AuthGenerateTokenTest extends TestCase
 
         Otp::query()->first()->update(['hash' => Hash::make('654321')]);
 
-        try {
-            $response = $this->postJson('/v1/auth/generate-token', [
-                'channel' => 'email',
-                'identifier' => $user->email,
-                'code' => '654321',
-            ]);
-        } catch (\Throwable $e) {
-            fwrite(STDERR, $e->getTraceAsString());
-            throw $e;
-        }
-
-        $response->assertOk();
+        $this->postJson('/v1/auth/generate-token', [
+            'channel' => 'email',
+            'identifier' => $user->email,
+            'code' => '654321',
+        ])->assertOk();
 
         $this->postJson('/v1/auth/login', [
             'email' => $user->email,
@@ -238,6 +234,8 @@ class AuthGenerateTokenTest extends TestCase
         ])->assertOk();
 
         $this->assertSame(2, Otp::query()->where('verified', false)->count());
+
+        $this->travelBack();
     }
 
     public function test_otp_send_is_blocked_until_the_previous_code_is_a_minute_old(): void
