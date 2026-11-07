@@ -130,6 +130,42 @@ class NombaServiceTest extends TestCase
         });
     }
 
+    public function test_it_fetches_a_checkout_transaction_by_order_id(): void
+    {
+        Cache::flush();
+
+        config([
+            'nomba.mode' => 'live',
+            'nomba.baseUrl' => 'https://api.nomba.com',
+            'nomba.clientId' => 'live-client',
+            'nomba.clientSecret' => 'live-secret',
+            'nomba.accountId' => 'acc-123',
+        ]);
+
+        Http::fake([
+            'https://api.nomba.com/v1/auth/token/issue' => Http::response([
+                'code' => '00',
+                'data' => ['access_token' => 'nomba-access-token'],
+            ], 200),
+            'https://api.nomba.com/v1/checkout/transaction*' => Http::response([
+                'code' => '00',
+                'data' => [
+                    'success' => true,
+                    'order' => ['orderId' => 'ca218976-bcbe-4f07-9c07-1a75468ed6d5'],
+                ],
+            ], 200),
+        ]);
+
+        $result = app(NombaService::class)->getCheckoutTransaction('ca218976-bcbe-4f07-9c07-1a75468ed6d5');
+
+        $this->assertTrue($result['success']);
+
+        Http::assertSent(function ($request) {
+            return $request->url() === 'https://api.nomba.com/v1/checkout/transaction?idType=ORDER_ID&id=ca218976-bcbe-4f07-9c07-1a75468ed6d5'
+                && $request->hasHeader('accountId', 'acc-123');
+        });
+    }
+
     public function test_it_reports_nomba_error_description_when_the_ip_is_rejected(): void
     {
         Cache::flush();

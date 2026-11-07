@@ -107,6 +107,25 @@ class NombaService
     }
 
     /**
+     * Fetch a checkout by the id in the checkout link, or by the order reference sent at creation.
+     *
+     * @return array<string, mixed>
+     */
+    public function getCheckoutTransaction(string $id, string $idType = 'ORDER_ID'): array
+    {
+        $token = $this->getAccessToken();
+
+        $response = $this->request()
+            ->withToken($token)
+            ->get("{$this->baseUrl}/v1/checkout/transaction", [
+                'idType' => $idType,
+                'id' => $id,
+            ]);
+
+        return $this->decoded($response, 'transaction lookup')['data'] ?? [];
+    }
+
+    /**
      * Validate Webhook Signature
      */
     public function isValidWebhook(?string $signature, string $payload): bool
