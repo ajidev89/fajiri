@@ -11,6 +11,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\PostTooLargeException;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
@@ -77,6 +78,16 @@ return Application::configure(basePath: dirname(__DIR__))
                     'error' => 'Method Not Allowed',
                     'message' => $exception->getMessage(),
                 ], 405);
+            }
+
+            if ($exception instanceof PostTooLargeException) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'The image is too large.',
+                    'errors' => [
+                        'image' => ['The image is too large.'],
+                    ],
+                ], 413);
             }
 
             // General HTTP Exception

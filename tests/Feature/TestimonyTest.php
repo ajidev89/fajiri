@@ -118,6 +118,35 @@ class TestimonyTest extends TestCase
         $this->assertDatabaseMissing('testimonies', ['id' => $id]);
     }
 
+    public function test_an_oversized_photo_says_the_image_is_too_large(): void
+    {
+        $this->actingAs($this->admin)
+            ->post('/v1/testimonies', [
+                'name' => 'John Bieber',
+                'age' => 15,
+                'story' => 'A community support story.',
+                'photo' => UploadedFile::fake()->image('john.jpg')->size(10241),
+            ], ['Accept' => 'application/json'])
+            ->assertUnprocessable()
+            ->assertJsonPath('message', 'The photo is too large. The maximum size is 10 MB.')
+            ->assertJsonPath('errors.photo.0', 'The photo is too large. The maximum size is 10 MB.');
+    }
+
+    public function test_a_request_larger_than_the_server_limit_says_the_image_is_too_large(): void
+    {
+        $postMax = $this->postMaxBytes();
+
+        if ($postMax === 0) {
+            $this->markTestSkipped('post_max_size is unlimited.');
+        }
+
+        $this->call('POST', '/v1/testimonies', [], [], [], [
+            'CONTENT_LENGTH' => (string) ($postMax + 1),
+            'HTTP_ACCEPT' => 'application/json',
+        ])->assertStatus(413)
+            ->assertJsonPath('message', 'The image is too large.');
+    }
+
     public function test_a_photo_is_required_when_creating_a_testimony(): void
     {
         $this->actingAs($this->admin)
@@ -136,5 +165,24 @@ class TestimonyTest extends TestCase
             'age' => 15,
             'story' => 'A story.',
         ])->assertUnauthorized();
+    }
+
+    protected function postMaxBytes(): int
+    {
+        $postMaxSize = ini_get('post_max_size');
+
+        if (is_numeric($postMaxSize)) {
+            return (int) $postMaxSize;
+        }
+
+        $metric = strtoupper(substr($postMaxSize, -1));
+        $postMaxSize = (int) $postMaxSize;
+
+        return match ($metric) {
+            'K' => $postMaxSize * 1024,
+            'M' => $postMaxSize * 1048576,
+            'G' => $postMaxSize * 1073741824,
+            default => $postMaxSize,
+        };
     }
 }
