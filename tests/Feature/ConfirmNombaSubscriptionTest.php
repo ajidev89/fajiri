@@ -81,7 +81,7 @@ class ConfirmNombaSubscriptionTest extends TestCase
         $this->assertDatabaseCount('user_plans', 0);
     }
 
-    public function test_a_paid_amount_that_does_not_match_the_plan_is_not_activated(): void
+    public function test_a_paid_amount_changed_by_the_exchange_rate_still_activates_the_plan(): void
     {
         $user = $this->createMember('nomba-mismatch@example.com');
         $plan = $this->createPlan();
@@ -90,13 +90,14 @@ class ConfirmNombaSubscriptionTest extends TestCase
         $this->fakeNomba($this->transaction($user, $plan, $orderId, 1000, true));
 
         $this->artisan('plans:confirm-nomba', ['order' => $orderId])
-            ->assertFailed();
+            ->assertSuccessful();
 
-        $this->assertNull($user->fresh()->currentPlan());
+        $this->assertSame($plan->id, $user->fresh()->currentPlan()?->id);
         $this->assertDatabaseHas('user_plans', [
             'user_id' => $user->id,
             'provider_subscription_id' => $orderId,
-            'status' => 'failed',
+            'status' => 'active',
+            'amount' => 1000,
         ]);
     }
 

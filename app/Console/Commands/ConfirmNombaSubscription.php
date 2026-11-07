@@ -4,7 +4,6 @@ namespace App\Console\Commands;
 
 use App\Models\Plan;
 use App\Models\User;
-use App\Services\CurrencyService;
 use App\Services\NombaService;
 use App\Services\SubscriptionAttemptService;
 use Illuminate\Console\Command;
@@ -31,7 +30,7 @@ class ConfirmNombaSubscription extends Command
     /**
      * Execute the console command.
      */
-    public function handle(NombaService $nomba, SubscriptionAttemptService $attempts, CurrencyService $currency): int
+    public function handle(NombaService $nomba, SubscriptionAttemptService $attempts): int
     {
         $orderId = (string) $this->argument('order');
         $transaction = $nomba->getCheckoutTransaction($orderId);
@@ -78,20 +77,23 @@ class ConfirmNombaSubscription extends Command
             return self::SUCCESS;
         }
 
-        if ($existing !== null && $existing->status !== 'pending') {
-            $this->error("This payment was already recorded as {$existing->status}.");
-
-            return self::FAILURE;
-        }
-
         if ($existing === null) {
-            $attempts->record($user, $plan, 'nomba', $reference, $this->expectedAmount($plan, $currency), 'NGN');
+            $attempts->record($user, $plan, 'nomba', $reference, (float) $paidAmount, $paidCurrency);
+        } else {
+            DB::table('user_plans')->where('id', $existing->id)->update([
+                'user_id' => $user->id,
+                'plan_id' => $plan->id,
+                'status' => 'pending',
+                'amount' => number_format((float) $paidAmount, 2, '.', ''),
+                'currency' => strtoupper($paidCurrency),
+                'updated_at' => now(),
+            ]);
         }
 
         $result = $attempts->confirm('nomba', $reference, $paidAmount, $paidCurrency, $orderId);
 
         if ($result === null) {
-            $this->error('The paid amount does not match the plan price. The subscription was not activated.');
+            $this->error('The subscription could not be activated.');
 
             return self::FAILURE;
         }
@@ -175,16 +177,5 @@ class ConfirmNombaSubscription extends Command
                     ->orWhere('provider_subscription_id', $orderId);
             })
             ->first();
-    }
-
-    private function expectedAmount(Plan $plan, CurrencyService $currency): float
-    {
-        $amount = (float) $plan->price;
-
-        if (strtoupper($plan->currency ?? 'NGN') === 'NGN') {
-            return $amount;
-        }
-
-        return $currency->convert($amount, $plan->currency ?? 'USD', 'NGN');
     }
 }
