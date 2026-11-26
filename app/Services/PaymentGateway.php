@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\Plan;
 use App\Models\User;
-use Exception;
 use Illuminate\Support\Str;
 
 class PaymentGateway
@@ -66,7 +65,7 @@ class PaymentGateway
     }
 
     /**
-     * Initialize a subscription
+     * Initialize a one-time lifetime membership payment.
      */
     public function initializeSubscription(User $user, Plan $plan, array $options = [])
     {
@@ -75,13 +74,21 @@ class PaymentGateway
 
         switch ($gateway) {
             case 'stripe':
-                if (! $plan->stripe_price_id) {
-                    throw new Exception('Stripe price ID not set for this plan.');
+                $stripeCurrency = 'USD';
+                $stripeAmount = round((float) $plan->price, 2);
+                if (strtoupper($plan->currency ?? 'NGN') !== $stripeCurrency) {
+                    $stripeAmount = round($this->currencyService->convert(
+                        (float) $plan->price,
+                        $plan->currency ?? 'NGN',
+                        $stripeCurrency
+                    ), 2);
                 }
 
                 $session = $this->stripeService->createCheckoutSession(
                     $user,
                     $plan,
+                    $stripeAmount,
+                    $stripeCurrency,
                     $options['success_url'] ?? config('app.url').'/payments/verify/stripe',
                     $options['cancel_url'] ?? config('app.url').'/plans'
                 );
@@ -91,8 +98,8 @@ class PaymentGateway
                     $plan,
                     'stripe',
                     (string) $session->id,
-                    (float) $plan->price,
-                    (string) ($plan->currency ?? 'USD'),
+                    $stripeAmount,
+                    $stripeCurrency,
                 );
 
                 return $session;
@@ -211,10 +218,6 @@ class PaymentGateway
 
             case 'paystack':
             default:
-                if (! $plan->paystack_plan_code) {
-                    throw new Exception('Paystack plan code not set for this plan.');
-                }
-
                 $paystackAmount = $plan->price;
                 if (strtoupper($plan->currency ?? 'NGN') !== 'NGN') {
                     $paystackAmount = $this->currencyService->convert(
@@ -226,10 +229,9 @@ class PaymentGateway
 
                 $reference = 'psub_'.Str::lower((string) Str::ulid());
                 $chargedAmount = round($paystackAmount, 2);
-                $result = $this->paystackService->initializeSubscription([
+                $result = $this->paystackService->initializeTransaction([
                     'email' => $user->email,
                     'amount' => (int) round($chargedAmount * 100),
-                    'plan' => $plan->paystack_plan_code,
                     'reference' => $reference,
                     'callback_url' => $options['success_url'] ?? config('app.url').'/payments/verify/paystack',
                     'metadata' => [

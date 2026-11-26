@@ -90,7 +90,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <img src="{{ asset('logo.png') }}" alt="Fajiri Logo" style="max-height: 50px; margin-bottom: 10px;">
+            <img src="{{ isset($message) ? $message->embed(public_path('logo.png')) : asset('logo.png') }}" alt="Fajiri Logo" style="max-height: 50px; margin-bottom: 10px;">
         </div>
         <div class="content">
             @yield('content')

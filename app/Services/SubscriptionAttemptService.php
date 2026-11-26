@@ -18,7 +18,7 @@ class SubscriptionAttemptService
             'user_id' => $user->id,
             'plan_id' => $plan->id,
             'status' => 'pending',
-            'auto_renew' => true,
+            'auto_renew' => false,
             'provider' => $provider,
             'provider_subscription_id' => $reference,
             'amount' => $this->money($amount),
@@ -100,7 +100,8 @@ class SubscriptionAttemptService
             DB::table('user_plans')->where('id', $attempt->id)->update([
                 'status' => 'active',
                 'started_at' => $startedAt,
-                'expires_at' => $startedAt->copy()->addDays($plan->duration),
+                'expires_at' => null,
+                'auto_renew' => false,
                 'provider_subscription_id' => $gatewaySubscriptionId ?: $attempt->provider_subscription_id,
                 'updated_at' => now(),
             ]);

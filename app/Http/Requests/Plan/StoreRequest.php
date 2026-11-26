@@ -2,7 +2,11 @@
 
 namespace App\Http\Requests\Plan;
 
+use App\Enums\User\AccountType;
+use App\Enums\User\SubAccountType;
 use App\Http\Requests\ApiRequest;
+use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Validation\Rules\Enum;
 
 class StoreRequest extends ApiRequest
 {
@@ -17,19 +21,18 @@ class StoreRequest extends ApiRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
             'name' => 'required|string|max:255|unique:plans,name',
             'level' => 'required|string|max:255',
-            'account_type' => ['required', new \Illuminate\Validation\Rules\Enum(\App\Enums\User\AccountType::class)],
-            'sub_account_type' => ['nullable', new \Illuminate\Validation\Rules\Enum(\App\Enums\User\SubAccountType::class)],
+            'account_type' => ['required', new Enum(AccountType::class)],
+            'sub_account_type' => ['nullable', new Enum(SubAccountType::class)],
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
             'currency' => 'required|string|max:3',
-            'duration' => 'required|integer|min:1',
             'features' => 'nullable|array',
             'status' => 'required|boolean',
         ];

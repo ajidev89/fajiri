@@ -2,7 +2,11 @@
 
 namespace App\Http\Requests\Plan;
 
+use App\Enums\User\AccountType;
+use App\Enums\User\SubAccountType;
 use App\Http\Requests\ApiRequest;
+use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Validation\Rules\Enum;
 
 class UpdateRequest extends ApiRequest
 {
@@ -17,19 +21,18 @@ class UpdateRequest extends ApiRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     * @return array<string, ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
             'name' => 'sometimes|string|max:255',
             'level' => 'sometimes|string|max:255',
-            'account_type' => ['sometimes', new \Illuminate\Validation\Rules\Enum(\App\Enums\User\AccountType::class)],
-            'sub_account_type' => ['nullable', new \Illuminate\Validation\Rules\Enum(\App\Enums\User\SubAccountType::class)],
+            'account_type' => ['sometimes', new Enum(AccountType::class)],
+            'sub_account_type' => ['nullable', new Enum(SubAccountType::class)],
             'description' => 'sometimes|string',
             'price' => 'sometimes|numeric|min:0',
             'currency' => 'sometimes|string|max:3',
-            'duration' => 'sometimes|integer|min:1',
             'features' => 'sometimes|array',
             'status' => 'sometimes|boolean',
         ];

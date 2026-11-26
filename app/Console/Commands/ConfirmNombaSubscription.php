@@ -53,12 +53,6 @@ class ConfirmNombaSubscription extends Command
             return self::FAILURE;
         }
 
-        if ($plan->duration === null) {
-            $this->error("Plan {$plan->name} has no duration.");
-
-            return self::FAILURE;
-        }
-
         $reference = (string) ($order['orderReference'] ?? $orderId);
         $paidAmount = $order['amount'] ?? null;
         $paidCurrency = isset($order['currency']) ? (string) $order['currency'] : null;

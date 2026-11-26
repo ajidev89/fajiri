@@ -26,23 +26,31 @@ class StripeService
     }
 
     /**
-     * Create a Stripe Checkout Session for Subscription
+     * Create a Stripe Checkout Session for a one-time lifetime membership payment.
      */
-    public function createCheckoutSession($user, $plan, $successUrl, $cancelUrl)
+    public function createCheckoutSession($user, $plan, float $amount, string $currency, $successUrl, $cancelUrl)
     {
         $payload = [
             'customer_email' => $user->email,
             'payment_method_types' => ['card'],
             'line_items' => [[
-                'price' => $plan->stripe_price_id,
+                'price_data' => [
+                    'currency' => strtolower($currency),
+                    'product_data' => [
+                        'name' => $plan->name ?: 'Membership',
+                        'description' => 'One-time lifetime membership',
+                    ],
+                    'unit_amount' => (int) round($amount * 100),
+                ],
                 'quantity' => 1,
             ]],
-            'mode' => 'subscription',
+            'mode' => 'payment',
             'success_url' => $successUrl.'?session_id={CHECKOUT_SESSION_ID}',
             'cancel_url' => $cancelUrl,
             'metadata' => [
                 'user_id' => $user->id ?? null,
                 'plan_id' => $plan->id,
+                'type' => 'subscription',
             ],
         ];
 

@@ -24,5 +24,5 @@
 
     <p>Thank you for choosing Fajiri.</p>
 
-    <a href="{{ config('app.frontend_url', 'https://app.fajiri.org') }}/wallet" class="btn">View wallet balance</a>
+    <a href="{{ config('app.frontend_url') }}/profile" class="btn">View wallet balance</a>
 @endsection

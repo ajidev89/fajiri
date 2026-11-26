@@ -7,9 +7,7 @@ use App\Http\Traits\AuthUserTrait;
 use App\Mail\SubscriptionSuccessMail;
 use App\Models\Notification;
 use App\Models\Plan;
-use App\Models\User;
 use App\Services\PaymentGateway;
-use App\Services\PaystackService;
 use App\Services\ReferralRewardService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -19,17 +17,7 @@ class PlanRepository implements PlanRepositoryInterface
 {
     use AuthUserTrait;
 
-    protected $paymentGateway;
-
-    protected $paystackService;
-
-    public function __construct(
-        PaymentGateway $paymentGateway,
-        PaystackService $paystackService
-    ) {
-        $this->paymentGateway = $paymentGateway;
-        $this->paystackService = $paystackService;
-    }
+    public function __construct(protected PaymentGateway $paymentGateway) {}
 
     public function all(array $filters = [])
     {
@@ -83,138 +71,15 @@ class PlanRepository implements PlanRepositoryInterface
 
     public function findById($id)
     {
-        $plan = Plan::findOrFail($id);
-
-        if (! $plan->stripe_price_id || ! $plan->paystack_plan_code) {
-            $this->syncWithGateways($plan);
-            $plan->refresh();
-        }
-
-        return $plan;
+        return Plan::findOrFail($id);
     }
 
     public function store(array $data)
     {
         $data['slug'] = Str::slug($data['name']);
-        $plan = Plan::create($data);
+        $data['duration'] = null;
 
-        $this->syncWithGateways($plan);
-
-        return $plan;
-    }
-
-    public function syncWithGateways(Plan $plan)
-    {
-        try {
-
-            // 1. Sync with Paystack (for NGN)
-            // Paystack requires the plan amount to be at least 100 NGN (10000 kobo)
-            if (! $plan->paystack_plan_code) {
-                $paystackAmount = $plan->price;
-                if (strtoupper($plan->currency ?? 'NGN') !== 'NGN') {
-                    $paystackAmount = $this->paymentGateway->getCurrencyService()->convert(
-                        (float) $plan->price,
-                        $plan->currency ?? 'USD',
-                        'NGN'
-                    );
-                }
-
-                if ($paystackAmount >= 100) {
-                    $paystackPlan = $this->paystackService->createPlan([
-                        'name' => $plan->name,
-                        'interval' => $this->mapDurationToInterval($plan->duration),
-                        'amount' => (int) round($paystackAmount * 100), // Paystack amount is in kobo
-                        'currency' => 'NGN',
-                    ]);
-
-                    if ($paystackPlan) {
-                        $plan->paystack_plan_code = $paystackPlan['plan_code'];
-                    }
-                }
-            }
-
-            // 2. Sync with Stripe (for non-NGN)
-            if (! $plan->stripe_price_id && $plan->price > 0) {
-                if (! $plan->stripe_product_id) {
-                    // Ensure a name is always sent to Stripe. If the local plan name is missing, use a placeholder.
-                    $productName = $plan->name ?: 'Plan '.$plan->id;
-                    $stripeProduct = $this->paymentGateway->getStripeService()->createProduct([
-                        'name' => $productName,
-                        'description' => $plan->description ?: '',
-                        // Include metadata to aid debugging and linking back to our system
-                        'metadata' => [
-                            'local_plan_id' => $plan->id,
-                            'provider' => 'stripe',
-                        ],
-                    ]);
-                    $plan->stripe_product_id = $stripeProduct['id'] ?? null;
-                }
-
-                // Convert price to USD for Stripe if it's in NGN or other local currency
-                $stripeCurrency = 'USD';
-                $stripeAmount = $plan->price;
-
-                if (strtoupper($plan->currency ?? 'NGN') !== 'USD') {
-                    $stripeAmount = $this->paymentGateway->getCurrencyService()->convert(
-                        (float) $plan->price,
-                        $plan->currency ?? 'NGN',
-                        'USD'
-                    );
-                }
-
-                $stripePrice = $this->paymentGateway->getStripeService()->createPrice([
-                    'product' => $plan->stripe_product_id,
-                    'unit_amount' => (int) round($stripeAmount * 100),
-                    'currency' => strtolower($stripeCurrency),
-                    'recurring' => ['interval' => $this->mapDurationToStripeInterval($plan->duration)],
-                    'metadata' => [
-                        'local_plan_id' => $plan->id,
-                        'provider' => 'stripe',
-                        'original_price' => $plan->price,
-                        'original_currency' => $plan->currency ?? 'NGN',
-                    ],
-                ]);
-
-                if ($stripePrice) {
-                    $plan->stripe_price_id = $stripePrice['id'];
-                }
-            }
-
-            $plan->save();
-        } catch (\Exception $e) {
-            \Log::error('Gateway Sync Error: '.$e->getMessage());
-            throw $e;
-        }
-    }
-
-    protected function mapDurationToInterval($days)
-    {
-        if ($days >= 365) {
-            return 'annually';
-        }
-        if ($days >= 30) {
-            return 'monthly';
-        }
-        if ($days >= 7) {
-            return 'weekly';
-        }
-
-        return 'daily';
-    }
-
-    protected function mapDurationToStripeInterval($days)
-    {
-        if ($days >= 365) {
-            return 'year';
-        }
-        if ($days >= 30) {
-            return 'month';
-        }
-        if ($days >= 7) {
-            return 'week';
-        }
-
-        return 'day';
+        return Plan::create($data);
     }
 
     public function initializeSubscription($user, $planId, array $options = [])
@@ -227,9 +92,8 @@ class PlanRepository implements PlanRepositoryInterface
     public function update($id, array $data)
     {
         $plan = $this->findById($id);
+        unset($data['duration']);
         $plan->update($data);
-
-        $this->syncWithGateways($plan);
 
         return $plan;
     }
@@ -245,9 +109,9 @@ class PlanRepository implements PlanRepositoryInterface
         return $plan->delete();
     }
 
-    public function subscribeUser($user, $planId, $duration = null, $autoRenew = true)
+    public function subscribeUser($user, $planId, $duration = null)
     {
-        return DB::transaction(function () use ($user, $planId, $duration, $autoRenew) {
+        return DB::transaction(function () use ($user, $planId, $duration) {
             $plan = Plan::findOrFail($planId);
 
             // Handle Payment if plan is not free
@@ -276,15 +140,16 @@ class PlanRepository implements PlanRepositoryInterface
                 ->where('status', 'active')
                 ->update(['status' => 'inactive']);
 
+            // Memberships are one-time lifetime payments: an admin may still grant a fixed duration.
             $startedAt = now();
-            $expiresAt = $duration ? $startedAt->copy()->addDays($duration) : $startedAt->copy()->addDays($plan->duration);
+            $expiresAt = $duration ? $startedAt->copy()->addDays($duration) : null;
 
             $user->plans()->attach($plan->id, [
                 'id' => Str::uuid(),
                 'started_at' => $startedAt,
                 'expires_at' => $expiresAt,
                 'status' => 'active',
-                'auto_renew' => $autoRenew,
+                'auto_renew' => false,
             ]);
 
             // Create notification
@@ -312,87 +177,5 @@ class PlanRepository implements PlanRepositoryInterface
 
             return $user->currentPlan();
         });
-    }
-
-    public function renewSubscription($userPlanId)
-    {
-        return DB::transaction(function () use ($userPlanId) {
-            $userPlanPivot = DB::table('user_plans')->where('id', $userPlanId)->first();
-
-            if (! $userPlanPivot) {
-                throw new \Exception('User plan not found.');
-            }
-
-            $user = User::find($userPlanPivot->user_id);
-            $plan = Plan::find($userPlanPivot->plan_id);
-
-            // Handle Payment if plan is not free
-            if ($plan->price > 0) {
-                $wallet = $user->wallet()->lockForUpdate()->firstOrCreate(['user_id' => $user->id]);
-
-                if ($wallet->balance < $plan->price) {
-                    throw new \Exception("Insufficient wallet balance to renew {$plan->name} plan.");
-                }
-
-                $wallet->decrement('balance', $plan->price);
-
-                // Create transaction record
-                $wallet->transactions()->create([
-                    'amount' => $plan->price,
-                    'type' => 'withdrawal',
-                    'description' => "Renewal of {$plan->name} plan",
-                    'reference' => 'RENEW_'.str($plan->name)->slug().'_'.uniqid(),
-                    'status' => 'completed',
-                ]);
-            }
-
-            // Deactivate old plan
-            DB::table('user_plans')->where('id', $userPlanId)->update(['status' => 'inactive']);
-
-            // Create new plan record (renewal)
-            $startedAt = now(); // Or use old expires_at if you want seamless renewal
-            $expiresAt = $startedAt->copy()->addDays($plan->duration);
-
-            $user->plans()->attach($plan->id, [
-                'id' => Str::uuid(),
-                'started_at' => $startedAt,
-                'expires_at' => $expiresAt,
-                'status' => 'active',
-                'auto_renew' => true,
-            ]);
-
-            // Create notification
-            Notification::create([
-                'user_id' => $user->id,
-                'title' => 'Plan Renewed',
-                'message' => "Your subscription to the '{$plan->name}' plan has been successfully renewed.",
-                'type' => 'plan_renewal',
-                'data' => [
-                    'plan_id' => $plan->id,
-                    'plan_name' => $plan->name,
-                    'amount' => $plan->price,
-                    'currency' => $plan->currency,
-                ],
-            ]);
-
-            // Send Email
-            try {
-                Mail::to($user->email)->send(new SubscriptionSuccessMail($user, $plan, $plan->price, $plan->currency));
-            } catch (\Exception $e) {
-                \Log::error('Failed to send subscription renewal email: '.$e->getMessage());
-            }
-
-            return $user->currentPlan();
-        });
-    }
-
-    public function syncAllWithGateways()
-    {
-        $plans = Plan::all();
-        foreach ($plans as $plan) {
-            $this->syncWithGateways($plan);
-        }
-
-        return $plans;
     }
 }

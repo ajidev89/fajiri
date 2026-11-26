@@ -2,19 +2,20 @@
 
 namespace App\Http\Resources;
 
-use Illuminate\Support\Facades\URL;
+use App\Http\Traits\ConvertedAmountTrait;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class PlanResource extends JsonResource
 {
-    use \App\Http\Traits\ConvertedAmountTrait;
+    use ConvertedAmountTrait;
 
     /**
      * Transform the resource into an array.
      *
      * @return array<string, mixed>
      */
-    public function toArray(\Illuminate\Http\Request $request): array
+    public function toArray(Request $request): array
     {
         $converted = $this->getConvertedAmount($this->price, $this->currency, $request);
 
@@ -30,7 +31,9 @@ class PlanResource extends JsonResource
             'currency' => $converted['currency'],
             'base_price' => $converted['base_amount'],
             'base_currency' => $converted['base_currency'],
-            'duration' => $this->duration,
+            'duration' => null,
+            'billing_type' => 'one_time',
+            'is_lifetime' => true,
             'features' => $this->features,
             'status' => $this->status,
             'stripe_price_id' => $this->stripe_price_id,

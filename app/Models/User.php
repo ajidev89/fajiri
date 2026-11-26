@@ -350,6 +350,11 @@ class User extends Authenticatable
         return $this->hasMany(WithdrawalAccount::class);
     }
 
+    public function withdrawalRequests(): HasMany
+    {
+        return $this->hasMany(WithdrawalRequest::class);
+    }
+
     public function referredBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'referred_by');

@@ -2,13 +2,14 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Config;
 use Exception;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Http;
 
 class PaystackService
 {
     protected string $baseUrl;
+
     protected ?string $secretKey = null;
 
     public function __construct()
@@ -26,7 +27,7 @@ class PaystackService
             ->post("{$this->baseUrl}/transaction/initialize", $data);
 
         if ($response->failed()) {
-            throw new Exception("Paystack initialization failed: " . $response->body());
+            throw new Exception('Paystack initialization failed: '.$response->body());
         }
 
         return $response->json('data');
@@ -41,54 +42,38 @@ class PaystackService
             ->get("{$this->baseUrl}/transaction/verify/{$reference}");
 
         if ($response->failed()) {
-            throw new Exception("Paystack verification failed: " . $response->body());
+            throw new Exception('Paystack verification failed: '.$response->body());
         }
 
         return $response->json('data');
     }
 
-    public function banks($query = [] ){
-        $response = Http::withToken($this->secretKey)->get("{$this->baseUrl}/bank",$query);
-        return $response->json('data');
-    }
-
-    public function resolveBankAccount($query = []){
-        $response = Http::withToken($this->secretKey)->get("{$this->baseUrl}/bank/resolve",$query);
-        return $response->json('data');
-    }
-
-    public function createRecipent($data){
-        $response = Http::withToken($this->secretKey)->post("{$this->baseUrl}/transferrecipient",$data);
-        return $response->json('data');
-    }   
-
-    public function transfer($data){
-        $response = Http::withToken($this->secretKey)->post("{$this->baseUrl}/transfer",$data);
-        return $response->json('data');
-    }   
-    
-    /**
-     * Create a Paystack Plan
-     */
-    public function createPlan(array $data)
+    public function banks($query = [])
     {
-        $response = Http::withToken($this->secretKey)
-            ->post("{$this->baseUrl}/plan", $data);
-
-        if ($response->failed()) {
-            throw new Exception("Paystack plan creation failed: " . $response->body());
-        }
+        $response = Http::withToken($this->secretKey)->get("{$this->baseUrl}/bank", $query);
 
         return $response->json('data');
     }
 
-    /**
-     * Initialize a Subscription (Initialize Transaction with Plan)
-     */
-    public function initializeSubscription(array $data)
+    public function resolveBankAccount($query = [])
     {
-        // Paystack uses 'plan' parameter in transaction initialization to start a subscription
-        return $this->initializeTransaction($data);
+        $response = Http::withToken($this->secretKey)->get("{$this->baseUrl}/bank/resolve", $query);
+
+        return $response->json('data');
+    }
+
+    public function createRecipent($data)
+    {
+        $response = Http::withToken($this->secretKey)->post("{$this->baseUrl}/transferrecipient", $data);
+
+        return $response->json('data');
+    }
+
+    public function transfer($data)
+    {
+        $response = Http::withToken($this->secretKey)->post("{$this->baseUrl}/transfer", $data);
+
+        return $response->json('data');
     }
 
     /**
@@ -99,7 +84,7 @@ class PaystackService
         $response = Http::withToken($this->secretKey)
             ->post("{$this->baseUrl}/subscription/disable", [
                 'code' => $subscriptionCode,
-                'token' => $emailToken
+                'token' => $emailToken,
             ]);
 
         return $response->json();

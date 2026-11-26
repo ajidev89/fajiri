@@ -55,6 +55,12 @@ return [
     'url' => env('APP_URL', 'http://localhost'),
 
     /*
+    | The member web app that links in emails point to.
+    */
+
+    'frontend_url' => rtrim((string) env('FRONTEND_URL', 'https://app.fajiri.org'), '/'),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------

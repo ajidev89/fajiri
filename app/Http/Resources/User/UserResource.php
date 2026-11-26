@@ -38,6 +38,7 @@ class UserResource extends JsonResource
             'role' => $this->rolePayload(),
             'username' => $this->username,
             'has_pin' => (bool) $this->pin,
+            'kyc_status' => $this->kyc?->status instanceof \BackedEnum ? $this->kyc->status->value : ($this->kyc?->status ?? 'not_started'),
             'profile' => $this->profile ? new ProfileResource($this->profile) : null,
             'wallet' => $this->walletPayload(),
             'phone_verified_at' => $this->phone_verified_at?->toISOString(),

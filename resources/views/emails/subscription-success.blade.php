@@ -24,5 +24,5 @@
 
     <p>If you have any questions, feel free to reach out to our support team.</p>
 
-    <a href="{{ config('app.frontend_url', 'https://app.fajiri.org') }}/dashboard" class="btn">Go to dashboard</a>
+    <a href="{{ config('app.frontend_url') }}/profile" class="btn">Go to dashboard</a>
 @endsection

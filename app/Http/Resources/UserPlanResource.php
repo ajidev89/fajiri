@@ -23,6 +23,7 @@ class UserPlanResource extends JsonResource
             'payment_currency' => $this->pivot->currency,
             'started_at' => $this->pivot->started_at,
             'expires_at' => $this->pivot->expires_at,
+            'is_lifetime' => $this->pivot->expires_at === null,
             'status' => $this->pivot->status,
             'auto_renew' => $this->pivot->auto_renew,
         ];

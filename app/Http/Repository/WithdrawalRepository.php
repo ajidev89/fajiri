@@ -2,23 +2,30 @@
 
 namespace App\Http\Repository;
 
+use App\Enums\Withdrawal\Status;
 use App\Http\Repository\Contracts\WithdrawalRepositoryInterface;
+use App\Http\Resources\Withdrawal\WithdrawalRequestResource;
 use App\Http\Traits\AuthUserTrait;
 use App\Http\Traits\ResponseTrait;
-use App\Models\Notification;
 use App\Models\WithdrawalAccount;
 use App\Services\PaystackService;
 use App\Services\StripeService;
+use App\Services\WithdrawalService;
 use Hash;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 class WithdrawalRepository implements WithdrawalRepositoryInterface
 {
     use AuthUserTrait, ResponseTrait;
 
-    public function __construct(public WithdrawalAccount $account, protected PaystackService $paystackService, protected StripeService $stripeService) {}
+    public function __construct(
+        public WithdrawalAccount $account,
+        protected PaystackService $paystackService,
+        protected StripeService $stripeService,
+        protected WithdrawalService $withdrawals,
+    ) {}
 
     public function store($request)
     {
@@ -30,58 +37,33 @@ class WithdrawalRepository implements WithdrawalRepositoryInterface
             return $this->handleErrorResponse('Invalid transaction PIN');
         }
 
-        $medium = $this->medium();
-        $recipient = null;
+        $account = $this->account->create($request->accountData() + [
+            'user_id' => $this->user()->id,
+            'default' => true,
+            'meta' => ['provider' => 'manual'],
+        ]);
 
-        try {
-            switch ($medium) {
-                case 'paystack':
-                    $recipientData = $this->paystackService->createRecipent([
-                        'type' => 'nuban',
-                        'name' => $request->account_name,
-                        'account_number' => $request->account_number,
-                        'bank_code' => $request->bank_code,
-                        'currency' => $this->user()->country->currency ?? 'NGN',
-                    ]);
-                    $recipientId = $recipientData['recipient_code'];
-                    break;
+        return $this->handleSuccessResponse('Successfully created withdrawal account', $account);
+    }
 
-                case 'stripe':
-                    if (!$this->user()->stripe_connected_id) {
-                        $stripeAccount = $this->stripeService->createConnectedAccount($this->user());
-                        $this->user()->update(['stripe_connected_id' => $stripeAccount->id]);
-                    }
-
-                    $recipientData = $this->stripeService->bankAccount($this->user(), [
-                        'account_name' => $request->account_name,
-                        'account_number' => $request->account_number,
-                        'routing_number' => $request->bank_code, // Using bank_code as routing_number for Stripe
-                    ]);
-                    $recipientId = $recipientData->id;
-                    break;
-
-                default:
-                    return $this->handleErrorResponse('Unsupported payment medium');
-            }
-
-            $account = $this->account->create([
-                'bank_name' => $request->bank_name,
-                'account_name' => $request->account_name,
-                'meta' => [
-                    'provider' => $medium,
-                    'provider_id' => $recipientId,
-                ],
-                'account_number' => $request->account_number,
-                'routing_number' => $request->bank_code,
-                'user_id' => $this->user()->id,
-                'default' => true,
-            ]);
-
-            return $this->handleSuccessResponse('Successfully created withdrawal account', $account);
-
-        } catch (\Exception $e) {
-            return $this->handleErrorResponse($e->getMessage());
+    public function update($request)
+    {
+        $account = $this->user()->withdrawalAccounts()->find($request->route('id'));
+        if (! $account) {
+            return $this->handleErrorResponse('Account not found', 404);
         }
+
+        if (! Hash::check($request->pin, $this->user()->pin)) {
+            return $this->handleErrorResponse('Invalid transaction PIN');
+        }
+
+        if ($this->user()->withdrawalRequests()->whereIn('status', [Status::PENDING, Status::APPROVED])->exists()) {
+            return $this->handleErrorResponse('You cannot change your bank account while a withdrawal is in progress.');
+        }
+
+        $account->update($request->accountData() + ['meta' => ['provider' => 'manual']]);
+
+        return $this->handleSuccessResponse('Successfully updated withdrawal account', $account->fresh());
     }
 
     public function index()
@@ -97,6 +79,11 @@ class WithdrawalRepository implements WithdrawalRepositoryInterface
         if (! $account) {
             return $this->handleErrorResponse('Account not found');
         }
+
+        if ($this->user()->withdrawalRequests()->whereIn('status', [Status::PENDING, Status::APPROVED])->exists()) {
+            return $this->handleErrorResponse('You cannot remove your bank account while a withdrawal is in progress.');
+        }
+
         $account->delete();
 
         return $this->handleSuccessResponse('Successfully deleted withdrawal account', []);
@@ -175,56 +162,45 @@ class WithdrawalRepository implements WithdrawalRepositoryInterface
             return $this->handleErrorResponse('No default withdrawal account found. Please add one.');
         }
 
-        // Wallet check happens inside $user->withdraw(), but we can do a preliminary check
-        if ($user->wallet->balance < $request->amount) {
-            return $this->handleErrorResponse('Insufficient wallet balance');
+        try {
+            $withdrawal = $this->withdrawals->request($user, $account, (float) $request->amount, $request->input('note'));
+        } catch (RuntimeException $e) {
+            return $this->handleErrorResponse($e->getMessage());
         }
 
-        return DB::transaction(function () use ($user, $account, $request) {
-            try {
-                $medium = $this->medium();
-                $providerId = $account->meta['provider_id'];
-
-                if ($medium === 'paystack') {
-                    $this->paystackService->transfer([
-                        'source' => 'balance',
-                        'amount' => $request->amount * 100, // Paystack uses kobo
-                        'recipient' => $providerId,
-                        'reason' => 'Wallet Withdrawal',
-                    ]);
-                } else {
-                    $this->stripeService->transfer([
-                        'amount' => $request->amount * 100,
-                        'destination' => $providerId,
-                        'currency' => strtolower($user->country->currency ?? 'usd'),
-                    ]);
-                }
-
-                // Log the transaction and deduct balance
-                $transaction = $user->withdraw($request->amount, "Withdrawal to {$account->account_name}");
-
-                // Add notification
-                Notification::create([
-                    'user_id' => $user->id,
-                    'title' => 'Withdrawal Initiated',
-                    'message' => 'Your withdrawal of '.($user->wallet->currency ?? 'NGN').' '.number_format($request->amount, 2).' has been initiated.',
-                    'type' => 'withdrawal_initiated',
-                    'data' => [
-                        'amount' => $request->amount,
-                        'account_name' => $account->account_name,
-                        'account_number' => $account->account_number,
-                    ],
-                ]);
-
-                return $this->handleSuccessResponse('Withdrawal initiated successfully', $transaction);
-            } catch (\Exception $e) {
-                return $this->handleErrorResponse($e->getMessage());
-            }
-        });
+        return $this->handleSuccessResponse(
+            'Withdrawal request submitted. You will be notified once it is paid.',
+            new WithdrawalRequestResource($withdrawal),
+            201
+        );
     }
 
-    protected function medium(): string
+    public function requests($request)
     {
-        return ($this->user()->canUsePaystack()) ? 'paystack' : 'stripe';
+        $requests = $this->user()->withdrawalRequests()
+            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->input('status')))
+            ->latest()
+            ->paginate((int) $request->input('per_page', 15));
+
+        return WithdrawalRequestResource::collection($requests)->additional([
+            'message' => 'Successfully fetched withdrawal requests',
+            'status' => true,
+        ]);
+    }
+
+    public function cancel($request)
+    {
+        $withdrawal = $this->user()->withdrawalRequests()->find($request->route('id'));
+        if (! $withdrawal) {
+            return $this->handleErrorResponse('Withdrawal request not found', 404);
+        }
+
+        try {
+            $withdrawal = $this->withdrawals->cancel($withdrawal, $this->user());
+        } catch (RuntimeException $e) {
+            return $this->handleErrorResponse($e->getMessage());
+        }
+
+        return $this->handleSuccessResponse('Withdrawal request cancelled', new WithdrawalRequestResource($withdrawal));
     }
 }

@@ -53,14 +53,15 @@ class PaystackJob implements ShouldQueue
     {
         $data = $this->event['data'];
 
-        if (isset($data['plan']) && ! empty($data['plan'])) {
+        $type = $data['metadata']['type'] ?? 'wallet_funding';
+
+        if ($type === 'subscription' || ! empty($data['plan'])) {
             $this->confirmSubscriptionCharge($data, $attempts);
 
             return;
         }
 
         $reference = $data['reference'];
-        $type = $data['metadata']['type'] ?? 'wallet_funding';
 
         if ($type === 'wallet_funding') {
             $this->processWalletFunding($data, $reference);

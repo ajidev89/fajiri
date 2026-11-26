@@ -9,4 +9,7 @@ interface WithdrawalRepositoryInterface {
     public function banks();
     public function resolveBankAccount($request);
     public function withdraw($request);
+    public function update($request);
+    public function requests($request);
+    public function cancel($request);
 }

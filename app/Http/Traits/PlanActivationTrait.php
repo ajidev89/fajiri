@@ -21,14 +21,13 @@ trait PlanActivationTrait
                 ->update(['status' => 'inactive']);
 
             $startedAt = now();
-            $expiresAt = $startedAt->copy()->addDays($plan->duration);
 
             $user->plans()->attach($plan->id, [
                 'id' => Str::uuid(),
                 'started_at' => $startedAt,
-                'expires_at' => $expiresAt,
+                'expires_at' => null,
                 'status' => 'active',
-                'auto_renew' => true,
+                'auto_renew' => false,
                 'provider' => $provider,
                 'provider_subscription_id' => $providerSubscriptionId,
             ]);

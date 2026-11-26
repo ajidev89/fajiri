@@ -1,11 +1,11 @@
 <?php
 
 namespace Database\Seeders;
- 
+
 use App\Enums\User\AccountType;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\Plan;
 use Illuminate\Database\Seeder;
- 
+
 class PlanSeeder extends Seeder
 {
     /**
@@ -22,10 +22,10 @@ class PlanSeeder extends Seeder
                 'description' => 'Perfect for getting started.',
                 'price' => 5000.00,
                 'currency' => 'NGN',
-                'duration' => 30,
+                'duration' => null,
                 'features' => [
-                    "Support and recognition for birthdays and special occasions",
-                    "Access to basic healthcare, life insurance, and wellness support programs"
+                    'Support and recognition for birthdays and special occasions',
+                    'Access to basic healthcare, life insurance, and wellness support programs',
                 ],
                 'status' => true,
             ],
@@ -37,7 +37,7 @@ class PlanSeeder extends Seeder
                 'description' => 'For small brands and creators.',
                 'price' => 10000.00,
                 'currency' => 'NGN',
-                'duration' => 30,
+                'duration' => null,
                 'features' => ['Standard Support', '5 Campaigns', 'Standard Analytics'],
                 'status' => true,
             ],
@@ -49,7 +49,7 @@ class PlanSeeder extends Seeder
                 'description' => 'Everything you need to grow.',
                 'price' => 25000.00,
                 'currency' => 'NGN',
-                'duration' => 30,
+                'duration' => null,
                 'features' => ['Priority Support', 'Unlimited Campaigns', 'Advanced Analytics'],
                 'status' => true,
             ],
@@ -61,14 +61,14 @@ class PlanSeeder extends Seeder
                 'description' => 'Custom solutions for your business.',
                 'price' => 50000.00,
                 'currency' => 'NGN',
-                'duration' => 30,
+                'duration' => null,
                 'features' => ['24/7 Support', 'Custom Integrations', 'Dedicated Account Manager'],
                 'status' => true,
             ],
         ];
 
         foreach ($plans as $plan) {
-            \App\Models\Plan::updateOrCreate(['slug' => $plan['slug']], $plan);
+            Plan::updateOrCreate(['slug' => $plan['slug']], $plan);
         }
     }
 }

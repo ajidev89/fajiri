@@ -5,6 +5,7 @@ use App\Http\Controllers\API\Admin\AdminFaqController;
 use App\Http\Controllers\API\Admin\AdminUserController;
 use App\Http\Controllers\API\Admin\RolePermissionController;
 use App\Http\Controllers\API\AdminDisbursementController;
+use App\Http\Controllers\API\AdminWithdrawalController;
 use App\Http\Controllers\API\AmbassadorController;
 use App\Http\Controllers\API\AnalyticsController;
 use App\Http\Controllers\API\AuthController;
@@ -184,8 +185,6 @@ Route::controller(PlanController::class)->middleware(['auth:sanctum'])->group(fu
         Route::post('/subscribe', 'subscribe');
         Route::post('/initialize-subscription', 'initializeSubscription');
         Route::put('/{id}', 'update')->middleware(['permission:membership_management']);
-        Route::post('/sync-all', 'syncAll')->withoutMiddleware(['auth:sanctum', 'admin', 'super-admin', 'permission:membership_management']);
-        Route::post('/{id}/sync', 'sync')->middleware(['permission:membership_management']);
         Route::delete('/{id}', 'destroy')->middleware(['permission:membership_management']);
     });
 });
@@ -213,12 +212,25 @@ Route::controller(NotificationController::class)->middleware(['auth:sanctum'])->
 
 Route::controller(WithdrawalController::class)->middleware(['auth:sanctum'])->group(function () {
     Route::group(['prefix' => 'withdrawals'], function () {
-        Route::get('/', 'index')->middleware(['permission:financial_records']);
+        Route::get('/', 'index');
         Route::post('/', 'store');
-        Route::delete('/{id}', 'destroy');
         Route::get('/banks', 'banks');
         Route::get('/resolve-bank-account', 'resolveBankAccount');
         Route::post('/withdraw', 'withdraw');
+        Route::get('/requests', 'requests');
+        Route::post('/requests/{id}/cancel', 'cancel');
+        Route::put('/{id}', 'update');
+        Route::delete('/{id}', 'destroy');
+    });
+});
+
+Route::controller(AdminWithdrawalController::class)->middleware(['auth:sanctum', 'permission:financial_records'])->group(function () {
+    Route::group(['prefix' => 'admin/withdrawals'], function () {
+        Route::get('/', 'index');
+        Route::get('/{id}', 'show');
+        Route::post('/{id}/approve', 'approve');
+        Route::post('/{id}/reject', 'reject');
+        Route::post('/{id}/mark-paid', 'markPaid');
     });
 });
 
