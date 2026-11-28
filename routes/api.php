@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\API\Admin\AdminAnnouncementController;
 use App\Http\Controllers\API\Admin\AdminFaqController;
+use App\Http\Controllers\API\Admin\AdminLegalDocumentController;
 use App\Http\Controllers\API\Admin\AdminUserController;
 use App\Http\Controllers\API\Admin\RolePermissionController;
 use App\Http\Controllers\API\AdminDisbursementController;
@@ -22,6 +23,7 @@ use App\Http\Controllers\API\FaqController;
 use App\Http\Controllers\API\FundraiserController;
 use App\Http\Controllers\API\InitiativeController;
 use App\Http\Controllers\API\InsuranceController;
+use App\Http\Controllers\API\LegalDocumentController;
 use App\Http\Controllers\API\MediaController;
 use App\Http\Controllers\API\NeedController;
 use App\Http\Controllers\API\NotificationController;
@@ -43,6 +45,7 @@ use Illuminate\Support\Facades\Route;
 Route::post('/contact', [ContactController::class, 'submit']);
 Route::get('/faqs/types', [FaqController::class, 'types']);
 Route::get('/faqs', [FaqController::class, 'index']);
+Route::get('/legal/{type}', [LegalDocumentController::class, 'show']);
 Route::get('/member/{member_id}', [PublicMemberController::class, 'show']);
 Route::controller(AuthController::class)->group(function () {
     Route::group(['prefix' => 'auth'], function () {
@@ -388,6 +391,9 @@ Route::group(['prefix' => 'admin', 'middleware' => ['auth:sanctum']], function (
         Route::post('/faqs', [AdminFaqController::class, 'store']);
         Route::put('/faqs/{faq}', [AdminFaqController::class, 'update']);
         Route::delete('/faqs/{faq}', [AdminFaqController::class, 'destroy']);
+
+        Route::get('/legal', [AdminLegalDocumentController::class, 'index']);
+        Route::put('/legal/{type}', [AdminLegalDocumentController::class, 'update']);
 
         Route::get('/roles', [RolePermissionController::class, 'indexRoles']);
         Route::post('/roles', [RolePermissionController::class, 'storeRole']);
